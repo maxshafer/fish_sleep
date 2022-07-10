@@ -21,12 +21,16 @@ resolved_names <- read.csv("resolved_names_local.csv", row.names = "X", header =
 trait.data <- readRDS("trait_data.rds")
 tr.calibrated <- readRDS("calibrated_phylo.rds")
 
+# Remove low quality data or not
+trait.data <- trait.data[trait.data$confidence > 1,]
+tr.calibrated <- keep.tip(tr.calibrated, tip = trait.data$species)
+
 ################################################################################################################################################
 ### Make phylogenetic tree plots showing activity patterns ###
 ################################################################################################################################################
 
 # Make a plot showing species names and diel activity
-diel.plot <- ggtree(tr.calibrated, layout = "circular") %<+% trait.data[,c("tips", "diel2", "order")] + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diel2), shape = 16, size = 1.5) + scale_color_manual(values = c("yellow", "red", "blue", "green"))
+diel.plot <- ggtree(tr.calibrated, layout = "circular") %<+% trait.data[,c("tips", "diel2", "order")] + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diel2), shape = 16, size = 0.5) + scale_color_manual(values = c("yellow", "red", "blue", "green"))
 
 pdf(file = paste("outs/Figures/fish_phylogeny_diel_", length(tr.calibrated$tip.label), "_species.pdf", sep = ""), width = 20, height = 20)
 diel.plot
@@ -96,18 +100,18 @@ dev.off()
 ### Plot Reconstructed ancestral states for Diurnal / Nocturnal ###
 ################################################################################################################################################
 
-# Now subset the tree based on which traits you want to test
+
+# Just diurnal/nocturnal
 trait.vector_n <- trait.data$diel1
 names(trait.vector_n) <- trait.data$species
-
 trait.vector_n <- trait.vector_n[trait.vector_n %in% c("diurnal", "nocturnal")]
-
 trpy_n <- keep.tip(tr.calibrated, tip = names(trait.vector_n))
-# Some edge lengths are equal to 0, which causes errors with ace
 trpy_n$edge.length[trpy_n$edge.length == 0] <- 0.001 
+trait.data_n <- trait.data[trait.data$species %in% trpy_n$tip.label,]
 
 # Load most likely model from script #2
-best_fit_model <- readRDS("best_fit_model.rds")
+# best_fit_model <- readRDS("best_fit_model_all_species.rds")
+best_fit_model <- readRDS(file = paste("best_fit_model_", length(trpy_n$tip.label), "_species.rds", sep = ""))
 
 # Extract the liklihood for each node and make it into a ggplotable data frame
 

@@ -1,116 +1,185 @@
 library(rfishbase)
+library(ggalt)
+library(ggbiplot)
+library(dplyr)
+library(patchwork)
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Euteleostomi_deil_patterns/")
+setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
 
-source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Euteleostomi_deil_patterns/scripts/Trait_rate_matrix_figure_script.R")
+source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/scripts/Trait_rate_matrix_figure_script.R")
 
 ## Load files
 
 resolved_names <- read.csv("resolved_names_local.csv", row.names = "X", header = TRUE)
 tr.calibrated <- readRDS("calibrated_phylo.rds")
 trait.data <- readRDS("trait_data.rds")
+trpy <- readRDS(file = "calibrated_phylo.rds")
+
+#############  #############  #############  #############  #############  #############  #############  
+#############  #############  #############  #############  #############  #############  #############  
 
 ## Load fishbase data
 
-fishbase_species <- rfishbase::load_taxa()
-
+fishbase_df <- rfishbase::load_taxa()
+fishbase_species <- species()
 fishbase_diet <- diet()
 fishbase_ecology <- ecology() # Has troph and 
 fishbase_morph <- morphometrics()
 fishbase_ecosystem <- ecosystem() # Salinity is here duh
+fishbase_maturity <- maturity()
+fishbase_spawning <- spawning()
+fishbase_swimming <- swimming()
+fishbase_larvae <- larvae()
+fishbase_dietitems <- diet_items()
+fishbase_fecundity <- fecundity()
+fishbase_reproduction <- reproduction()
+fishbase_length <- length_weight()
+
+#############  #############  #############  #############  #############  #############  #############  
+#############  #############  #############  #############  #############  #############  #############  
+
+## OK need to collect my traits, then transform them, then do PCA
+
+############# TL/SL for 11k species or actual length measurements ############# 
+# standard_size <- fishbase_morph %>% group_by(Species) %>% dplyr::summarise(mean_TL = mean(TL), mean_SL = mean(SL))
+# fishbase_length2 <- fishbase_length[complete.cases(fishbase_length[,c("LengthMax", "a", "b")])]
+standard_size <- fishbase_length %>% group_by(Species) %>% dplyr::summarise(mean_LengthMax = mean(LengthMax), mean_Weight = mean(a*LengthMax^b))
+
+
+#############  Next is reproduction, rate, size, age ############# 
+
+# Max fecundity for 456 species (sad), SpawningCycles for 589, gestation values for 30-40 (boo)
+fecundity <- fishbase_spawning %>% group_by(Species) %>% dplyr::summarise(mean_FecundityMax = mean(FecundityMax), mean_SpawningCycles = mean(SpawningCycles))
+# Can also get 'spawning ground' from fishbase_spawning, which is a character vector for ~1500 species
+spawning_ground <- fishbase_spawning %>% group_by(Species) %>% dplyr::summarise(spawning_ground = paste(unique(SpawningGround), sep = "_"))
+# This gives me the age at maturity for 1015 species
+age_maturity <- fishbase_maturity %>% group_by(Species) %>% dplyr::summarize(mean_AgeMatMin = mean(c(AgeMatMin, AgeMatMin2), na.rm = TRUE))
+
+
+############# Next is trophic level, benthopelagic, and ecosystem breadth) #############  
+
+trophic <- fishbase_ecology %>% group_by(Species) %>% dplyr::summarise(mean_DietTroph = mean(DietTroph), mean_FoodTroph = mean(FoodTroph), FeedingType = paste(unique(FeedingType), sep = "_"))
+ecosystem <- fishbase_ecosystem %>% group_by(Species) %>% dplyr::summarise(ecosystem_type = paste(unique(EcosystemType), sep = "_"))
+realm <- fishbase_ecosystem[fishbase_ecosystem$EcosystemType == "Zoogeographic realm",] %>% group_by(Species) %>% dplyr::summarise(realm = paste(unique(EcosystemName), sep = "_"))
+benthopelagic <- fishbase_species %>% group_by(Species) %>% dplyr::summarise(benthopelagic = paste(unique(DemersPelag), sep = "_"), Fresh_Brack_Saltwater = paste(mean(Fresh), mean(Brack), mean(Saltwater), sep = "_"))
+
+
+#############  Reproduction! Can use the Guild, which is a reflection of parental investment, and is super complete ############# 
+
+reproduction <- fishbase_reproduction %>% group_by(Species) %>% dplyr::summarise(RepGuild1 = paste(unique(RepGuild1), sep = "_"), RepGuild2 = paste(unique(RepGuild2), sep = "_"), ParentalCare = paste(unique(ParentalCare), sep = "_"))
+
+#############  #############  #############  #############  #############  #############  #############  
+#############  #############  #############  #############  #############  #############  #############  
+
+## Make a combined list
+combined_ecology_metrics <- Reduce(merge, list(standard_size, trophic, ecosystem, realm, benthopelagic, reproduction))
+
+## Find those species with 'complete.cases'
+combined_ecology_metrics <- data.frame(lapply(combined_ecology_metrics, function(x) gsub("NA", NA, x)))
+combined_ecology_metrics <- combined_ecology_metrics[!(is.na(combined_ecology_metrics$Species)),]
+
+zoo <- combined_ecology_metrics[combined_ecology_metrics$ecosystem_type == "Zoogeographic realm",]
+combined_ecology_metrics <- combined_ecology_metrics[combined_ecology_metrics$ecosystem_type != "Zoogeographic realm",]
+
+#############  Calculate the ecosystem breadth (the number of ecosystem types x the number of zoogeographic realms)#############  
+
+realm_vector <- unlist(lapply(unique(zoo$Species), function(x) {
+  vector <- zoo[zoo$Species %in% x, "realm"]
+  vector <- paste(unique(sort(vector)), collapse = "_")
+  return(vector)
+}))
+
+realm_count <- as.vector(table(zoo$Species))
+realm_df <- data.frame(Species = unique(zoo$Species)[!(is.na(unique(zoo$Species)))], realm_count = realm_count[!(is.na(unique(zoo$Species)))], realm_names = realm_vector[!(is.na(unique(zoo$Species)))])
+
+ecosystem_vector <- unlist(lapply(unique(combined_ecology_metrics$Species), function(x) {
+  vector <- combined_ecology_metrics[combined_ecology_metrics$Species %in% x, "ecosystem_type"]
+  vector <- paste(unique(sort(vector)), collapse = "_")
+  return(vector)
+}))
+
+ecosystem_count <- as.vector(table(combined_ecology_metrics$Species))
+ecosystem_df <- data.frame(Species = unique(combined_ecology_metrics$Species)[!(is.na(unique(combined_ecology_metrics$Species)))], ecosystem_count = ecosystem_count[!(is.na(unique(combined_ecology_metrics$Species)))], ecosystem_names = ecosystem_vector[!(is.na(unique(combined_ecology_metrics$Species)))])
+
+#############  Combine back with all data ############# 
+
+combined_ecology_metrics <- combined_ecology_metrics[,c("Species", "mean_LengthMax", "mean_Weight", "mean_DietTroph", "mean_FoodTroph", "benthopelagic", "RepGuild1", "RepGuild2")]
+combined_ecology_metrics <- combined_ecology_metrics[!duplicated(combined_ecology_metrics),]
+combined_ecology_metrics <- Reduce(merge, list(combined_ecology_metrics, ecosystem_df, realm_df))
+
+
+#############  Calculate simplified Trophic and reproduction guild metrics #############  
+combined_ecology_metrics$RepGuild <- ifelse(!(is.na(combined_ecology_metrics$RepGuild2)), combined_ecology_metrics$RepGuild2, combined_ecology_metrics$RepGuild1)
+combined_ecology_metrics$mean_DietTroph <- as.numeric(combined_ecology_metrics$mean_DietTroph)
+combined_ecology_metrics$mean_FoodTroph <- as.numeric(combined_ecology_metrics$mean_FoodTroph)
+combined_ecology_metrics$Trophic <- ifelse(is.na(combined_ecology_metrics$mean_FoodTroph), combined_ecology_metrics$mean_DietTroph, ifelse(!(is.na(combined_ecology_metrics$mean_DietTroph)) & !(is.na(combined_ecology_metrics$mean_FoodTroph)), rowMeans(combined_ecology_metrics[,c("mean_DietTroph", "mean_FoodTroph")]), combined_ecology_metrics$mean_FoodTroph))
+
+
+#############  Subset for only those with diel information #############
+combined_ecology_metrics_diel <- combined_ecology_metrics[combined_ecology_metrics$Species %in% gsub("_", " ", trait.data$species),]
+
+combined_ecology_metrics_diel <- combined_ecology_metrics
+# View(lapply(combined_ecology_metrics_diel, function(x) table(is.na(x))))
+
+#############  Subset to only complete cases #############  
+# complete_cases <- combined_ecology_metrics_diel[complete.cases(combined_ecology_metrics_diel[,c("Species","mean_Weight", "Trophic","ecosystem_count", "benthopelagic", "RepGuild")]), c("Species", "mean_LengthMax", "mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")]
+complete_cases <- combined_ecology_metrics_diel[complete.cases(combined_ecology_metrics_diel[,c("Species","Trophic","benthopelagic")]), c("Species", "mean_LengthMax", "mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")]
+
+complete_cases$diel <- trait.data$diel2[match(complete_cases$Species, gsub("_", " ", trait.data$species))]
+complete_cases$mean_Weight <- log(as.numeric(complete_cases$mean_Weight))
+# View(lapply(complete_cases, function(x) table(is.na(x))))
+
+## Assign factor levels to character vectors
+
+# benthopelagic, RepGuild (and combine), FeedingType
+complete_cases$benthopelagic <- factor(complete_cases$benthopelagic, levels = c("demersal", "reef-associated", "benthopelagic", "pelagic-neritic", "pelagic", "pelagic-oceanic"))
+complete_cases$RepGuild <- tolower(complete_cases$RepGuild)
+complete_cases$RepGuild <- factor(complete_cases$RepGuild, levels = c("open water/substratum egg scatterers", "nonguarders", "brood hiders", "guarders", "clutch tenders", "nesters", "external brooders", "internal live bearers"))
+
+# complete_cases$FeedingType <- factor(complete_cases$FeedingType, levels = c("variable", "grazing on aquatic plants", "browsing on substrate", "filtering plankton", "other", "selective plankton feeding", "hunting macrofauna (predator)", "feeding on a host (parasite)"))
+
+
+# Make histograms
+
+p_mean_Weight <- ggplot(complete_cases, aes(x = as.numeric(mean_Weight))) + geom_histogram(color = "black", fill = "grey", binwidth = 1) + theme_classic()
+p_mean_FoodTroph <- ggplot(complete_cases, aes(x = as.numeric(Trophic))) + geom_histogram(color = "red4", fill = "red1", binwidth = 0.25) + theme_classic()
+# p_FeedingType <- ggplot(complete_cases, aes(x = as.numeric(FeedingType))) + geom_histogram(color = "gold4", fill = "gold1") + theme_classic()
+p_benthopelagic <- ggplot(complete_cases, aes(x = as.numeric(benthopelagic))) + geom_histogram(color = "royalblue4", fill = "royalblue1", binwidth = 1) + theme_classic()
+p_ecosystem_count <- ggplot(complete_cases, aes(x = as.numeric(ecosystem_count))) + geom_histogram(color = "seagreen", fill = "seagreen2", binwidth = 1) + theme_classic()
+p_RepGuild <- ggplot(complete_cases, aes(x = as.numeric(RepGuild))) + geom_histogram(color = "mediumpurple4", fill = "mediumpurple1", binwidth = 1) + theme_classic()
+
+histograms <- p_mean_Weight + p_mean_FoodTroph + p_benthopelagic + p_RepGuild + p_ecosystem_count + plot_layout(ncol = 1)
+
+
+pca.data <- complete_cases[,c("mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")]
+row.names(pca.data) <- complete_cases$Species
+for (i in 1:ncol(pca.data)) {
+  pca.data[,i] <- as.numeric(pca.data[,i])
+}
+diel.pca <- prcomp(pca.data, center = TRUE, scale. = TRUE)
 
 
 
-#resolved_names$marine <- fishbase_ecosystem$Salinity[match(resolved_names$unique_name, fishbase_ecosystem$Species)]
+biplot <- ggbiplot(diel.pca, groups = complete_cases$diel, choices = c(1,2)) + theme_classic() 
+# Find the convex hull of the points plotted
+hull <- biplot$data %>% group_by(groups) %>% slice(chull(xvar, yvar))
 
-### Compare marine and diel together as discrete traits (4 of them)
+biplot <- biplot + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + geom_polygon(data = hull, aes(fill = groups, colour = groups), alpha = 0, show.legend = FALSE) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme(legend.position = c(0.15,0.15))
 
-
-# First create a vector for the trait (diurnal or nocturnal + marine)
-trait.vector <- paste(resolved_names$diel[match(trpy$tip.label, resolved_names$tips)], resolved_names$marine[match(trpy$tip.label, resolved_names$tips)], sep = "_")
-trait.vector <- str_replace(trait.vector, "crepuscular/", "")
-names(trait.vector) <- trpy$tip.label
-# Only those with diurnal/nocturnal or fresh/salt water
-trait.vector.marine <- trait.vector[unique(c(grep("diurnal_freshwater", trait.vector), grep("diurnal_saltwater", trait.vector), grep("nocturnal_freshwater", trait.vector), grep("nocturnal_saltwater", trait.vector)))]
-
-# diel.vector2 <- vector(length = length(trait.vector))
-# diel.vector2[grep("diurnal", trait.vector)] <- "diurnal"
-# diel.vector2[grep("nocturnal", trait.vector)] <- "nocturnal"
-# 
-# marine.vector2 <- vector(length = length(trait.vector))
-# marine.vector2[grep("saltwater", trait.vector)] <- "saltwater"
-# marine.vector2[grep("freshwater", trait.vector)] <- "freshwater"
+pdf(file = "outs/Figures/Ecological_economics_summary_figure.pdf", width = 7.5, height = 15)
+biplot + histograms + plot_layout(ncol = 1, heights = c(7.5,10), widths = c(7.5,7.5))
+dev.off()
 
 
-# # First create a vector for the trait (diurnal or nocturnal + climate)
-# trait.vector <- paste(resolved_names$diel[match(trpy$tip.label, resolved_names$tips)], resolved_names$Climate[match(trpy$tip.label, resolved_names$tips)], sep = "_")
-# trait.vector <- str_replace(trait.vector, "crepuscular/", "")
-# names(trait.vector) <- trpy$tip.label
-# trait.vector.climate <- trait.vector[unique(c(grep("diurnal_subtropical", trait.vector), grep("diurnal_temperate", trait.vector), grep("diurnal_tropical", trait.vector), grep("diurnal_boreal", trait.vector), grep("nocturnal_subtropical", trait.vector), grep("nocturnal_temperate", trait.vector), grep("nocturnal_tropical", trait.vector), grep("nocturnal_boreal", trait.vector)))]
+pca.data <- as.data.frame(diel.pca$x)
+pca.data$diel <- complete_cases$diel
 
-# fit an ARD based Mk model for discrete character evolution (allows different forward and backward rates), which returns ancestral liklihoods for each node
-# ARD model has the lowest log-likelihood compared with other models for discrete traits, so it fits best
+ggplot(pca.data, aes(x = PC1, group = diel, color = diel, fill = diel)) + geom_density(alpha = 0.25) + theme_classic() + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green"))
 
-trait.vector_n <- trait.vector.marine # Specify which trait vector to use below
-trpy_n <- keep.tip(trpy, tip = names(trait.vector_n))
-trpy_n$edge.length[trpy_n$edge.length == 0] <- 0.001 
+ggplot(complete_cases, aes(x = benthopelagic, group = diel, color = diel, fill = diel)) + geom_density(alpha = 0.25) + theme_classic() + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green"))
 
+tb.plot <- ggplot(complete_cases, aes(x = Trophic, y = as.numeric(benthopelagic), group = diel, color = diel, fill = diel)) + geom_point() + theme_classic() + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green"))
 
-fitER <- ace(trait.vector_n, trpy_n, model = "ER", type = "discrete")
-fitSYM <- ace(trait.vector_n, trpy_n, model = "SYM", type = "discrete")
-fitARD <- ace(trait.vector_n, trpy_n, model = "ARD", type = "discrete")
-
-plotRateIndex(model = fitSYM)
-
-# ace(diel.vector2, trpy_n, model = "ER", type = "discrete")
-# ace(diel.vector2, trpy_n, model = "SYM", type = "discrete")
-# ace(diel.vector2, trpy_n, model = "ARD", type = "discrete")
-
-
-# Symmetric rates, without a rate for switching both at once
-fitSINGLE.SYM <- ace(trait.vector_n, trpy_n, model = matrix(c(0,1,2,0, 1,0,0,3, 2,0,0,4, 0,3,4,0), 4), type = "discrete")
-# ARD rates, without a rate for switching both at once
-fitSINGLE.ARD <- ace(trait.vector_n, trpy_n, model = matrix(c(0,1,3,0, 2,0,0,5, 4,0,0,7, 0,6,8,0), 4), type = "discrete")
-
-# Only rates for M <-> F or D <-> N
-fitMFonly <- ace(trait.vector_n, trpy_n, model = matrix(c(0,2,0,2, 1,0,1,0, 0,2,0,2, 1,0,1,0), 4), type = "discrete")
-fitDNonly <- ace(trait.vector_n, trpy_n, model = matrix(c(0,0,2,2, 0,0,2,2, 1,1,0,0, 1,1,0,0), 4), type = "discrete")
-
-
-plotRateIndex(model = fitMFonly)
-
-
-tv <- data.frame(tips = names(trait.vector_n), diel_marine = trait.vector_n)
-diel.plot <- ggtree(trpy2, layout = "circular") %<+% tv + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diel_marine), shape = 16, size = 1) + scale_color_manual(values = c("red1", "red4", "blue1", "blue4"))
-
-lik.anc2 <- as.data.frame(fitSYM$lik.anc)
-lik.anc2$node <- (1:nrow(lik.anc2)) + length(trpy_n$tip.label)
-
-node.data2 <- data.frame(diurnal_freshwater = ifelse(trait.vector_n == "diurnal_freshwater", 1, 0), diurnal_saltwater = ifelse(trait.vector_n == "diurnal_saltwater", 1, 0), nocturnal_freshwater = ifelse(trait.vector_n == "nocturnal_freshwater", 1, 0), nocturnal_saltwater = ifelse(trait.vector_n == "nocturnal_saltwater", 1, 0), node = 1:length(trpy_n$tip.label))
-# node.data <- data.frame(diurnal = ifelse(diel.vector == "diurnal", 1, 0), nocturnal = ifelse(diel.vector == "diurnal", 0, 1), unclear = ifelse(diel.vector == "unclear", 0, 1), crepuscular = ifelse(diel.vector == "crepuscular", 0, 1), node = 1:length(trpy$tip.label))
-node.data2 <- rbind(node.data2, lik.anc2)
-
-
-rate_index <- plotRateIndex(model = fitSYM)
-
-di_fresh <- ggtree(trpy2, layout = "circular") %<+% node.data2 + aes(color = diurnal_freshwater) + scale_color_distiller(palette = "Reds", direction = 1) + geom_tippoint(aes(color = diurnal_freshwater), shape = 16, size = 1.5) + scale_color_distiller(palette = "Reds", direction = 1) + ggtitle("Diurnal Freshwater")
-di_salt <- ggtree(trpy2, layout = "circular") %<+% node.data2 + aes(color = diurnal_saltwater) + scale_color_distiller(palette = "OrRd", direction = 1) + geom_tippoint(aes(color = diurnal_saltwater), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1) + ggtitle("Diurnal Saltwater")
-
-noc_fresh <- ggtree(trpy2, layout = "circular") %<+% node.data2 + aes(color = nocturnal_freshwater) + scale_color_distiller(palette = "Blues", direction = 1) + geom_tippoint(aes(color = nocturnal_freshwater), shape = 16, size = 1.5) + scale_color_distiller(palette = "Blues", direction = 1)  + ggtitle("Nocturnal Freshwater")
-noc_salt <- ggtree(trpy2, layout = "circular") %<+% node.data2 + aes(color = nocturnal_saltwater) + scale_color_distiller(palette = "Purples", direction = 1) + geom_tippoint(aes(color = nocturnal_saltwater), shape = 16, size = 1.5) + scale_color_distiller(palette = "Purples", direction = 1) + ggtitle("Nocturnal Saltwater")
-
-di_fresh + di_salt + rate_index + noc_fresh + noc_salt + plot_layout(nrow =2, ncol = 3)
-
-
-
-
-
-
-
-
-
-
-
-
-
+hull <- tb.plot$data %>% group_by(diel) %>% slice(chull(Trophic, as.numeric(benthopelagic)))
+tb.plot + geom_polygon(data = hull, aes(fill = diel, colour = diel), alpha = 0, show.legend = FALSE) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) #+ theme(legend.position = c(0.15,0.15))
 

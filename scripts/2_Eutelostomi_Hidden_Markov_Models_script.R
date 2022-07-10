@@ -16,7 +16,7 @@ resolved_names <- read.csv("resolved_names_local.csv", row.names = "X", header =
 tr.calibrated <- readRDS("calibrated_phylo.rds")
 trait.data <- readRDS("trait_data.rds")
 
-name_variable <- "all"
+name_variable <- "AllGroups"
 
 # Remove low quality data
 # trait.data <- trait.data[trait.data$confidence > 1,]
@@ -41,14 +41,6 @@ trpy_n <- keep.tip(tr.calibrated, tip = names(trait.vector_n))
 trpy_n$edge.length[trpy_n$edge.length == 0] <- 0.001 
 trait.data_n <- trait.data[trait.data$species %in% trpy_n$tip.label,]
 
-# Diurnal/nocturnal plus marine/fresh
-trait.vector_m <- paste(trait.data$diel1, trait.data$marine, sep = "_")
-names(trait.vector_m) <- trait.data$species
-trait.vector_m <- trait.vector_m[trait.vector_m %in% c("diurnal_freshwater", "diurnal_saltwater", "nocturnal_freshwater", "nocturnal_saltwater")]
-trpy_m <- keep.tip(tr.calibrated, tip = names(trait.vector_m))
-trpy_m$edge.length[trpy_m$edge.length == 0] <- 0.001 
-trait.data_m <- trait.data[trait.data$species %in% trpy_m$tip.label,]
-
 
 ###############################################################################################################################################
 ### Run standard tests from ape ### 
@@ -60,49 +52,7 @@ standard_tests[[1]] <- ace(trait.vector_n, trpy_n, model = "ER", type = "discret
 standard_tests[[2]] <- ace(trait.vector_n, trpy_n, model = "SYM", type = "discrete")
 standard_tests[[3]] <- ace(trait.vector_n, trpy_n, model = "ARD", type = "discrete")
 
-# Equal rates, symmetric rates (same as ER), and All rates different WITH marine
-standard_tests[[4]] <- ace(trait.vector_m, trpy_m, model = "ER", type = "discrete")
-standard_tests[[5]] <- ace(trait.vector_m, trpy_m, model = "SYM", type = "discrete")
-standard_tests[[6]] <- ace(trait.vector_m, trpy_m, model = "ARD", type = "discrete")
-
-
-names(standard_tests) <- c("fitER", "fitSYM", "fitARD", "fitERmarine", "fitSYMmarine", "fitARDmarine")
-
-# # For continous
-# trait.vector_c <- trait.data$diel_continuous
-# names(trait.vector_c) <- trait.data$species
-# trait.vector_c <- trait.vector_c[trait.vector_c %in% c(-5:5)]
-# trpy_c <- keep.tip(tr.calibrated, tip = names(trait.vector_c))
-# trpy_c$edge.length[trpy_c$edge.length == 0] <- 0.001 
-# 
-# trait.vector_cm <- trait.data$diel_continuous
-# names(trait.vector_cm) <- trait.data$species
-# trait.vector_cm <- trait.vector_cm[trait.vector_cm %in% c(-5:5)]
-# trpy_cm <- keep.tip(tr.calibrated, tip = names(trait.vector_cm))
-# trpy_cm$edge.length[trpy_cm$edge.length == 0] <- 0.001 
-# 
-# standard_tests[[7]] <- ace(trait.vector_c, trpy_c, model = "ML", type = "continuous")
-# standard_tests[[8]] <- ace(trait.vector_c, trpy_c, model = "GLS", type = "continuous")
-# 
-# standard_tests[[9]] <- ace(trait.vector_cm, trpy_cm, model = "ML", type = "continuous")
-# standard_tests[[10]] <- ace(trait.vector_cm, trpy_cm, model = "GLS", type = "continuous")
-# names(standard_tests) <- c("fitER", "fitSYM", "fitARD", "fitERmarine", "fitSYMmarine", "fitARDmarine", "fitML", "fitGLS", "fitMLmarine", "fitGLSmarine")
-
-# Symmetric rates, without a rate for switching both at once
-standard_tests[[7]] <- ace(trait.vector_m, trpy_m, model = matrix(c(0,1,2,0, 1,0,0,3, 2,0,0,4, 0,3,4,0), 4), type = "discrete")
-# ARD rates, without a rate for switching both at once
-standard_tests[[8]] <- ace(trait.vector_m, trpy_m, model = matrix(c(0,1,3,0, 2,0,0,5, 4,0,0,7, 0,6,8,0), 4), type = "discrete")
-
-# Only rates for M <-> F or D <-> N
-trait.vector_m2 <- str_replace(trait.vector_m, "saltwater", "freshwater")
-standard_tests[[9]] <- ace(trait.vector_m2, trpy_m, model = "ER", type = "discrete")
-standard_tests[[10]] <- ace(trait.vector_m2, trpy_m, model = "ARD", type = "discrete")
-
-trait.vector_m2 <- str_replace(trait.vector_m, "nocturnal", "diurnal")
-standard_tests[[11]] <- ace(trait.vector_m2, trpy_m, model = "ER", type = "discrete")
-standard_tests[[12]] <- ace(trait.vector_m2, trpy_m, model = "ARD", type = "discrete")
-
-names(standard_tests) <- c("fitER", "fitSYM", "fitARD", "fitERmarine", "fitSYMmarine", "fitARDmarine", "fitSINGLE.SYM", "fitSINGLE.ARD", "fitDNonlyER", "fitDNonlyARD", "fitMFonlyER", "fitMFonlyARD")
+names(standard_tests) <- c("fitER", "fitSYM", "fitARD")
 
 unlist(lapply(standard_tests, function(x) x[names(x[grep("loglik", names(x))])]))
 
@@ -120,22 +70,14 @@ saveRDS(standard_tests, file = paste("standard_tests", name_variable, length(trp
 
 # Run corHMM for just diel or diel and marine, with 1 rat category (Markov model)
 MK_2state <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 1, model = "ARD")
-MK_4state_m <- corHMM(phy = trpy_m, data = trait.data_m[trpy_m$tip.label, c("species", "diel1", "marine")], rate.cat = 1, model = "ARD")
 
 
 # Run corHMM for just diel, with 2 or 3 rate categories (large improvement for 2, diminishing returns for 3)
 HMM_2state_2rate <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 2, model = "ARD", get.tip.states = TRUE)
-# HMM_2state_3rate <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c(1,4)], rate.cat = 3, model = "ARD", get.tip.states = TRUE)
 
-# # Run corHMM for diel x marine or diel x acanthomorpha, with 2 or 3 rate categories
-# HMM_4state_2rate_m <- corHMM(phy = trpy_m, data = trait.data_m[trpy_m$tip.label, ], rate.cat = 2, model = "ARD", get.tip.states = TRUE)
-# HMM_4state_3rate_m <- corHMM(phy = trpy_m, data = trait.data_m[trpy_m$tip.label, ], rate.cat = 3, model = "ARD", get.tip.states = TRUE)
-
-# HMM_4state_2rate_a <- corHMM(phy = trpy_a, data = trait.data_a[trpy_a$tip.label, ], rate.cat = 2, model = "ARD", get.tip.states = TRUE)
-# HMM_4state_3rate_a <- corHMM(phy = trpy_a, data = trait.data_a[trpy_a$tip.label, ], rate.cat = 3, model = "ARD", get.tip.states = TRUE)
 
 # 2 state 2 rate is best fit that still makes sense (3 rates starts to maybe overfit)
-standard_tests <- append(standard_tests, list(MK_2state, MK_4state_m, HMM_2state_2rate))
+standard_tests <- append(standard_tests, list(MK_2state, HMM_2state_2rate))
 names(standard_tests) <- c("fitER", "fitSYM", "fitARD", "fitERmarine", "fitSYMmarine", "fitARDmarine", "fitSINGLE.SYM", "fitSINGLE.ARD", "fitDNonlyER", "fitDNonlyARD", "fitMFonlyER", "fitMFonlyARD", "MK_2state", "MK_4state_m", "HMM_2state_2rate")
 View(unlist(lapply(standard_tests, function(x) x[names(x[grep("loglik", names(x))])])))
 saveRDS(standard_tests, file = paste("standard_tests", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
@@ -144,11 +86,7 @@ saveRDS(HMM_2state_2rate, file = paste("best_fit_model", name_variable, length(t
 
 # Look at models
 plotMKmodel(MK_2state) # High Diurnal -> Nocturnal
-plotMKmodel(MK_4state_m)
 plotMKmodel(HMM_2state_2rate) # 1 rate is high transition rate (both ways), other is low both ways, with slightly higher rate to go from high to low transition rate
-# plotMKmodel(HMM_4state_2rate)
-plotMKmodel(HMM_2state_3rate) # 1) 3x higher Noc->Di (high bow), 2) 3x higher Di-> Noc (medium both), 3) Low both (less Di->Noc) - low transition rates all around
-# plotMKmodel(HMM_4state_3rate)
 
 ###############################################################################################################################################
 
