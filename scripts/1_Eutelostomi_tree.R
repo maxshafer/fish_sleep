@@ -5,7 +5,7 @@ library(geiger)
 library(xlsx)
 
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 
 
 # Load in data files with names and activity patterns
@@ -108,19 +108,31 @@ geiger.genus <- congruify.phylo(reference = timetree_genus, target = geiger.fami
 
 tr.calibrated <- geiger.genus$phy
 
+## Save out files
+
+saveRDS(tr.calibrated, file = "calibrated_phylo.rds")
+
+## load back in to do by species manually
+
+# tr.calibrated <- readRDS("calibrated_phylo.rds")
+
+# Below works if you modify the heights.phylo function
+# trace(geiger:::heights.phylo, edit = TRUE)
+# depth = max(xx[!(is.na(xx))])
+# Also have to do it manually - which is ugh!
+# timetree_species <- ape::read.tree("timetree_data/actinopterygii_species.nwk")
+# timetree_species <- multi2di(timetree_species)
+# setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+
+# geiger.species <- congruify.phylo(reference = timetree_species, target = tr.calibrated, taxonomy = reference.df, tol = 0, scale = "treePL")
+# tr.calibrated <- geiger.species$phy
+
+# tr.calibrated$tip.label <- resolved_names$tips[match(tr.calibrated$tip.label, resolved_names$ott_id)]
+
+# saveRDS(tr.calibrated, file = "calibrated_phylo.rds")
 
 
-
-
-
-
-
-
-
-
-
-
-## Generate subset with Nocturnal vs Diurnal
+## Make trait.data file
 
 trait.data <- data.frame(ott_id = tr.calibrated$tip.label, species = resolved_names$tips[match(tr.calibrated$tip.label, resolved_names$ott_id)], diel = resolved_names$diel[match(tr.calibrated$tip.label, resolved_names$ott_id)]) # OK, some species tip labels are more complicated and cause issues here
 
@@ -136,11 +148,4 @@ rownames(trait.data) <- trait.data$species
 trait.data$tips <- resolved_names$tips[match(trait.data$species, resolved_names$tips)]
 trait.data$order <- resolved_names$order[match(trait.data$species, resolved_names$tips)]
 
-
-
-# Add acanthomorpha
-acanthomorpha <- extract.clade(tr.calibrated, node = getMRCA(tr.calibrated, tip = c("Saccogaster_melanomycter", "Apolemichthys_xanthopunctatus")))
-cartilagenous <- extract.clade(tr.calibrated, node = getMRCA(tr.calibrated, tip = c("Rhizoprionodon_terraenovae", "Rhynchobatus_djiddensis")))
-trait.data$acanthomorpha <- ifelse(trait.data$tips %in% acanthomorpha$tip.label, "acanthomorpha", ifelse(trait.data$tips %in% cartilagenous$tip.label, "cartilagenous", "outgroup"))
-
-saveRDS(trait.data, file = "trait_data.rds")
+saveRDS(trait.data, file = "trait_data_AllGroups.rds")
