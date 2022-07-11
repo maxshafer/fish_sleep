@@ -41,34 +41,43 @@ all_data <- all_data[!(is.na(all_data$diel)),]
 
 # Fetch species from tree of life using rotl package
 
-resolved_names <- tnrs_match_names(all_data$unique_name, context_name = "Vertebrates", do_approximate_matching = FALSE)
+# resolved_names <- tnrs_match_names(all_data$unique_name, context_name = "Vertebrates", do_approximate_matching = FALSE)
 
 # Remove any that don't have exact matches or are synonyms (this is really just for finding ancestral state, so missing a few species won't matter)
-resolved_names <- resolved_names[!(is.na(resolved_names$unique_name)),]
-resolved_names <- resolved_names[resolved_names$is_synonym == FALSE,]
-resolved_names <- resolved_names[resolved_names$approximate_match == FALSE,]
+# resolved_names <- resolved_names[!(is.na(resolved_names$unique_name)),]
+# resolved_names <- resolved_names[resolved_names$is_synonym == FALSE,]
+# resolved_names <- resolved_names[resolved_names$approximate_match == FALSE,]
 
 # Remove excess information, clean up, and add tip label ids that will match the tree
 # resolved_names <- resolved_names[,c("search_string", "unique_name", "ott_id", "flags")]
-resolved_names$tips <- str_replace(resolved_names$unique_name, " ", "_")
-resolved_names <- resolved_names[!duplicated(resolved_names$tips),]
+# resolved_names$tips <- str_replace(resolved_names$unique_name, " ", "_")
+# resolved_names <- resolved_names[!duplicated(resolved_names$tips),]
 
 # Add data on activity
 
-resolved_names$diel <- all_data$diel[match(resolved_names$search_string, tolower(all_data$unique_name))]
+# resolved_names$diel <- all_data$diel[match(resolved_names$search_string, tolower(all_data$unique_name))]
 
-resolved_names$genus <- all_data$genus[match(resolved_names$unique_name, all_data$unique_name)]
-resolved_names$family <- all_data$family[match(resolved_names$unique_name, all_data$unique_name)]
-resolved_names$order <- all_data$order[match(resolved_names$unique_name, all_data$unique_name)]
+# resolved_names$genus <- all_data$genus[match(resolved_names$unique_name, all_data$unique_name)]
+# resolved_names$family <- all_data$family[match(resolved_names$unique_name, all_data$unique_name)]
+# resolved_names$order <- all_data$order[match(resolved_names$unique_name, all_data$unique_name)]
 
 ## Fetch the tree
 
-tr <- tol_induced_subtree(ott_ids = resolved_names$ott_id[resolved_names$flags %in% c("sibling_higher", "")], label_format = "id") # I need to use the id option here, and then use that to map the tip labels from resolved_names (that way I don't run into the issue with the difference in formatting between the two tools)
+# tr <- tol_induced_subtree(ott_ids = resolved_names$ott_id[resolved_names$flags %in% c("sibling_higher", "")], label_format = "id") # I need to use the id option here, and then use that to map the tip labels from resolved_names (that way I don't run into the issue with the difference in formatting between the two tools)
 
 # Time calibrate it using geiger and timetree.org
 # First resolve polytomies ~randomly using multi2dr
 
-tr <- multi2di(tr)
+# tr <- multi2di(tr)
+
+# Save and re-load files
+# saveRDS(tr, file = "tr_tree_AllGroups.rds")
+# saveRDS(resolved_names, file = "resolved_names_AllGroups.rds")
+
+# stop()
+
+tr <- readRDS(file = "tr_tree_AllGroups.rds")
+resolved_names <- readRDS(file = "resolved_names_AllGroups.rds")
 
 # Make the reference file
 # Ensure that the rownames and tip.labels in the target match the species names in the reference
@@ -87,11 +96,10 @@ rownames(reference.df) <- reference.df$tips
 reference.df <- reference.df[!duplicated(reference.df$unique_name),]
 reference.df <- reference.df[!is.na(reference.df$unique_name),]
 
-tr$tip.label <- resolved_names$tips[match(tr$tip.label, resolved_names$ott_id)]
 # Load the timetree tree (genus level data works, but not species)
 # Have download timetree data for species, genus, family, and order
 # Genus level data has the most calibration points
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 
 timetree_order <- ape::read.tree("timetree_data/euteleostomi_order.nwk")
 timetree_family <- ape::read.tree("timetree_data/euteleostomi_family.nwk")
@@ -99,14 +107,15 @@ timetree_genus <- ape::read.tree("timetree_data/euteleostomi_genus.nwk")
 
 # Use geiger to congruify the tree, works with treePL
 # This seems to work up to genus, but not species (by replacing tip.labels with the same names)
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 geiger.order <- congruify.phylo(reference = timetree_order, target = tr, taxonomy = reference.df, tol = 0, scale = "treePL")
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 geiger.family <- congruify.phylo(reference = timetree_family, target = geiger.order$phy, taxonomy = reference.df, tol = 0, scale = "treePL")
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 geiger.genus <- congruify.phylo(reference = timetree_genus, target = geiger.family$phy, taxonomy = reference.df, tol = 0, scale = "treePL")
 
 tr.calibrated <- geiger.genus$phy
+tr.calibrated$tip.label <- resolved_names$tips[match(tr.calibrated$tip.label, resolved_names$ott_id)]
 
 ## Save out files
 

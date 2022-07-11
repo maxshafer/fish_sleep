@@ -34,6 +34,10 @@ module load R/4.0.0-foss-2018b
 #export your required environment variables below
 #################################################
 
+export PATH=~/.local/bin:~/.local:$PATH
+export LD_LIBRARY_PATH=~/.local/lib:~/.local/lib64:${exec_prefix}/lib64:$LD_LIBRARY_PATH
+export LIBRARY_PATH=~/.local/lib:~/.local/lib64:$LIBRARY_PATH
+export CPATH=~/.local/include:~/.local/include/adolc:$CPATH
 
 #add your command lines below
 #############################
