@@ -1,3 +1,9 @@
 Warning message:
 In smooth_scion(phy, scion, scion_desc, taxa, spp, tol = tol, method = method) :
   Supplied 'stock' is non-ultrametric.
+Warning message:
+In smooth_scion(phy, scion, scion_desc, taxa, spp, tol = tol, method = method) :
+  Supplied 'stock' is non-ultrametric.
+Warning message:
+In smooth_scion(phy, scion, scion_desc, taxa, spp, tol = tol, method = method) :
+  Supplied 'stock' is non-ultrametric.
