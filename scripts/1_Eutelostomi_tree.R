@@ -143,7 +143,7 @@ saveRDS(tr.calibrated, file = "calibrated_phylo.rds")
 
 ## Make trait.data file
 
-trait.data <- data.frame(ott_id = tr.calibrated$tip.label, species = resolved_names$tips[match(tr.calibrated$tip.label, resolved_names$ott_id)], diel = resolved_names$diel[match(tr.calibrated$tip.label, resolved_names$ott_id)]) # OK, some species tip labels are more complicated and cause issues here
+trait.data <- data.frame(ott_id = tr.calibrated$tip.label, species = resolved_names$tips[match(tr.calibrated$tip.label, paste("ott", resolved_names$ott_id, sep = ""))], diel = resolved_names$diel[match(tr.calibrated$tip.label, paste("ott", resolved_names$ott_id, sep = ""))]) # OK, some species tip labels are more complicated and cause issues here
 
 # Create vectors including crepuscular/unclear, or not
 trait.data$diel1 <- ifelse(trait.data$diel %in% c("diurnal", "crepuscular/diurnal"), "diurnal", ifelse(trait.data$diel %in% c("nocturnal", "crepuscular/nocturnal"), "nocturnal", "unclear/crepuscular"))

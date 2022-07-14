@@ -4,6 +4,8 @@ library(phytools)
 library(corHMM)
 library(rfishbase)
 library(stringr)
+library(ggtree)
+library(ggplot2)
 
 
 setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
@@ -19,8 +21,8 @@ trait.data <- readRDS("trait_data.rds")
 name_variable <- "all"
 
 # Remove low quality data
-# trait.data <- trait.data[trait.data$confidence > 1,]
-# name_variable <- "only_highqual"
+trait.data <- trait.data[trait.data$confidence > 1,]
+name_variable <- "only_highqual"
 
 # Remove cartilaginous fish (just actinopterygii)
 # Common ancestor of Lepisosteus_osseus (Order: Lepisosteiformes) Lepidosiren_paradoxa (lepidosiren) and Lutjanus_fulvus (Order: Perciformes)
@@ -68,25 +70,6 @@ standard_tests[[6]] <- ace(trait.vector_m, trpy_m, model = "ARD", type = "discre
 
 names(standard_tests) <- c("fitER", "fitSYM", "fitARD", "fitERmarine", "fitSYMmarine", "fitARDmarine")
 
-# # For continous
-# trait.vector_c <- trait.data$diel_continuous
-# names(trait.vector_c) <- trait.data$species
-# trait.vector_c <- trait.vector_c[trait.vector_c %in% c(-5:5)]
-# trpy_c <- keep.tip(tr.calibrated, tip = names(trait.vector_c))
-# trpy_c$edge.length[trpy_c$edge.length == 0] <- 0.001 
-# 
-# trait.vector_cm <- trait.data$diel_continuous
-# names(trait.vector_cm) <- trait.data$species
-# trait.vector_cm <- trait.vector_cm[trait.vector_cm %in% c(-5:5)]
-# trpy_cm <- keep.tip(tr.calibrated, tip = names(trait.vector_cm))
-# trpy_cm$edge.length[trpy_cm$edge.length == 0] <- 0.001 
-# 
-# standard_tests[[7]] <- ace(trait.vector_c, trpy_c, model = "ML", type = "continuous")
-# standard_tests[[8]] <- ace(trait.vector_c, trpy_c, model = "GLS", type = "continuous")
-# 
-# standard_tests[[9]] <- ace(trait.vector_cm, trpy_cm, model = "ML", type = "continuous")
-# standard_tests[[10]] <- ace(trait.vector_cm, trpy_cm, model = "GLS", type = "continuous")
-# names(standard_tests) <- c("fitER", "fitSYM", "fitARD", "fitERmarine", "fitSYMmarine", "fitARDmarine", "fitML", "fitGLS", "fitMLmarine", "fitGLSmarine")
 
 # Symmetric rates, without a rate for switching both at once
 standard_tests[[7]] <- ace(trait.vector_m, trpy_m, model = matrix(c(0,1,2,0, 1,0,0,3, 2,0,0,4, 0,3,4,0), 4), type = "discrete")
@@ -122,7 +105,6 @@ saveRDS(standard_tests, file = paste("standard_tests", name_variable, length(trp
 MK_2state <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 1, model = "ARD")
 MK_4state_m <- corHMM(phy = trpy_m, data = trait.data_m[trpy_m$tip.label, c("species", "diel1", "marine")], rate.cat = 1, model = "ARD")
 
-
 # Run corHMM for just diel, with 2 or 3 rate categories (large improvement for 2, diminishing returns for 3)
 HMM_2state_2rate <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 2, model = "ARD", get.tip.states = TRUE)
 # HMM_2state_3rate <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c(1,4)], rate.cat = 3, model = "ARD", get.tip.states = TRUE)
@@ -131,8 +113,45 @@ HMM_2state_2rate <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c
 # HMM_4state_2rate_m <- corHMM(phy = trpy_m, data = trait.data_m[trpy_m$tip.label, ], rate.cat = 2, model = "ARD", get.tip.states = TRUE)
 # HMM_4state_3rate_m <- corHMM(phy = trpy_m, data = trait.data_m[trpy_m$tip.label, ], rate.cat = 3, model = "ARD", get.tip.states = TRUE)
 
-# HMM_4state_2rate_a <- corHMM(phy = trpy_a, data = trait.data_a[trpy_a$tip.label, ], rate.cat = 2, model = "ARD", get.tip.states = TRUE)
-# HMM_4state_3rate_a <- corHMM(phy = trpy_a, data = trait.data_a[trpy_a$tip.label, ], rate.cat = 3, model = "ARD", get.tip.states = TRUE)
+###############################################################################################################################################
+
+# Let's do a 2state_2rate model, where once you transition into a higher rate class, you can't switch back (testing the 'origin' of fast-switching)
+# Let's say R2 cannot transition to R1, but can go D->N and N->D, R1 can go to R2, and D->N and N->D
+# NoGoingBack (NGB) model
+
+DN_LegendAndRate <- getStateMat4Dat(trait.data_n[trpy_n$tip.label, c("species", "diel1")])
+DN_R1 <- DN_LegendAndRate$rate.mat
+DN_R2 <- DN_LegendAndRate$rate.mat
+
+DN_ObsStateClasses <- list(DN_R1, DN_R2)
+DN_RateClassMat <- getRateCatMat(2)
+DN_RateClassMat <- dropStateMatPars(DN_RateClassMat, c(1))
+
+DN_FullMat <- getFullMat(DN_ObsStateClasses, DN_RateClassMat)
+# plotMKmodel(DN_FullMat, rate.cat = 2, display = "square", text.scale = 0.9)
+
+HMM_2state_2rate_NGB <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 2, rate.mat = DN_FullMat)
+
+###############################################################################################################################################
+
+# 2state_2rate model, where R1 cannot switch D<->N, but R2 can
+# NoSwitchRate (NSR) model
+
+DN_LegendAndRate <- getStateMat4Dat(trait.data_n[trpy_n$tip.label, c("species", "diel1")])
+DN_R1 <- dropStateMatPars(DN_LegendAndRate$rate.mat, c(1,2))
+DN_R2 <- DN_LegendAndRate$rate.mat
+
+DN_ObsStateClasses <- list(DN_R1, DN_R2)
+DN_RateClassMat <- getRateCatMat(2)
+
+DN_FullMat <- getFullMat(DN_ObsStateClasses, DN_RateClassMat)
+# plotMKmodel(DN_FullMat, rate.cat = 2, display = "square", text.scale = 0.9)
+
+HMM_2state_2rate_NSR <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 2, rate.mat = DN_FullMat, node.states)
+
+###############################################################################################################################################
+###############################################################################################################################################
+###############################################################################################################################################
 
 # 2 state 2 rate is best fit that still makes sense (3 rates starts to maybe overfit)
 standard_tests <- append(standard_tests, list(MK_2state, MK_4state_m, HMM_2state_2rate))
@@ -160,8 +179,11 @@ HMM_2state_2rate <- readRDS(file = paste("best_fit_model", name_variable, length
 ### Plot the Hidden rate ancestral reconstructions (of rate and state) ### 
 ###############################################################################################################################################
 
-lik.anc <- as.data.frame(rbind(HMM_2state_2rate$tip.states, HMM_2state_2rate$states))
+model <- HMM_2state_1rate_FEN
+
+lik.anc <- as.data.frame(rbind(model$tip.states, model$states))
 colnames(lik.anc) <- c("diurnal_R1", "nocturnal_R1", "diurnal_R2", "nocturnal_R2")
+# colnames(lik.anc) <- c("diurnal_extinction", "diurnal_radiation", "nocturnal_extinction", "nocturnal_radiation")
 lik.anc$node <- c(1:length(trpy_n$tip.label), (length(trpy_n$tip.label) + 1):(trpy_n$Nnode + length(trpy_n$tip.label)))
 
 lik.anc$noc.sum <- rowSums(lik.anc[,c(2,4)])
@@ -169,6 +191,12 @@ lik.anc$di.sum <- rowSums(lik.anc[,c(1,3)])
 
 lik.anc$R1.sum <- rowSums(lik.anc[,c(1,2)])
 lik.anc$R2.sum <- rowSums(lik.anc[,c(3,4)])
+
+lik.anc$noc.sum <- rowSums(lik.anc[,c(3,4)])
+lik.anc$di.sum <- rowSums(lik.anc[,c(1,2)])
+
+lik.anc$Ext.sum <- rowSums(lik.anc[,c(1,3)])
+lik.anc$Rad.sum <- rowSums(lik.anc[,c(2,4)])
 
 # Plot just nocturnal vs diurnal, regardless of rate class (this is what I want to known anyway)
 diel_2state_2rate <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
