@@ -20,16 +20,22 @@ trait.data <- readRDS("trait_data.rds")
 
 name_variable <- "all"
 
-# Remove low quality data
-trait.data <- trait.data[trait.data$confidence > 1,]
-name_variable <- "only_highqual"
+# # Remove low quality data
+# trait.data <- trait.data[trait.data$confidence > 1,]
+# name_variable <- "only_highqual"
 
-# Remove cartilaginous fish (just actinopterygii)
-# Common ancestor of Lepisosteus_osseus (Order: Lepisosteiformes) Lepidosiren_paradoxa (lepidosiren) and Lutjanus_fulvus (Order: Perciformes)
+# # Remove cartilaginous fish (just actinopterygii)
+# # Common ancestor of Lepisosteus_osseus (Order: Lepisosteiformes) Lepidosiren_paradoxa (lepidosiren) and Lutjanus_fulvus (Order: Perciformes)
 # node_of_interest <- getMRCA(phy = tr.calibrated, tip = c("Lepidosiren_paradoxa", "Lutjanus_fulvus"))
 # tr.calibrated <- extract.clade(phy = tr.calibrated, node = node_of_interest)
 # trait.data <- trait.data[trait.data$species %in% tr.calibrated$tip.label,]
 # name_variable <- "only_ingroup"
+
+# Keep only cartilaginous fish (no actinopterygii)
+node_of_interest <- getMRCA(tr.calibrated, tip = c("Rhizoprionodon_terraenovae", "Rhynchobatus_djiddensis"))
+tr.calibrated <- extract.clade(phy = tr.calibrated, node = node_of_interest)
+trait.data <- trait.data[trait.data$species %in% tr.calibrated$tip.label,]
+name_variable <- "only_cartilaginous"
 
 ###############################################################################################################################################
 ### Now subset the tree based on which traits you want to test ### 
@@ -107,7 +113,8 @@ MK_4state_m <- corHMM(phy = trpy_m, data = trait.data_m[trpy_m$tip.label, c("spe
 
 # Run corHMM for just diel, with 2 or 3 rate categories (large improvement for 2, diminishing returns for 3)
 HMM_2state_2rate <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 2, model = "ARD", get.tip.states = TRUE)
-# HMM_2state_3rate <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c(1,4)], rate.cat = 3, model = "ARD", get.tip.states = TRUE)
+HMM_2state_3rate <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 3, model = "ARD", get.tip.states = TRUE)
+HMM_2state_4rate <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 4, model = "ARD", get.tip.states = TRUE)
 
 # # Run corHMM for diel x marine or diel x acanthomorpha, with 2 or 3 rate categories
 # HMM_4state_2rate_m <- corHMM(phy = trpy_m, data = trait.data_m[trpy_m$tip.label, ], rate.cat = 2, model = "ARD", get.tip.states = TRUE)
@@ -154,9 +161,11 @@ HMM_2state_2rate_NSR <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.labe
 ###############################################################################################################################################
 
 # 2 state 2 rate is best fit that still makes sense (3 rates starts to maybe overfit)
-standard_tests <- append(standard_tests, list(MK_2state, MK_4state_m, HMM_2state_2rate))
-names(standard_tests) <- c("fitER", "fitSYM", "fitARD", "fitERmarine", "fitSYMmarine", "fitARDmarine", "fitSINGLE.SYM", "fitSINGLE.ARD", "fitDNonlyER", "fitDNonlyARD", "fitMFonlyER", "fitMFonlyARD", "MK_2state", "MK_4state_m", "HMM_2state_2rate")
+standard_tests <- append(standard_tests, list(MK_2state, MK_4state_m, HMM_2state_2rate, HMM_2state_3rate, HMM_2state_4rate, HMM_2state_2rate_NGB, HMM_2state_2rate_NSR))
+names(standard_tests) <- c("fitER", "fitSYM", "fitARD", "fitERmarine", "fitSYMmarine", "fitARDmarine", "fitSINGLE.SYM", "fitSINGLE.ARD", "fitDNonlyER", "fitDNonlyARD", "fitMFonlyER", "fitMFonlyARD", "MK_2state", "MK_4state_m", "HMM_2state_2rate", "HMM_2state_3rate", "HMM_2state_4rate", "HMM_2state_2rate_NGB", "HMM_2state_2rate_NSR")
 View(unlist(lapply(standard_tests, function(x) x[names(x[grep("loglik", names(x))])])))
+View(unlist(lapply(standard_tests, function(x) x[names(x[grep("AIC", names(x))])])))
+
 saveRDS(standard_tests, file = paste("standard_tests", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
 
 saveRDS(HMM_2state_2rate, file = paste("best_fit_model", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
@@ -165,9 +174,10 @@ saveRDS(HMM_2state_2rate, file = paste("best_fit_model", name_variable, length(t
 plotMKmodel(MK_2state) # High Diurnal -> Nocturnal
 plotMKmodel(MK_4state_m)
 plotMKmodel(HMM_2state_2rate) # 1 rate is high transition rate (both ways), other is low both ways, with slightly higher rate to go from high to low transition rate
-# plotMKmodel(HMM_4state_2rate)
+plotMKmodel(HMM_2state_2rate_NGB)
+plotMKmodel(HMM_2state_2rate_NSR)
 plotMKmodel(HMM_2state_3rate) # 1) 3x higher Noc->Di (high bow), 2) 3x higher Di-> Noc (medium both), 3) Low both (less Di->Noc) - low transition rates all around
-# plotMKmodel(HMM_4state_3rate)
+plotMKmodel(HMM_2state_4rate)
 
 ###############################################################################################################################################
 
@@ -179,7 +189,7 @@ HMM_2state_2rate <- readRDS(file = paste("best_fit_model", name_variable, length
 ### Plot the Hidden rate ancestral reconstructions (of rate and state) ### 
 ###############################################################################################################################################
 
-model <- HMM_2state_1rate_FEN
+model <- HMM_2state_2rate
 
 lik.anc <- as.data.frame(rbind(model$tip.states, model$states))
 colnames(lik.anc) <- c("diurnal_R1", "nocturnal_R1", "diurnal_R2", "nocturnal_R2")
@@ -226,34 +236,36 @@ dev.off()
 ###############################################################################################################################################
 ###############################################################################################################################################
 
-lik.anc <- as.data.frame(rbind(HMM_2state_3rate$tip.states, HMM_2state_3rate$states))
-colnames(lik.anc) <- c("diurnal_R1", "nocturnal_R1", "diurnal_R2", "nocturnal_R2", "diurnal_R3", "nocturnal_R3")
-lik.anc$node <- c(1:length(trpy_n$tip.label), (length(trpy_n$tip.label) + 1):(trpy_n$Nnode + length(trpy_n$tip.label)))
-
-lik.anc$noc.sum <- rowSums(lik.anc[,c(2,4,6)])
-lik.anc$di.sum <- rowSums(lik.anc[,c(1,3,5)])
-
-lik.anc$R1.sum <- rowSums(lik.anc[,c(1,2)])
-lik.anc$R2.sum <- rowSums(lik.anc[,c(3,4)])
-lik.anc$R3.sum <- rowSums(lik.anc[,c(5,6)])
-
-# Plot just nocturnal vs diurnal, regardless of rate class (this is what I want to known anyway)
-diel_2state_3rate <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
-
-r1 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = R1.sum) + geom_tippoint(aes(color = R1.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "Reds", direction = 1) + scale_color_distiller(palette = "Reds", direction = 1)
-r2 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = R2.sum) + geom_tippoint(aes(color = R2.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1) + scale_color_distiller(palette = "OrRd", direction = 1)
-r3 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = R3.sum) + geom_tippoint(aes(color = R3.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1) + scale_color_distiller(palette = "OrRd", direction = 1)
-
-r1 + r2 + r3 + plot_layout(nrow = 1)
-
-dir1 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = diurnal_R1) + scale_color_distiller(palette = "Reds", direction = 1) + geom_tippoint(aes(color = diurnal_R1), shape = 16, size = 1.5) + scale_color_distiller(palette = "Reds", direction = 1)
-dir2 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = diurnal_R2) + scale_color_distiller(palette = "OrRd", direction = 1) + geom_tippoint(aes(color = diurnal_R2), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1)
-dir3 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = diurnal_R3) + scale_color_distiller(palette = "OrRd", direction = 1) + geom_tippoint(aes(color = diurnal_R3), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1)
-nocr1 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = nocturnal_R1) + scale_color_distiller(palette = "Blues", direction = 1) + geom_tippoint(aes(color = nocturnal_R1), shape = 16, size = 1.5) + scale_color_distiller(palette = "Blues", direction = 1)
-nocr2 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = nocturnal_R2) + scale_color_distiller(palette = "Purples", direction = 1) + geom_tippoint(aes(color = nocturnal_R2), shape = 16, size = 1.5) + scale_color_distiller(palette = "Purples", direction = 1)
-nocr3 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = nocturnal_R3) + scale_color_distiller(palette = "Purples", direction = 1) + geom_tippoint(aes(color = nocturnal_R3), shape = 16, size = 1.5) + scale_color_distiller(palette = "Purples", direction = 1)
-
-three_rate_plots <- dir1 + dir2 + dir3 + nocr1+ nocr2 + nocr3 + plot_layout(nrow = 2)
+# lik.anc <- as.data.frame(rbind(HMM_2state_4rate$tip.states, HMM_2state_4rate$states))
+# colnames(lik.anc) <- c("diurnal_R1", "nocturnal_R1", "diurnal_R2", "nocturnal_R2", "diurnal_R3", "nocturnal_R3", "diurnal_R4", "nocturnal_R4")
+# lik.anc$node <- c(1:length(trpy_n$tip.label), (length(trpy_n$tip.label) + 1):(trpy_n$Nnode + length(trpy_n$tip.label)))
+# 
+# lik.anc$noc.sum <- rowSums(lik.anc[,c(2,4,6,8)])
+# lik.anc$di.sum <- rowSums(lik.anc[,c(1,3,5,7)])
+# 
+# lik.anc$R1.sum <- rowSums(lik.anc[,c(1,2)])
+# lik.anc$R2.sum <- rowSums(lik.anc[,c(3,4)])
+# lik.anc$R3.sum <- rowSums(lik.anc[,c(5,6)])
+# lik.anc$R4.sum <- rowSums(lik.anc[,c(7,8)])
+# 
+# # Plot just nocturnal vs diurnal, regardless of rate class (this is what I want to known anyway)
+# diel_2state_3rate <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+# 
+# r1 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = R1.sum) + geom_tippoint(aes(color = R1.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "Reds", direction = 1) + scale_color_distiller(palette = "Reds", direction = 1)
+# r2 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = R2.sum) + geom_tippoint(aes(color = R2.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1) + scale_color_distiller(palette = "OrRd", direction = 1)
+# r3 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = R3.sum) + geom_tippoint(aes(color = R3.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1) + scale_color_distiller(palette = "OrRd", direction = 1)
+# r4 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = R4.sum) + geom_tippoint(aes(color = R3.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1) + scale_color_distiller(palette = "OrRd", direction = 1)
+# 
+# r1 + r2 + r3 + r4 + plot_layout(nrow = 1)
+# 
+# dir1 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = diurnal_R1) + scale_color_distiller(palette = "Reds", direction = 1) + geom_tippoint(aes(color = diurnal_R1), shape = 16, size = 1.5) + scale_color_distiller(palette = "Reds", direction = 1)
+# dir2 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = diurnal_R2) + scale_color_distiller(palette = "OrRd", direction = 1) + geom_tippoint(aes(color = diurnal_R2), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1)
+# dir3 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = diurnal_R3) + scale_color_distiller(palette = "OrRd", direction = 1) + geom_tippoint(aes(color = diurnal_R3), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1)
+# nocr1 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = nocturnal_R1) + scale_color_distiller(palette = "Blues", direction = 1) + geom_tippoint(aes(color = nocturnal_R1), shape = 16, size = 1.5) + scale_color_distiller(palette = "Blues", direction = 1)
+# nocr2 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = nocturnal_R2) + scale_color_distiller(palette = "Purples", direction = 1) + geom_tippoint(aes(color = nocturnal_R2), shape = 16, size = 1.5) + scale_color_distiller(palette = "Purples", direction = 1)
+# nocr3 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = nocturnal_R3) + scale_color_distiller(palette = "Purples", direction = 1) + geom_tippoint(aes(color = nocturnal_R3), shape = 16, size = 1.5) + scale_color_distiller(palette = "Purples", direction = 1)
+# 
+# three_rate_plots <- dir1 + dir2 + dir3 + nocr1+ nocr2 + nocr3 + plot_layout(nrow = 2)
 
 ###############################################################################################################################################
 ###############################################################################################################################################

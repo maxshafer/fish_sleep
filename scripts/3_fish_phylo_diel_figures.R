@@ -11,9 +11,10 @@ library(geiger)
 library(phytools)
 library(rfishbase)
 library(xlsx)
+library(RColorBrewer)
 
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Euteleostomi_deil_patterns/")
+setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
 
 ## Load files for making figures
 
@@ -21,30 +22,47 @@ resolved_names <- read.csv("resolved_names_local.csv", row.names = "X", header =
 trait.data <- readRDS("trait_data.rds")
 tr.calibrated <- readRDS("calibrated_phylo.rds")
 
-# Remove low quality data or not
-trait.data <- trait.data[trait.data$confidence > 1,]
-tr.calibrated <- keep.tip(tr.calibrated, tip = trait.data$species)
+name_variable <- "all"
+
+# # Remove low quality data or not
+# trait.data <- trait.data[trait.data$confidence > 1,]
+# tr.calibrated <- keep.tip(tr.calibrated, tip = trait.data$species)
+# name_variable <- "only_highqual"
 
 ################################################################################################################################################
 ### Make phylogenetic tree plots showing activity patterns ###
 ################################################################################################################################################
 
-# Make a plot showing species names and diel activity
-diel.plot <- ggtree(tr.calibrated, layout = "circular") %<+% trait.data[,c("tips", "diel2", "order")] + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diel2), shape = 16, size = 0.5) + scale_color_manual(values = c("yellow", "red", "blue", "green"))
+# Can I make a phylo tree, but add bars to indicate diel activity pattern (so that I can make them longer and skinnier) - like in Fig 2 here (https://www.pnas.org/doi/10.1073/pnas.1216063110)
+# Can then use the same for adding orders, maybe
 
-pdf(file = paste("outs/Figures/fish_phylogeny_diel_", length(tr.calibrated$tip.label), "_species.pdf", sep = ""), width = 20, height = 20)
-diel.plot
+diel.plot <- ggtree(tr.calibrated, layout = "circular") %<+% trait.data[,c("tips", "diel2", "order")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(tr.calibrated$tip.label),], aes(y=y, x=x+15, fill = diel2), width = 30, inherit.aes = FALSE, color = "transparent") + scale_fill_manual(values = c("#abdda4", "#d7191c", "#2c7bb6", "#fdae61"))
+diel.plot.labelled <- diel.plot + geom_tiplab(color = "black", size = 1.5, offset = 30)
+# # Make a plot showing species names and diel activity
+# diel.plot <- ggtree(tr.calibrated, layout = "circular") %<+% trait.data[,c("tips", "diel2", "order")] + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diel2), shape = 16, size = 0.5) + scale_color_manual(values = c("yellow", "red", "blue", "green"))
+
+pdf(file = paste("outs/Figures/fish_phylogeny_diel_", length(tr.calibrated$tip.label), "_species.pdf", sep = ""), width = 40, height = 40)
+diel.plot.labelled
 dev.off()
 
 # Make a plot showing diel activity and orders
-
-diel.plot <- ggtree(tr.calibrated, layout = "circular") %<+% resolved_names[,c("tips", "diel", "order")] + geom_tippoint(aes(color = diel), shape = 16, size = 1.5) + scale_color_manual(values = c("red", "blue", "yellow", "green3", "green1", "green4", "green2", "white"))
+# diel.plot <- ggtree(tr.calibrated, layout = "circular") %<+% resolved_names[,c("tips", "diel", "order")] + geom_tippoint(aes(color = diel), shape = 16, size = 1.5) + scale_color_manual(values = c("red", "blue", "yellow", "green3", "green1", "green4", "green2", "white"))
 
 # Annotate clades?
 orders <- unique(resolved_names$order)[!(is.na(unique(resolved_names$order)))]
+# orders <- orders[!(grepl("Perciformes", orders))]
+# orders <- orders[!(orders %in% c("Scorpaeniformes", "Lampriformes", "Osmeriformes", "Beryciformes", "Scombriformes", "Eupercaria/misc", "Acanthuriformes", "Acropomatiformes"))]
+# orders <- orders[!(orders %in% c("Perciformes/Percoidei", "Perciformes/Notothenioidei", "Perciformes", "Scorpaeniformes", "Lampriformes", "Osmeriformes", "Beryciformes", "Scombriformes", "Eupercaria/misc", "Acanthuriformes", "Perciformes/Serranoidei", "Acropomatiformes", "Perciformes/Uranoscopoidei", "Perciformes/Zoarcoidei", "Perciformes/Gasterosteoidei", "Perciformes/Cottoidei", "Perciformes/Notothenoidei"))]
+
+# Or just a few orders
+# orders <- c("Anguilliformes", "Cypriniformes", "Characiformes", "Siluriformes", "Kurtiformes", "Gobiiformes", "Syngnathiformes", "Pleuronectiformes", "Cichliformes", "Perciformes/Scorpaenoidei", "Tetraodontiformes", "Carcharhiniformes", "Holocentriformes", "Blenniiformes")
+
 my_colors <- hue_pal()(length(orders))
 
 # Add highlights and labels using a for loop for each order
+
+diel.plot.orders <- diel.plot
 
 for (i in 1:length(orders)) {
   tips <- resolved_names$tips[resolved_names$order == orders[[i]] & !(is.na(resolved_names$genus))]
@@ -55,16 +73,17 @@ for (i in 1:length(orders)) {
   tips <- match(tips, tr.calibrated$tip.label)
   tips <- tips[!(is.na(tips))]
   
-  offset = 4
+  offset = 25
   alpha = 0.25
   
-  if (orders[[i]] %in% c("Perciformes", "Scorpaeniformes", "Lampriformes", "Osmeriformes", "Beryciformes", "Scombriformes", "Eupercaria/misc", "Acanthuriformes", "Perciformes/Serranoidei")) {
-    diel.plot <- diel.plot
+  if (orders[[i]] %in% ("test")) {
+    diel.plot.orders <- diel.plot.orders
   } else {
     if(length(tips) > 1) {
       node <- getMRCA(tr.calibrated, tips)
-      diel.plot <- diel.plot + geom_hilight(node = node, fill = my_colors[[i]], alpha = alpha)
-      angle = diel.plot$data$angle[match(node, diel.plot$data$node)]
+      diel.plot.orders <- diel.plot.orders + geom_hilight(node = node, fill = my_colors[[i]], alpha = alpha)
+      # angle = diel.plot.orders$data$angle[match(node, diel.plot.orders$data$node)]
+      angle <- mean(diel.plot.orders$data$angle[diel.plot.orders$data$node %in% tips])
       if(between(angle, 90, 270)) {
         angle <- angle + 180
         hjust <- 1
@@ -72,12 +91,13 @@ for (i in 1:length(orders)) {
         angle <- angle
         hjust <- 0
       }
-      diel.plot <- diel.plot + geom_cladelabel(node = node, label = orders[[i]], color = my_colors[[i]], offset = offset, align = F, angle = angle, hjust = hjust)
+      diel.plot.orders <- diel.plot.orders + geom_cladelabel(node = node, label = orders[[i]], color = my_colors[[i]], offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5)
     } 
     
     if(length(tips) == 1) {
-      diel.plot <- diel.plot + geom_hilight(node = tips, fill = my_colors[[i]], alpha = alpha)
-      angle = diel.plot$data$angle[match(tips, diel.plot$data$node)]
+      diel.plot.orders <- diel.plot.orders + geom_hilight(node = tips, fill = my_colors[[i]], alpha = alpha)
+      # angle = diel.plot.orders$data$angle[match(tips, diel.plot.orders$data$node)]
+      angle <- mean(diel.plot.orders$data$angle[diel.plot.orders$data$node %in% tips])
       if(between(angle, 90, 270)) {
         angle <- angle + 180
         hjust <- 1
@@ -85,16 +105,20 @@ for (i in 1:length(orders)) {
         angle <- angle
         hjust <- 0
       }
-      diel.plot <- diel.plot + geom_cladelabel(node = tips, label = orders[[i]], color = my_colors[[i]], offset = offset, align = F, angle = angle, hjust = hjust)
+      diel.plot.orders <- diel.plot.orders + geom_cladelab(node = tips, label = orders[[i]], color = my_colors[[i]], offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5)
     }
   }
 }
 rm(tips, anchor.point, node, angle, hjust)
 
-pdf(file = paste("outs/Figures/fish_phylogeny_diel_orders_", length(tr.calibrated$tip.label), "_species.pdf", sep = ""), width = 20, height = 20)
-diel.plot
+pdf(file = paste("outs/Figures/fish_phylogeny_diel_orders_", length(tr.calibrated$tip.label), "_species.pdf", sep = ""), width = 40, height = 40)
+diel.plot.orders + xlim(0,600)
 dev.off()
 
+# To save the subset
+pdf(file = paste("outs/Figures/fish_phylogeny_diel_orders_subsetLabelled_", length(tr.calibrated$tip.label), "_species.pdf", sep = ""), width = 15, height = 15)
+diel.plot.orders + xlim(0,600)
+dev.off()
 
 ################################################################################################################################################
 ### Plot Reconstructed ancestral states for Diurnal / Nocturnal ###
@@ -111,7 +135,7 @@ trait.data_n <- trait.data[trait.data$species %in% trpy_n$tip.label,]
 
 # Load most likely model from script #2
 # best_fit_model <- readRDS("best_fit_model_all_species.rds")
-best_fit_model <- readRDS(file = paste("best_fit_model_", length(trpy_n$tip.label), "_species.rds", sep = ""))
+best_fit_model <- readRDS(file = paste("best_fit_model", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
 
 # Extract the liklihood for each node and make it into a ggplotable data frame
 
@@ -141,6 +165,8 @@ if (ncol(lik.anc) == 4) {
 
 # Plot just nocturnal vs diurnal, regardless of rate class (this is what I want to known anyway)
 ancestral_plot <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+# ancestral_plot <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_gradient(low = "#2c7bb6", high = "#ffffbf")
+
 ancestral_plot_rect <- ggtree(trpy_n) %<+% lik.anc + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
 
 rate_plot <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = R1.sum) + geom_tippoint(aes(color = R1.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "PRGn") + scale_color_distiller(palette = "PRGn")
@@ -201,7 +227,9 @@ dev.off()
 
 # ancestral.plot <- ggtree(trpy, layout = "circular") %<+% node.data + aes(color = diurnal) + scale_color_distiller(palette = "RdBu") + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu")
 ancestral.plot <- ancestral_plot
-orders <- unique(resolved_names$order)[!(is.na(unique(resolved_names$order)))]
+
+orders <- c("Anguilliformes", "Cypriniformes", "Characiformes", "Siluriformes", "Kurtiformes", "Gobiiformes", "Syngnathiformes", "Pleuronectiformes", "Cichliformes", "Perciformes/Scorpaenoidei", "Tetraodontiformes", "Carcharhiniformes", "Holocentriformes", "Blenniiformes")
+
 my_colors <- hue_pal()(length(orders))
 
 # Add labels using a for loop for each order
@@ -212,16 +240,20 @@ for (i in 1:length(orders)) {
   anchor.point <- round(median(1:length(tips)))
   anchor.point <- tips[anchor.point]
   tips <- tips[!(is.na(tips))]
-  tips <- match(tips, trpy$tip.label)
+  tips <- match(tips, trpy_n$tip.label)
   tips <- tips[!(is.na(tips))]
   
-  if (orders[[i]] %in% c("Perciformes", "Scorpaeniformes", "Lampriformes", "Osmeriformes", "Beryciformes", "Scombriformes", "Eupercaria/misc", "Acanthuriformes", "Perciformes/Serranoidei")) {
-    diel.plot <- diel.plot
+  offset = 5
+  alpha = 0.25
+  
+  if (orders[[i]] %in% ("test")) {
+    ancestral.plot <- ancestral.plot
   } else {
     if(length(tips) > 1) {
-      node <- getMRCA(trpy, tips)
-      # ancestral.plot <- ancestral.plot + geom_hilight(node = node, fill = my_colors[[i]], alpha = 0.25)
-      angle = ancestral.plot$data$angle[match(node, ancestral.plot$data$node)]
+      node <- getMRCA(trpy_n, tips)
+      ancestral.plot <- ancestral.plot + geom_hilight(node = node, fill = my_colors[[i]], alpha = alpha)
+      # angle = ancestral.plot$data$angle[match(node, ancestral.plot$data$node)]
+      angle <- mean(ancestral.plot$data$angle[ancestral.plot$data$node %in% tips])
       if(between(angle, 90, 270)) {
         angle <- angle + 180
         hjust <- 1
@@ -229,12 +261,13 @@ for (i in 1:length(orders)) {
         angle <- angle
         hjust <- 0
       }
-      ancestral.plot <- ancestral.plot + geom_cladelabel(node = node, label = orders[[i]], color = my_colors[[i]], offset = offset, align = F, angle = angle, hjust = hjust)
+      ancestral.plot <- ancestral.plot + geom_cladelabel(node = node, label = orders[[i]], color = my_colors[[i]], offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5)
     } 
     
     if(length(tips) == 1) {
-      # ancestral.plot <- ancestral.plot + geom_hilight(node = tips, fill = my_colors[[i]], alpha = 0.25)
-      angle = ancestral.plot$data$angle[match(tips, ancestral.plot$data$node)]
+      ancestral.plot <- ancestral.plot + geom_hilight(node = tips, fill = my_colors[[i]], alpha = alpha)
+      # angle = ancestral.plot$data$angle[match(tips, ancestral.plot$data$node)]
+      angle <- mean(ancestral.plot$data$angle[ancestral.plot$data$node %in% tips])
       if(between(angle, 90, 270)) {
         angle <- angle + 180
         hjust <- 1
@@ -242,14 +275,14 @@ for (i in 1:length(orders)) {
         angle <- angle
         hjust <- 0
       }
-      ancestral.plot <- ancestral.plot + geom_cladelabel(node = tips, label = orders[[i]], color = my_colors[[i]], offset = offset, align = F, angle = angle, hjust = hjust)
+      ancestral.plot <- ancestral.plot + geom_cladelab(node = tips, label = orders[[i]], color = my_colors[[i]], offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5)
     }
   }
 }
 rm(tips, anchor.point, node, angle, hjust)
 
 pdf(file = paste("outs/Figures/fish_phylogeny_diel_orders_ancestral_", length(trpy_n$tip.label), "_species.pdf", sep = ""), width = 20, height = 20)
-ancestral.plot
+ancestral.plot + xlim(0,500)
 dev.off()
 
 

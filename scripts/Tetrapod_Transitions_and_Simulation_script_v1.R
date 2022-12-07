@@ -77,44 +77,64 @@ plotRECON(hackett, HD3.madfitz$states, piecolors = c("yellow", "cornflowerblue",
 model <- HN2.madfitz
 trpy_n <- keep.tip(hackett, tip = dataN$Species)
 
+
+setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+
+## Load files
+
+resolved_names <- readRDS("resolved_names_AllGroups.rds")
+tr.calibrated <- readRDS("tr_tree_calibrated_AllGroups.rds")
+trait.data <- readRDS("trait_data_AllGroups.rds")
+
+name_variable <- "AllGroups"
+
+# Just diurnal/nocturnal
+trait.vector_n <- trait.data$diel1
+names(trait.vector_n) <- trait.data$species
+trait.vector_n <- trait.vector_n[trait.vector_n %in% c("diurnal", "nocturnal")]
+trpy_n <- keep.tip(tr.calibrated, tip = names(trait.vector_n))
+trpy_n$edge.length[trpy_n$edge.length == 0] <- 0.001 
+trait.data_n <- trait.data[trait.data$species %in% trpy_n$tip.label,]
+
+# Make a tree for extracting node ages
+tree <- ggtree(trpy_n)
+
+# Load the  model, for which I use the MK one (1 rate)
+model <- readRDS(file = paste("MK_2state_model", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
+
 ###############################################################################################################################################
 ### Plot the Hidden rate ancestral reconstructions (of rate and state) ### 
 ###############################################################################################################################################
 
 lik.anc.tet <- as.data.frame(rbind(model$tip.states, model$states))
-colnames(lik.anc.tet) <- c("diurnal_R1", "nocturnal_R1", "diurnal_R2", "nocturnal_R2")
+colnames(lik.anc.tet) <- c("di.sum", "noc.sum")
 lik.anc.tet$node <- c(1:length(trpy_n$tip.label), (length(trpy_n$tip.label) + 1):(trpy_n$Nnode + length(trpy_n$tip.label)))
 
-lik.anc.tet$noc.sum <- rowSums(lik.anc.tet[,c(2,4)])
-lik.anc.tet$di.sum <- rowSums(lik.anc.tet[,c(1,3)])
+# lik.anc.tet$noc.sum <- rowSums(lik.anc.tet[,c(2,4)])
+# lik.anc.tet$di.sum <- rowSums(lik.anc.tet[,c(1,3)])
 
-lik.anc.tet$R1.sum <- rowSums(lik.anc.tet[,c(1,2)])
-lik.anc.tet$R2.sum <- rowSums(lik.anc.tet[,c(3,4)])
+# lik.anc.tet$R1.sum <- rowSums(lik.anc.tet[,c(1,2)])
+# lik.anc.tet$R2.sum <- rowSums(lik.anc.tet[,c(3,4)])
 
 # Plot just nocturnal vs diurnal, regardless of rate class (this is what I want to known anyway)
 diel_2state_2rate <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
 diel_2state_2rate_rect <- ggtree(trpy_n) %<+% lik.anc.tet + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
 
-rate_plot <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = R1.sum) + geom_tippoint(aes(color = R1.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "PRGn") + scale_color_distiller(palette = "PRGn")
+# rate_plot <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = R1.sum) + geom_tippoint(aes(color = R1.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "PRGn") + scale_color_distiller(palette = "PRGn")
 
 
-dir1 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = diurnal_R1) + scale_color_distiller(palette = "Reds", direction = 1) + geom_tippoint(aes(color = diurnal_R1), shape = 16, size = 1.5) + scale_color_distiller(palette = "Reds", direction = 1)
-dir2 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = diurnal_R2) + scale_color_distiller(palette = "OrRd", direction = 1) + geom_tippoint(aes(color = diurnal_R2), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1)
-nocr1 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = nocturnal_R1) + scale_color_distiller(palette = "Blues", direction = 1) + geom_tippoint(aes(color = nocturnal_R1), shape = 16, size = 1.5) + scale_color_distiller(palette = "Blues", direction = 1)
-nocr2 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = nocturnal_R2) + scale_color_distiller(palette = "Purples", direction = 1) + geom_tippoint(aes(color = nocturnal_R2), shape = 16, size = 1.5) + scale_color_distiller(palette = "Purples", direction = 1)
-dir3 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = diurnal_R3) + scale_color_distiller(palette = "OrRd", direction = 1) + geom_tippoint(aes(color = diurnal_R3), shape = 16, size = 1.5) + scale_color_distiller(palette = "YlOrBr", direction = 1)
-nocr3 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = nocturnal_R3) + scale_color_distiller(palette = "Purples", direction = 1) + geom_tippoint(aes(color = nocturnal_R3), shape = 16, size = 1.5) + scale_color_distiller(palette = "BuPu", direction = 1)
+dir1 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = di.sum) + scale_color_distiller(palette = "Reds", direction = 1) + geom_tippoint(aes(color = di.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "Reds", direction = 1)
+# dir2 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = diurnal_R2) + scale_color_distiller(palette = "OrRd", direction = 1) + geom_tippoint(aes(color = diurnal_R2), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1)
+nocr1 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = noc.sum) + scale_color_distiller(palette = "Blues", direction = 1) + geom_tippoint(aes(color = noc.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "Blues", direction = 1)
+# nocr2 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = nocturnal_R2) + scale_color_distiller(palette = "Purples", direction = 1) + geom_tippoint(aes(color = nocturnal_R2), shape = 16, size = 1.5) + scale_color_distiller(palette = "Purples", direction = 1)
+# dir3 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = diurnal_R3) + scale_color_distiller(palette = "OrRd", direction = 1) + geom_tippoint(aes(color = diurnal_R3), shape = 16, size = 1.5) + scale_color_distiller(palette = "YlOrBr", direction = 1)
+# nocr3 <- ggtree(trpy_n, layout = "circular") %<+% lik.anc.tet + aes(color = nocturnal_R3) + scale_color_distiller(palette = "Purples", direction = 1) + geom_tippoint(aes(color = nocturnal_R3), shape = 16, size = 1.5) + scale_color_distiller(palette = "BuPu", direction = 1)
 
-two_rate_plots <- dir1 + dir2 + nocr1 + nocr2 + plot_layout(nrow = 2)
+two_rate_plots <- dir1 + nocr1 + plot_layout(nrow = 1)
 
-# pdf(file = paste("outs/Figures/fish_phylogeny_diel_ancestral_diel_rates_", length(trpy_n$tip.label), "_species.pdf", sep = ""), width =20, height = 20)
-# two_rate_plots
-# dev.off()
-# 
-# pdf(file = paste("outs/Figures/fish_phylogeny_diel_ancestral_rates_", length(trpy_n$tip.label), "_species.pdf", sep = ""), width = 20, height = 20)
-# rate_plot
-# dev.off()
-
+pdf(file = paste("outs/Figures/vert_phylogeny_diel_ancestral_diel_", length(trpy_n$tip.label), "_species.pdf", sep = ""), width =20, height = 20)
+two_rate_plots
+dev.off()
 
 
 
@@ -126,12 +146,12 @@ two_rate_plots <- dir1 + dir2 + nocr1 + nocr2 + plot_layout(nrow = 2)
 
 # Create data frame with trait values
 lik.anc.tet <- as.data.frame(rbind(model$tip.states, model$states))
-colnames(lik.anc.tet) <- c("diurnal_R1", "nocturnal_R1", "diurnal_R2", "nocturnal_R2")
+colnames(lik.anc.tet) <- c("diurnal", "nocturnal")
 lik.anc.tet$node <- c(1:length(trpy_n$tip.label), (length(trpy_n$tip.label) + 1):(trpy_n$Nnode + length(trpy_n$tip.label)))
 
 # Determine the number of transitions or diurnal/nocturnal taxa by age
-lik.anc.tet$diurnal <- ifelse(lik.anc.tet$diurnal_R1 + lik.anc.tet$diurnal_R2 > 0.5, 1, 0)
-# lik.anc.tet$Time <- tree$data$x[match(lik.anc.tet$node, tree$data$node)]
+# lik.anc.tet$diurnal <- ifelse(lik.anc.tet$diurnal_R1 + lik.anc.tet$diurnal_R2 > 0.5, 1, 0)
+lik.anc.tet$Time <- tree$data$x[match(lik.anc.tet$node, tree$data$node)]
 # lik.anc.tet$Time2 <- (lik.anc.tet$Time - max(lik.anc.tet$Time))*-1
 lik.anc.tet <- lik.anc.tet[order(lik.anc.tet$Time),]
 
@@ -190,6 +210,11 @@ ltt.switch.plot.tet <- ggplot(lik.anc.tet, aes(x = node.age, y = log(switch2))) 
 
 
 
+
+#### So Problem here is that I'm now using a tree + data_frame for all species (fish and tetrapods), rather than just for specific groups. Prob better in the long run, but can I split it now?
+#### Or do I need to split it before I do all the lik.anc stuff above? Easy to split trees and pheno data, but difficult to split the anc data because it's nodes, and these change? Or can I extract all node #s or something?
+
+
 ## Put the two together (get lik.anc from other script)
 
 lik.anc$group <- "fish"
@@ -244,6 +269,18 @@ occurances_ammo <- read.csv("paleobiodb/pbdb_data_ammonoidea_summary.csv")
 occurances_ammo$group <- "Ammonoidea"
 occurances_ichthyosaurs <- read.csv("paleobiodb/pbdb_data_ichthyosaurs_summary.csv")
 occurances_ichthyosaurs$group <- "Ichthyosaurs"
+
+occurances_conodonta <- occurances_conodonta[occurances_conodonta$min_ma < 410,]
+occurances_conodonta$sampled_in_bin <- occurances_conodonta$sampled_in_bin/max(occurances_conodonta$sampled_in_bin)
+occurances_actino <- occurances_actino[occurances_actino$min_ma < 410,]
+occurances_actino$sampled_in_bin <- occurances_actino$sampled_in_bin/max(occurances_actino$sampled_in_bin)
+occurances_tetrapoda <- occurances_tetrapoda[occurances_tetrapoda$min_ma < 410,]
+occurances_tetrapoda$sampled_in_bin <- occurances_tetrapoda$sampled_in_bin/max(occurances_tetrapoda$sampled_in_bin)
+occurances_ammo <- occurances_ammo[occurances_ammo$min_ma < 410,]
+occurances_ammo$sampled_in_bin <- occurances_ammo$sampled_in_bin/max(occurances_ammo$sampled_in_bin)
+occurances_ichthyosaurs <- occurances_ichthyosaurs[occurances_ichthyosaurs$min_ma < 410,]
+occurances_ichthyosaurs$sampled_in_bin <- occurances_ichthyosaurs$sampled_in_bin/max(occurances_ichthyosaurs$sampled_in_bin)
+
 occurances <- rbind(occurances_conodonta, occurances_actino, occurances_tetrapoda, occurances_ammo, occurances_ichthyosaurs)
 
 occurances_plot <- ggplot(occurances[occurances$group %in% c("Conodonta", "Actinopterygii", "Ammonoidea"),], aes(x = min_ma, y = sampled_in_bin, colour = group)) + geom_line(size = 1) + theme_bw() + scale_x_reverse(limits = c(408.341, 0), breaks = scales::pretty_breaks(n = 20))

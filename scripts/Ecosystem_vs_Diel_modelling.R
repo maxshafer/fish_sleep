@@ -122,8 +122,8 @@ combined_ecology_metrics_diel <- combined_ecology_metrics
 # View(lapply(combined_ecology_metrics_diel, function(x) table(is.na(x))))
 
 #############  Subset to only complete cases #############  
-# complete_cases <- combined_ecology_metrics_diel[complete.cases(combined_ecology_metrics_diel[,c("Species","mean_Weight", "Trophic","ecosystem_count", "benthopelagic", "RepGuild")]), c("Species", "mean_LengthMax", "mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")]
-complete_cases <- combined_ecology_metrics_diel[complete.cases(combined_ecology_metrics_diel[,c("Species","Trophic","benthopelagic")]), c("Species", "mean_LengthMax", "mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")]
+complete_cases <- combined_ecology_metrics_diel[complete.cases(combined_ecology_metrics_diel[,c("Species","mean_Weight", "Trophic","ecosystem_count", "benthopelagic", "RepGuild")]), c("Species", "mean_LengthMax", "mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")]
+# complete_cases <- combined_ecology_metrics_diel[complete.cases(combined_ecology_metrics_diel[,c("Species","Trophic","benthopelagic")]), c("Species", "mean_LengthMax", "mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")]
 
 complete_cases$diel <- trait.data$diel2[match(complete_cases$Species, gsub("_", " ", trait.data$species))]
 complete_cases$mean_Weight <- log(as.numeric(complete_cases$mean_Weight))
@@ -141,6 +141,7 @@ complete_cases$RepGuild <- factor(complete_cases$RepGuild, levels = c("open wate
 
 # Make histograms
 
+p_mean_LengthMax <- ggplot(complete_cases, aes(x = log(as.numeric(mean_LengthMax)))) + geom_histogram(color = "black", fill = "grey", binwidth = 1) + theme_classic()
 p_mean_Weight <- ggplot(complete_cases, aes(x = as.numeric(mean_Weight))) + geom_histogram(color = "black", fill = "grey", binwidth = 1) + theme_classic()
 p_mean_FoodTroph <- ggplot(complete_cases, aes(x = as.numeric(Trophic))) + geom_histogram(color = "red4", fill = "red1", binwidth = 0.25) + theme_classic()
 # p_FeedingType <- ggplot(complete_cases, aes(x = as.numeric(FeedingType))) + geom_histogram(color = "gold4", fill = "gold1") + theme_classic()
@@ -148,7 +149,7 @@ p_benthopelagic <- ggplot(complete_cases, aes(x = as.numeric(benthopelagic))) + 
 p_ecosystem_count <- ggplot(complete_cases, aes(x = as.numeric(ecosystem_count))) + geom_histogram(color = "seagreen", fill = "seagreen2", binwidth = 1) + theme_classic()
 p_RepGuild <- ggplot(complete_cases, aes(x = as.numeric(RepGuild))) + geom_histogram(color = "mediumpurple4", fill = "mediumpurple1", binwidth = 1) + theme_classic()
 
-histograms <- p_mean_Weight + p_mean_FoodTroph + p_benthopelagic + p_RepGuild + p_ecosystem_count + plot_layout(ncol = 1)
+histograms <- p_mean_LengthMax + p_mean_Weight + p_mean_FoodTroph + p_benthopelagic + p_RepGuild + p_ecosystem_count + plot_layout(ncol = 1)
 
 
 pca.data <- complete_cases[,c("mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")]
@@ -175,6 +176,22 @@ pca.data <- as.data.frame(diel.pca$x)
 pca.data$diel <- complete_cases$diel
 
 ggplot(pca.data, aes(x = PC1, group = diel, color = diel, fill = diel)) + geom_density(alpha = 0.25) + theme_classic() + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green"))
+ggplot(pca.data, aes(x = PC2, group = diel, color = diel, fill = diel)) + geom_density(alpha = 0.25) + theme_classic() + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green"))
+ggplot(pca.data, aes(x = PC3, group = diel, color = diel, fill = diel)) + geom_density(alpha = 0.25) + theme_classic() + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green"))
+ggplot(pca.data, aes(x = PC4, group = diel, color = diel, fill = diel)) + geom_density(alpha = 0.25) + theme_classic() + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green"))
+ggplot(pca.data, aes(x = PC5, group = diel, color = diel, fill = diel)) + geom_density(alpha = 0.25) + theme_classic() + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green"))
+
+# Make a ridgeline plot
+pca.data.long <- pca.data %>% gather("PC_numb", "value", PC1, PC2, PC3, PC4, PC5)
+
+ggplot(pca.data.long, aes(y = as.factor(PC_numb), x = value, fill = diel)) + geom_density_ridges(alpha = 0.25) + theme_classic()
+
+# Make a plot of loadings
+pca.loadings <- as.data.frame(diel.pca$rotation)
+pca.loadings$category <- row.names(pca.loadings)
+pca.loadings <- pca.loadings %>% gather("PC_numb", "value", PC1, PC2, PC3, PC4, PC5)
+
+ggplot(pca.loadings, aes(x = PC_numb, y = value, color = category, group = category)) + geom_point() + geom_line() + theme_classic()
 
 ggplot(complete_cases, aes(x = benthopelagic, group = diel, color = diel, fill = diel)) + geom_density(alpha = 0.25) + theme_classic() + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green"))
 
