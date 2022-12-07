@@ -1,9 +1,4 @@
-Warning message:
-In smooth_scion(phy, scion, scion_desc, taxa, spp, tol = tol, method = method) :
-  Supplied 'stock' is non-ultrametric.
-Warning message:
-In smooth_scion(phy, scion, scion_desc, taxa, spp, tol = tol, method = method) :
-  Supplied 'stock' is non-ultrametric.
-Warning message:
-In smooth_scion(phy, scion, scion_desc, taxa, spp, tol = tol, method = method) :
-  Supplied 'stock' is non-ultrametric.
+Error in curl::curl_fetch_memory(url, handle = handle) : 
+  Failed to connect to api.opentreeoflife.org port 443: No route to host
+Calls: tnrs_match_names ... request_fetch -> request_fetch.write_memory -> <Anonymous>
+Execution halted
