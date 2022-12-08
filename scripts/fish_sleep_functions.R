@@ -1,8 +1,13 @@
+### FUNCTIONS FOR LINEAGE THROUGH TIME PLOTS
+### Associated with Fish_sleep project
+### Copyright Maxwell Shafer 2022
+### The following functions are associated with scripts for analysing diurnal and nocturnal states through time across a phylogeny
+### and can be used with both data from fish, but also data from all vertebrates
+### Updated 07.12.2022
 
-
+### Need to make these work for if there is another trait involved (for example, marine/fresh). Would still be useful to plot the Di/Noc for these models
 
 ### Write a function to extract ancestral likelihoods from a model
-
 returnAncestralStates <- function(phylo_model = model, phylo_tree = trpy_n) {
   
   # Create a data frame with trait values from reconstruction
@@ -29,13 +34,12 @@ returnAncestralStates <- function(phylo_model = model, phylo_tree = trpy_n) {
   ancestral_states$node <- 1:(length(phylo_tree$tip.label) + phylo_tree$Nnode)
   ancestral_states$states <- states
   ancestral_states$rate_states <- rate_states
+  print(paste("returning ancestral states for", phylo_tree$Nnode, "internal nodes corresponding to", length(phylo_tree$tip.label), "tips in tree provided", sep = " "))
   return(ancestral_states)
 }
 
 
-
-# Function to determine the number of transitions between states
-
+### Function to determine the number of transitions between states
 calculateStateTranstitions <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n) {
   
   states <- ancestral_states$states
@@ -64,18 +68,22 @@ calculateStateTranstitions <- function(ancestral_states = ancestral_states, phyl
   
   ancestral_states$transition <- ifelse(ifelse(ancestral_states$parent.diel > 0.5, 1, 0) != ifelse(ancestral_states$recon_states > 0.5, 1, 0), 1, 0)
   # ancestral_states$transition[is.na(ancestral_states$transition)] <- 0
+  
+  print(paste("Identified", table(ancestral_states$transition)[2], "transitions between", ancestral_states$states[1], "and", ancestral_states$states[2], sep = " "))
   return(ancestral_states)
 }
 
 
-
+### Function to calculate transition history on tree for the state
 calculateLinTransHist <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n) {
-
+  
   ancestors <- lapply(c(1:length(phylo_tree$tip.label)), function(x) Ancestors(phylo_tree, x, type = "all"))
   ancestors <- lapply(seq_along(ancestors), function(x) append(c(1:length(phylo_tree$tip.label))[[x]], ancestors[[x]]))
+  print("calculating ancestral states for all nodes")
   recon_states <- ifelse(ancestral_states$recon_states > 0.5, 1, 0)
   ancestors.diel <- lapply(ancestors, function(x) lapply(x, function(y) recon_states[match(y, ancestral_states$node)]))
   
+  print("identifying switch types")
   # This works, can I simplify it so it works on a vector?
   switch.type <- unlist(lapply(ancestors.diel, function(x) {
     df <- data.frame(test = unlist(x))
@@ -85,17 +93,20 @@ calculateLinTransHist <- function(ancestral_states = ancestral_states, phylo_tre
   
   ancestral_states$switch.type <- as.character(switch.type)
   
+  print("Identified the following switch types")
+  print(table(switch.type))
+  
   return(ancestral_states)
 }
 
 
-
+### Function to calculate the cummulative sums (of switches and switch types)
 returnCumSums <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n) {
-  
-  node_order <- order(ancestral_states$node.age, decreasing = T)
-  
+  # This is all nodes (for transitions only)
+  node_order <- order(ancestral_states$node.age, decreasing = T) # Oldest node first (root)
   ancestral_states$transition_cumsum <- cumsum(ancestral_states$transition[node_order])
   
+  # This is only tips (for real ltt plots)
   node_order_2 <- order(ancestral_states$node.age[ancestral_states$node %in% c(1:length(phylo_tree$tip.label))], decreasing = T)
     
   cumsums <- data.frame(row.names = phylo_tree$tip.label[node_order_2])
@@ -106,29 +117,9 @@ returnCumSums <- function(ancestral_states = ancestral_states, phylo_tree = trpy
     cumsums[,i] <- cumsum(ifelse(ancestral_states$switch.type == i, 1, 0))
   }
   
+  ancestral_states$cumsums <- cumsums
+  return(ancestral_states)
 }
-
-
-node.data3 <- data.table::melt(cumsums, id.vars = c("node.age", "Lineage_Cumsum"), value.name = "Cummulative_ratio")
-
-node.data3$CRLC <- node.data3$Cummulative_ratio
-node.data4 <- node.data3 %>% group_by(node.age, variable) %>% summarise(n = sum(CRLC)) %>% mutate(percentage = n / sum(n))
-
-switch_histo <- ggplot(node.data4, aes(x = node.age, y = percentage, fill = variable)) + theme_classic() + geom_area() + scale_x_reverse() + xlab("Millions of years ago") + scale_fill_manual(values = c("blue4", "red4", "blue3", "red3", "blue1", "red1"))
-
-  
-  
-  
-  
-
-
-
-
-
-
-
-
-
 
 
 ## Write a function that takes the rate index from computed models of trat evolution and make a plot which shows the rates

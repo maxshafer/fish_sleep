@@ -29,6 +29,19 @@ name_variable <- "all"
 # tr.calibrated <- keep.tip(tr.calibrated, tip = trait.data$species)
 # name_variable <- "only_highqual"
 
+# # Remove cartilaginous fish (just actinopterygii)
+# # Common ancestor of Lepisosteus_osseus (Order: Lepisosteiformes) Lepidosiren_paradoxa (lepidosiren) and Lutjanus_fulvus (Order: Perciformes)
+# node_of_interest <- getMRCA(phy = tr.calibrated, tip = c("Lepidosiren_paradoxa", "Lutjanus_fulvus"))
+# tr.calibrated <- extract.clade(phy = tr.calibrated, node = node_of_interest)
+# trait.data <- trait.data[trait.data$species %in% tr.calibrated$tip.label,]
+# name_variable <- "only_ingroup"
+
+# Keep only cartilaginous fish (no actinopterygii)
+node_of_interest <- getMRCA(tr.calibrated, tip = c("Rhizoprionodon_terraenovae", "Rhynchobatus_djiddensis"))
+tr.calibrated <- extract.clade(phy = tr.calibrated, node = node_of_interest)
+trait.data <- trait.data[trait.data$species %in% tr.calibrated$tip.label,]
+name_variable <- "only_cartilaginous"
+
 ################################################################################################################################################
 ### Make phylogenetic tree plots showing activity patterns ###
 ################################################################################################################################################

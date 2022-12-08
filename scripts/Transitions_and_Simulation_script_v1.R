@@ -11,7 +11,7 @@ library(ggtree)
 
 setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
 
-source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/scripts/Trait_rate_matrix_figure_script.R")
+source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/scripts/Fish_sleep_functions.R")
 
 ## Load files
 
@@ -21,9 +21,9 @@ trait.data <- readRDS("trait_data.rds")
 
 name_variable <- "all"
 
-# # Remove low quality data
-# trait.data <- trait.data[trait.data$confidence > 1,]
-# name_variable <- "only_highqual"
+# Remove low quality data
+trait.data <- trait.data[trait.data$confidence > 1,]
+name_variable <- "only_highqual"
 
 # # Remove cartilaginous fish (just actinopterygii)
 # # Common ancestor of Lepisosteus_osseus (Order: Lepisosteiformes) and Lutjanus_fulvus (Order: Perciformes)
@@ -31,6 +31,13 @@ name_variable <- "all"
 # tr.calibrated <- extract.clade(phy = tr.calibrated, node = node_of_interest)
 # trait.data <- trait.data[trait.data$species %in% tr.calibrated$tip.label,]
 # name_variable <- "only_ingroup"
+
+# # Keep only cartilaginous fish (no actinopterygii)
+# node_of_interest <- getMRCA(tr.calibrated, tip = c("Rhizoprionodon_terraenovae", "Rhynchobatus_djiddensis"))
+# tr.calibrated <- extract.clade(phy = tr.calibrated, node = node_of_interest)
+# trait.data <- trait.data[trait.data$species %in% tr.calibrated$tip.label,]
+# name_variable <- "only_cartilaginous"
+
 
 # Just diurnal/nocturnal
 trait.vector_n <- trait.data$diel1
@@ -40,98 +47,125 @@ trpy_n <- keep.tip(tr.calibrated, tip = names(trait.vector_n))
 trpy_n$edge.length[trpy_n$edge.length == 0] <- 0.001 
 trait.data_n <- trait.data[trait.data$species %in% trpy_n$tip.label,]
 
-# Make a tree for extracting node ages
-tree <- ggtree(trpy_n)
 
 # Load the best model, which is the HMM 2 state 2 rate model
-# model <- readRDS(file = "best_fit_model_all_species.rds")
-# model <- readRDS(file = paste("best_fit_model_", length(trpy_n$tip.label), "_species.rds", sep = ""))
+models <- readRDS(file = paste("standard_tests", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
 model <- readRDS(file = paste("best_fit_model", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
 
+View(unlist(lapply(models, function(x) x[names(x[grep("loglik", names(x))])])))
+
 ###############################################################################################################################################
-### Create the dataframe with lineages through time and diel switches data ### 
+### Create the object with lineages through time and diel switches data ### 
 ###############################################################################################################################################
 
-# Create data frame with trait values
-lik.anc <- as.data.frame(rbind(model$tip.states, model$states))
-colnames(lik.anc) <- c("diurnal_R1", "nocturnal_R1", "diurnal_R2", "nocturnal_R2")
-lik.anc$node <- c(1:length(trpy_n$tip.label), (length(trpy_n$tip.label) + 1):(trpy_n$Nnode + length(trpy_n$tip.label)))
+# First, extract the ancestral states from the best fit model
+anc_states <- returnAncestralStates(phylo_model = models[[14]], phylo_tree = trpy_n)
 
-# Determine the number of transitions or diurnal/nocturnal taxa by age
-lik.anc$diurnal <- ifelse(lik.anc$diurnal_R1 + lik.anc$diurnal_R2 > 0.5, 1, 0)
-lik.anc$Time <- tree$data$x[match(lik.anc$node, tree$data$node)]
-# lik.anc$Time2 <- (lik.anc$Time - max(lik.anc$Time))*-1
-lik.anc <- lik.anc[order(lik.anc$Time),]
+# Then, calculate transitions between states
+anc_states <- calculateStateTranstitions(ancestral_states = anc_states, phylo_tree = trpy_n)
 
-##
-lik.anc$parental.node <- apply(lik.anc, 1, function(x) Ancestors(trpy_n, x["node"], type = "parent"))
-lik.anc$parent.diel <- apply(lik.anc, 1, function(x) lik.anc$diurnal[match(x["parental.node"], lik.anc$node)]) # I should match, not index
-lik.anc$parent.diel[is.na(lik.anc$parent.diel)] <- 0
-lik.anc$switch <- ifelse(lik.anc$parent.diel != lik.anc$diurnal, 1, 0)
-lik.anc$switch[is.na(lik.anc$switch)] <- 0
+# Determine transition histories (types of lineages)
+anc_states <- calculateLinTransHist(ancestral_states = anc_states, phylo_tree = trpy_n)
 
-# Determine if switch is N->D (1) or D->N (0)
-# lik.anc$switch.ND <- ifelse(lik.anc$switch == 1 & lik.anc$diurnal == 1, 1, 0)
-# lik.anc$switch.DN <- ifelse(lik.anc$switch == 1 & lik.anc$diurnal == 0, 1, 0)
-
-### Maybe its better to assign ND, NDN, NDND, NDNDN etc, then covert that to numeric, or whatever
+# Calculate cumsums through time (for ltt plots)
+anc_states <- returnCumSums(ancestral_states = anc_states, phylo_tree = trpy_n)
 
 
-## This gives me all the ancestors of a node, in order of descendance?
-# ancestors <- apply(lik.anc, 1, function(x) Ancestors(trpy_n, x["node"], type = "all"))
-ancestors <- apply(lik.anc[lik.anc$node %in% c(1:length(trpy_n$tip.label)),], 1, function(x) Ancestors(trpy_n, x["node"], type = "all"))
-ancestors <- lapply(seq_along(ancestors), function(x) append(c(1:length(trpy_n$tip.label))[[x]], ancestors[[x]]))
 
-ancestors.diel <- lapply(ancestors, function(x) lapply(x, function(y) lik.anc$diurnal[match(y, lik.anc$node)]))
 
-# This works, can I simplify it so it works on a vector?
-switch.type <- unlist(lapply(ancestors.diel, function(x) {
-  df <- data.frame(test = unlist(x))
-  df <- df[with(df, c(test[-1]!= test[-nrow(df)], TRUE)),]
-  return(paste(df, collapse = ""))
-}))
 
-names(switch.type) <- lik.anc[lik.anc$node %in% c(1:length(trpy_n$tip.label)), "node"]
 
-# lik.anc2 <- lik.anc[lik.anc$node %in% c(1:length(trpy_n$tip.label)),]
-lik.anc$switch.type <- as.character(switch.type[match(lik.anc$node, names(switch.type), nomatch = NA)])
-## This doesn't make sense, because it counts lineages double.
-## I think my original way of counting switches, and normalizing them is still Correct?
-## Or should everything be normalized by the 'normal' cumsum of lineages through time?
 
-lik.anc$switch.N <- ifelse(is.na(lik.anc$switch.type), 0, ifelse(lik.anc$switch.type == "0", 1, 0))
-lik.anc$switch.ND <- ifelse(is.na(lik.anc$switch.type), 0, ifelse(lik.anc$switch.type == "10", 1, 0))
-lik.anc$switch.NDN <- ifelse(is.na(lik.anc$switch.type), 0, ifelse(lik.anc$switch.type == "010", 1, 0))
-lik.anc$switch.NDND <- ifelse(is.na(lik.anc$switch.type), 0, ifelse(lik.anc$switch.type == "1010", 1, 0))
-lik.anc$switch.NDNDN <- ifelse(is.na(lik.anc$switch.type), 0, ifelse(lik.anc$switch.type == "01010", 1, 0))
-lik.anc$switch.NDNDND <- ifelse(is.na(lik.anc$switch.type), 0, ifelse(lik.anc$switch.type == "101010", 1, 0))
 
-# Include or not
-node_heights <- nodeHeights(trpy_n)
-lik.anc$node.age <- node_heights[match(lik.anc$node, trpy_n$edge[,2]),1]
-lik.anc$node.age[is.na(lik.anc$node.age)] <- 0
-lik.anc$node.age <- (lik.anc$node.age - max(lik.anc$node.age))*-1
 
-# Sort by node.age or Time2
-lik.anc <- lik.anc[order(lik.anc$node.age, decreasing = T),]
 
-# Determine cumulative sums
-lik.anc$Diurnal_Cumsum <- cumsum(ifelse(lik.anc$diurnal > 0.5, 1, 0))
-lik.anc$Nocturnal_Cumsum <- cumsum(ifelse(lik.anc$diurnal < 0.5, 1, 0))
-lik.anc$Lineage_Cumsum <- cumsum(ifelse(lik.anc$node %in% c(1:length(trpy_n$tip.label)), 1, 0))
-lik.anc$Lineage_Cumsum2 <- cumsum(c(rep(1, nrow(lik.anc))))
-lik.anc$Diurnal_ratio <- lik.anc$Diurnal_Cumsum/lik.anc$Lineage_Cumsum # This doesn't work now, because I'm not normalizing by the right thing. If I just use the tips, it ignores lineags that were NDN I think?
-lik.anc$Nocturnal_ratio <- lik.anc$Nocturnal_Cumsum/lik.anc$Lineage_Cumsum # This doesn't work now, because I'm not normalizing by the right thing. If I just use the tips, it ignores lineags that were NDN I think?
-lik.anc$switch2 <- cumsum(lik.anc$switch)
-# lik.anc$switch.ND.Cum <- cumsum(lik.anc$switch.ND)/lik.anc$Lineage_Cumsum
-# lik.anc$switch.DN.Cum <- cumsum(lik.anc$switch.DN)/lik.anc$Lineage_Cumsum
 
-lik.anc$switch.N.Cum <- cumsum(ifelse(is.na(lik.anc$switch.N), 0, lik.anc$switch.N))
-lik.anc$switch.ND.Cum <- cumsum(ifelse(is.na(lik.anc$switch.ND), 0, lik.anc$switch.ND))
-lik.anc$switch.NDN.Cum <- cumsum(ifelse(is.na(lik.anc$switch.NDN), 0, lik.anc$switch.NDN))
-lik.anc$switch.NDND.Cum <- cumsum(ifelse(is.na(lik.anc$switch.NDND), 0, lik.anc$switch.NDND))
-lik.anc$switch.NDNDN.Cum <- cumsum(ifelse(is.na(lik.anc$switch.NDNDN), 0, lik.anc$switch.NDNDN))
-lik.anc$switch.NDNDND.Cum <- cumsum(ifelse(is.na(lik.anc$switch.NDNDND), 0, lik.anc$switch.NDNDND))
+
+
+
+
+
+
+# # Create data frame with trait values
+# lik.anc <- as.data.frame(rbind(model$tip.states, model$states))
+# colnames(lik.anc) <- c("diurnal_R1", "nocturnal_R1", "diurnal_R2", "nocturnal_R2")
+# lik.anc$node <- c(1:length(trpy_n$tip.label), (length(trpy_n$tip.label) + 1):(trpy_n$Nnode + length(trpy_n$tip.label)))
+# 
+# # Determine the number of transitions or diurnal/nocturnal taxa by age
+# lik.anc$diurnal <- ifelse(lik.anc$diurnal_R1 + lik.anc$diurnal_R2 > 0.5, 1, 0)
+# lik.anc$Time <- tree$data$x[match(lik.anc$node, tree$data$node)]
+# # lik.anc$Time2 <- (lik.anc$Time - max(lik.anc$Time))*-1
+# lik.anc <- lik.anc[order(lik.anc$Time),]
+# 
+# ##
+# lik.anc$parental.node <- apply(lik.anc, 1, function(x) Ancestors(trpy_n, x["node"], type = "parent"))
+# lik.anc$parent.diel <- apply(lik.anc, 1, function(x) lik.anc$diurnal[match(x["parental.node"], lik.anc$node)]) # I should match, not index
+# lik.anc$parent.diel[is.na(lik.anc$parent.diel)] <- 0
+# lik.anc$switch <- ifelse(lik.anc$parent.diel != lik.anc$diurnal, 1, 0)
+# lik.anc$switch[is.na(lik.anc$switch)] <- 0
+# 
+# # Determine if switch is N->D (1) or D->N (0)
+# # lik.anc$switch.ND <- ifelse(lik.anc$switch == 1 & lik.anc$diurnal == 1, 1, 0)
+# # lik.anc$switch.DN <- ifelse(lik.anc$switch == 1 & lik.anc$diurnal == 0, 1, 0)
+# 
+# ### Maybe its better to assign ND, NDN, NDND, NDNDN etc, then covert that to numeric, or whatever
+# 
+# 
+# ## This gives me all the ancestors of a node, in order of descendance?
+# # ancestors <- apply(lik.anc, 1, function(x) Ancestors(trpy_n, x["node"], type = "all"))
+# ancestors <- apply(lik.anc[lik.anc$node %in% c(1:length(trpy_n$tip.label)),], 1, function(x) Ancestors(trpy_n, x["node"], type = "all"))
+# ancestors <- lapply(seq_along(ancestors), function(x) append(c(1:length(trpy_n$tip.label))[[x]], ancestors[[x]]))
+# 
+# ancestors.diel <- lapply(ancestors, function(x) lapply(x, function(y) lik.anc$diurnal[match(y, lik.anc$node)]))
+# 
+# # This works, can I simplify it so it works on a vector?
+# switch.type <- unlist(lapply(ancestors.diel, function(x) {
+#   df <- data.frame(test = unlist(x))
+#   df <- df[with(df, c(test[-1]!= test[-nrow(df)], TRUE)),]
+#   return(paste(df, collapse = ""))
+# }))
+# 
+# names(switch.type) <- lik.anc[lik.anc$node %in% c(1:length(trpy_n$tip.label)), "node"]
+# 
+# # lik.anc2 <- lik.anc[lik.anc$node %in% c(1:length(trpy_n$tip.label)),]
+# lik.anc$switch.type <- as.character(switch.type[match(lik.anc$node, names(switch.type), nomatch = NA)])
+# ## This doesn't make sense, because it counts lineages double.
+# ## I think my original way of counting switches, and normalizing them is still Correct?
+# ## Or should everything be normalized by the 'normal' cumsum of lineages through time?
+# 
+# lik.anc$switch.N <- ifelse(is.na(lik.anc$switch.type), 0, ifelse(lik.anc$switch.type == "0", 1, 0))
+# lik.anc$switch.ND <- ifelse(is.na(lik.anc$switch.type), 0, ifelse(lik.anc$switch.type == "10", 1, 0))
+# lik.anc$switch.NDN <- ifelse(is.na(lik.anc$switch.type), 0, ifelse(lik.anc$switch.type == "010", 1, 0))
+# lik.anc$switch.NDND <- ifelse(is.na(lik.anc$switch.type), 0, ifelse(lik.anc$switch.type == "1010", 1, 0))
+# lik.anc$switch.NDNDN <- ifelse(is.na(lik.anc$switch.type), 0, ifelse(lik.anc$switch.type == "01010", 1, 0))
+# lik.anc$switch.NDNDND <- ifelse(is.na(lik.anc$switch.type), 0, ifelse(lik.anc$switch.type == "101010", 1, 0))
+# 
+# # Include or not
+# node_heights <- nodeHeights(trpy_n)
+# lik.anc$node.age <- node_heights[match(lik.anc$node, trpy_n$edge[,2]),1]
+# lik.anc$node.age[is.na(lik.anc$node.age)] <- 0
+# lik.anc$node.age <- (lik.anc$node.age - max(lik.anc$node.age))*-1
+# 
+# # Sort by node.age or Time2
+# lik.anc <- lik.anc[order(lik.anc$node.age, decreasing = T),]
+# 
+# # Determine cumulative sums
+# lik.anc$Diurnal_Cumsum <- cumsum(ifelse(lik.anc$diurnal > 0.5, 1, 0))
+# lik.anc$Nocturnal_Cumsum <- cumsum(ifelse(lik.anc$diurnal < 0.5, 1, 0))
+# lik.anc$Lineage_Cumsum <- cumsum(ifelse(lik.anc$node %in% c(1:length(trpy_n$tip.label)), 1, 0))
+# lik.anc$Lineage_Cumsum2 <- cumsum(c(rep(1, nrow(lik.anc))))
+# lik.anc$Diurnal_ratio <- lik.anc$Diurnal_Cumsum/lik.anc$Lineage_Cumsum # This doesn't work now, because I'm not normalizing by the right thing. If I just use the tips, it ignores lineags that were NDN I think?
+# lik.anc$Nocturnal_ratio <- lik.anc$Nocturnal_Cumsum/lik.anc$Lineage_Cumsum # This doesn't work now, because I'm not normalizing by the right thing. If I just use the tips, it ignores lineags that were NDN I think?
+# lik.anc$switch2 <- cumsum(lik.anc$switch)
+# # lik.anc$switch.ND.Cum <- cumsum(lik.anc$switch.ND)/lik.anc$Lineage_Cumsum
+# # lik.anc$switch.DN.Cum <- cumsum(lik.anc$switch.DN)/lik.anc$Lineage_Cumsum
+# 
+# lik.anc$switch.N.Cum <- cumsum(ifelse(is.na(lik.anc$switch.N), 0, lik.anc$switch.N))
+# lik.anc$switch.ND.Cum <- cumsum(ifelse(is.na(lik.anc$switch.ND), 0, lik.anc$switch.ND))
+# lik.anc$switch.NDN.Cum <- cumsum(ifelse(is.na(lik.anc$switch.NDN), 0, lik.anc$switch.NDN))
+# lik.anc$switch.NDND.Cum <- cumsum(ifelse(is.na(lik.anc$switch.NDND), 0, lik.anc$switch.NDND))
+# lik.anc$switch.NDNDN.Cum <- cumsum(ifelse(is.na(lik.anc$switch.NDNDN), 0, lik.anc$switch.NDNDN))
+# lik.anc$switch.NDNDND.Cum <- cumsum(ifelse(is.na(lik.anc$switch.NDNDND), 0, lik.anc$switch.NDNDND))
 
 ###############################################################################################################################################
 ### Make plots ### 
