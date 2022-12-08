@@ -111,7 +111,7 @@ reference.df <- reference.df[!is.na(reference.df$unique_name),]
 # Load the timetree tree (genus level data works, but not species)
 # Have download timetree data for species, genus, family, and order
 # Genus level data has the most calibration points
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 
 timetree_order <- ape::read.tree("timetree_data/euteleostomi_order.nwk")
 timetree_family <- ape::read.tree("timetree_data/euteleostomi_family.nwk")
