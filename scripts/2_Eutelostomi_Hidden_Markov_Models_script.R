@@ -1,9 +1,6 @@
 library(ape)
-library(geiger)
-library(phytools)
 library(corHMM)
-library(rfishbase)
-library(stringr)
+
 
 
 # setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")

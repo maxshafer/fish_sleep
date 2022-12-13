@@ -1,0 +1,18 @@
+You specified 'fixed.nodes=FALSE' but included a phy object with node labels. These node labels have been removed.
+State distribution in data:
+States:	1	2	
+Counts:	3697	5048	
+Beginning thorough optimization search -- performing 0 random restarts 
+Finished. Inferring ancestral states using marginal reconstruction. 
+You specified 'fixed.nodes=FALSE' but included a phy object with node labels. These node labels have been removed.
+State distribution in data:
+States:	1	2	
+Counts:	3697	5048	
+Beginning thorough optimization search -- performing 0 random restarts 
+Finished. Inferring ancestral states using marginal reconstruction. 
+You specified 'fixed.nodes=FALSE' but included a phy object with node labels. These node labels have been removed.
+State distribution in data:
+States:	1	2	
+Counts:	3697	5048	
+Beginning thorough optimization search -- performing 0 random restarts 
+Finished. Inferring ancestral states using marginal reconstruction. 
