@@ -26,6 +26,13 @@ returnAncestralStates <- function(phylo_model = model, phylo_tree = trpy_n) {
     states <- sort(states)
     rate_states <- c(paste(states, "R1", sep = "_"), paste(states, "R2", sep = "_"))
   }
+  if (phylo_model$rate.cat == 3) {
+    print("model has 3 rate categories")
+    states <- unique(phylo_model$data[,2])
+    names(states) <- as.numeric(unique(phylo_model$data.legend[,2]))
+    states <- sort(states)
+    rate_states <- c(paste(states, "R1", sep = "_"), paste(states, "R2", sep = "_"), paste(states, "R3", sep = "_"))
+  }
   
   colnames(lik.anc) <- rate_states
   
@@ -119,6 +126,79 @@ returnCumSums <- function(ancestral_states = ancestral_states, phylo_tree = trpy
   
   ancestral_states$cumsums <- cumsums
   return(ancestral_states)
+}
+
+
+### Function to make the Switch history histogram
+
+switchHisto <- function(ancestral_states = ancestral_states, replace_variable_names = TRUE) {
+  require(tidyr)
+  require(ggplot2)
+  require(patchwork)
+  
+  ## Prepare the data by gathering
+  node.data <- gather(ancestral_states$cumsums, "variable", "Cummulative_ratio", -node.age, -Lineage_Cumsum)
+  node.data <- node.data %>% group_by(node.age, variable) %>% summarise(n = sum(Cummulative_ratio)) %>% mutate(percentage = n / sum(n))
+  
+  ## Set factor levels for switch history types
+  levels <- sort(unique(node.data$variable))
+  
+  # This is the correct order of the levels
+  factor_order <- match(levels[order(nchar(levels), levels)], levels)
+  
+  node.data$variable <- factor(node.data$variable, levels = levels[factor_order])
+  
+  ## Determine the colour scales
+  levels_str <- str_sub(levels, start = 1, end = 1)
+  noc_levels <- length(levels_str[levels_str == "0"])
+  di_levels <- length(levels_str[levels_str == "1"])
+  
+  noc_colours <- brewer.pal(noc_levels, "Blues") 
+  di_colours <- brewer.pal(noc_levels, "Reds")
+  colours <- c(noc_colours, di_colours)
+  colours <- colours[factor_order]
+  
+  if(replace_variable_names) {
+    variable_names <- levels
+    variable_names <- gsub("0", "Noc", variable_names)
+    variable_names <- gsub("1", "-Di-", variable_names)
+    node.data$variable <- variable_names[match(node.data$variable, levels)]
+    node.data$variable <- factor(node.data$variable, levels = variable_names[factor_order])
+  }
+  
+  ## Should come up with function to make this? Yeah, and auto-find colors maybe from the red and blue scales
+  plot <- ggplot(node.data, aes(x = node.age, y = percentage, fill = variable)) + theme_classic() + geom_area() + scale_x_reverse()
+  plot <- plot + xlab("Millions of years ago") + ylab("Fraction of lineages") #+ scale_fill_manual(values = c("blue4", "red4", "blue3", "red3", "blue1", "red1"))
+  
+
+  
+  plot <- plot + scale_fill_manual(values = colours)
+  
+  return(plot)
+}
+
+
+### Function to make the Switch ratio plot (line)
+
+switchRatio <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, use_ltt = TRUE) {
+  
+  node_order <- order(ancestral_states$node.age, decreasing = T)
+  
+  df <- data.frame(node = ancestral_states$node[node_order], node.age = ancestral_states$node.age[node_order], transition_cumsum = ancestral_states$transition_cumsum)
+  df$Lineage_Cumsum2 <- cumsum(rep(1, nrow(df))) # This is the old wrong method
+  df$Lineage_Cumsum <- cumsum(ifelse(df$node %in% c(1:length(phylo_tree$tip.label)), 1, 0))
+  
+  if (use_ltt) {
+    df$ratio <- df$transition_cumsum/df$Lineage_Cumsum
+  } else {
+    df$ratio <- df$transition_cumsum/df$Lineage_Cumsum2
+  }
+  
+  df$ratio[is.nan(df$ratio)] <- 0
+
+  plot <- ggplot(df, aes(x = node.age, y = ratio)) + geom_line() + theme_classic() + scale_x_reverse() # Lineage_Cumsum2 would be the number of times it was possible to switch? Or something like that?
+  
+  return(plot)
 }
 
 

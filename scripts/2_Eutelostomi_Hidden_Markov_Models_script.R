@@ -3,10 +3,10 @@ library(corHMM)
 
 
 
-# setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+# setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
 setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 
-# source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/scripts/Trait_rate_matrix_figure_script.R")
+# source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/Trait_rate_matrix_figure_script.R")
 
 ## Load files
 

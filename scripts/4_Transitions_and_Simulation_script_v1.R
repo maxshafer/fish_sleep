@@ -9,9 +9,9 @@ library(zoo)
 library(ggtree)
 
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
 
-source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/scripts/Fish_sleep_functions.R")
+source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/Fish_sleep_functions.R")
 
 ## Load files
 
