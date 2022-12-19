@@ -21,9 +21,9 @@ trait.data <- readRDS("trait_data.rds")
 
 name_variable <- "all"
 
-# Remove low quality data
-trait.data <- trait.data[trait.data$confidence > 1,]
-name_variable <- "only_highqual"
+# # Remove low quality data
+# trait.data <- trait.data[trait.data$confidence > 1,]
+# name_variable <- "only_highqual"
 
 # # Remove cartilaginous fish (just actinopterygii)
 # # Common ancestor of Lepisosteus_osseus (Order: Lepisosteiformes) and Lutjanus_fulvus (Order: Perciformes)
@@ -59,7 +59,7 @@ View(unlist(lapply(models, function(x) x[names(x[grep("loglik", names(x))])])))
 ###############################################################################################################################################
 
 # First, extract the ancestral states from the best fit model
-anc_states <- returnAncestralStates(phylo_model = models[[14]], phylo_tree = trpy_n)
+anc_states <- returnAncestralStates(phylo_model = model, phylo_tree = trpy_n)
 
 # Then, calculate transitions between states
 anc_states <- calculateStateTranstitions(ancestral_states = anc_states, phylo_tree = trpy_n)
@@ -71,6 +71,13 @@ anc_states <- calculateLinTransHist(ancestral_states = anc_states, phylo_tree = 
 anc_states <- returnCumSums(ancestral_states = anc_states, phylo_tree = trpy_n)
 
 
+###############################################################################################################################################
+### Make Plots! ### 
+###############################################################################################################################################
+
+switch.histo <- switchHisto(ancestral_states = anc_states, replace_variable_names = TRUE)
+
+switch.ratio <- switchRatio(ancestral_states = anc_states, phylo_tree = trpy_n)
 
 
 

@@ -61,8 +61,10 @@ calculateStateTranstitions <- function(ancestral_states = ancestral_states, phyl
   
   # Determine ages of each node
   node_heights <- nodeHeights(phylo_tree)
-  ancestral_states$node.age <- node_heights[match(ancestral_states$node, phylo_tree$edge[,2]),1]
-  ancestral_states$node.age[is.na(ancestral_states$node.age)] <- 0
+  
+  ancestral_states$node.age <- node_heights[match(ancestral_states$node, phylo_tree$edge[,2]),2] # This extracts all but one that is missing from phylo_tree$edge[,2], and generates an NA
+  ancestral_states$node.age[ancestral_states$node[is.na(ancestral_states$node.age)]] <- node_heights[ancestral_states$node[is.na(ancestral_states$node.age)],1]
+  # ancestral_states$node.age[is.na(ancestral_states$node.age)] <- 0
   ancestral_states$node.age <- (ancestral_states$node.age - max(ancestral_states$node.age))*-1
   
   # ancestral_states <- ancestral_states[order(ancestral_states$Time),]
@@ -108,20 +110,33 @@ calculateLinTransHist <- function(ancestral_states = ancestral_states, phylo_tre
 
 
 ### Function to calculate the cummulative sums (of switches and switch types)
-returnCumSums <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n) {
+returnCumSums <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, use.height = TRUE) {
   # This is all nodes (for transitions only)
   node_order <- order(ancestral_states$node.age, decreasing = T) # Oldest node first (root)
+  
   ancestral_states$transition_cumsum <- cumsum(ancestral_states$transition[node_order])
   
-  # This is only tips (for real ltt plots)
-  node_order_2 <- order(ancestral_states$node.age[ancestral_states$node %in% c(1:length(phylo_tree$tip.label))], decreasing = T)
-    
-  cumsums <- data.frame(row.names = phylo_tree$tip.label[node_order_2])
-  cumsums$node.age <- ancestral_states$node.age[node_order_2]
+  # This now no longer works, because it is the age of the branch points?
+  
+  ## OK, for this graph, I want to index the first half of node_heights!
+  
+  # First column from 'edge' is the higher node, second is lower
+  # both columns from 'node_heights' should match by the index ('edge')
+  # If I find the tip in edge[,2], but pull node_heights[,1], I get the age of the node connected to the tip (the branch point of the tip)
+
+  node_heights <- nodeHeights(phylo_tree)
+  node.age2 <- node_heights[match(c(length(phylo_tree$tip.label):length(ancestral_states$node.age)), phylo_tree$edge[,2]),1] 
+
+  node.age2[is.na(node.age2)] <- 0
+  node.age2 <- (node.age2 - max(node.age))*-1
+  
+  cumsums <- data.frame(row.names = phylo_tree$tip.label[order(node.age2, decreasing = T)])
+  cumsums$node.age <- node.age2[order(node.age2, decreasing = T)]
+  # cumsums$node.age <- ancestral_states$node.age[node_order_2]
   cumsums$Lineage_Cumsum <- cumsum(rep(1, length(phylo_tree$tip.label)))
   
   for (i in unique(ancestral_states$switch.type)) {
-    cumsums[,i] <- cumsum(ifelse(ancestral_states$switch.type == i, 1, 0))
+    cumsums[,i] <- cumsum(ifelse(ancestral_states$switch.type[order(node.age2, decreasing = T)] == i, 1, 0))
   }
   
   ancestral_states$cumsums <- cumsums
@@ -135,6 +150,8 @@ switchHisto <- function(ancestral_states = ancestral_states, replace_variable_na
   require(tidyr)
   require(ggplot2)
   require(patchwork)
+  require(dplyr)
+  require(RColorBrewer)
   
   ## Prepare the data by gathering
   node.data <- gather(ancestral_states$cumsums, "variable", "Cummulative_ratio", -node.age, -Lineage_Cumsum)
@@ -180,21 +197,33 @@ switchHisto <- function(ancestral_states = ancestral_states, replace_variable_na
 
 ### Function to make the Switch ratio plot (line)
 
-switchRatio <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, use_ltt = TRUE) {
+switchRatio <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n) {
+  require(ape)
   
   node_order <- order(ancestral_states$node.age, decreasing = T)
   
-  df <- data.frame(node = ancestral_states$node[node_order], node.age = ancestral_states$node.age[node_order], transition_cumsum = ancestral_states$transition_cumsum)
-  df$Lineage_Cumsum2 <- cumsum(rep(1, nrow(df))) # This is the old wrong method
-  df$Lineage_Cumsum <- cumsum(ifelse(df$node %in% c(1:length(phylo_tree$tip.label)), 1, 0))
+  ltt.data <- as.data.frame(ltt.plot.coords(trpy_n))
+  ggplot(ltt.data, aes(x = time, y = log(N))) + geom_point() + geom_line() + theme_minimal() + ylim(c(0,9))
   
-  if (use_ltt) {
-    df$ratio <- df$transition_cumsum/df$Lineage_Cumsum
-  } else {
-    df$ratio <- df$transition_cumsum/df$Lineage_Cumsum2
-  }
+  df <- data.frame(node = ancestral_states$node[node_order], node.age = ancestral_states$node.age[node_order], transition_cumsum = ancestral_states$transition_cumsum)
+  
+  ## calculate it the way the ape function does, but with my node.ages?
+  ## This works close to the function, but neglects the node at the root
+  df$ltt_source <- ifelse(df$node %in% c(1:Ntip(phylo_tree)), 0, 1)
+  df$Lineage_Cumsum2 <- cumsum(df$ltt_source)
+  
+  ## Replace values past 8745 with the max #
+  # max <- max(df$Lineage_Cumsum2)
+  # df$Lineage_Cumsum2[Ntip(phylo_tree):nrow(df)] <- max
+
+  ## OK this seems to be really close. I can calculate ltt's properly, but it also makes a weird thing were ltt decreases near present day
+
+  df$ratio <- df$transition_cumsum/df$Lineage_Cumsum2
+  
   
   df$ratio[is.nan(df$ratio)] <- 0
+  df$ratio[is.infinite(df$ratio)] <- 0
+  
 
   plot <- ggplot(df, aes(x = node.age, y = ratio)) + geom_line() + theme_classic() + scale_x_reverse() # Lineage_Cumsum2 would be the number of times it was possible to switch? Or something like that?
   
