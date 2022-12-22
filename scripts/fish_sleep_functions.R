@@ -5,7 +5,83 @@
 ### and can be used with both data from fish, but also data from all vertebrates
 ### Updated 07.12.2022
 
+
+source("/Volumes/BZ/Home/gizevo30/R_Projects/Plot-multiple-scales-same-aes-ggplot2.R")
+
+
 ### Need to make these work for if there is another trait involved (for example, marine/fresh). Would still be useful to plot the Di/Noc for these models
+
+### This function loads either the tree or the trait data (only the tree and the model are required for the ancestral reconstruction)
+loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapods or amniotes", "mammals", "sauropsida"), subset = c("no", "all", "only_highqual", "only_ingroup", "only_cartilaginous", "custom"), custom_tips = NA) {
+  require(ape)
+  
+  ## Load the basic files
+  if (dataset == "fish") {
+    resolved_names <- read.csv("resolved_names_local.csv", row.names = "X", header = TRUE)
+    tr.calibrated <- readRDS("calibrated_phylo.rds")
+    trait.data <- readRDS("trait_data.rds")
+  } else {
+    resolved_names <- readRDS(paste("resolved_names_", dataset, ".rds", sep = ""))
+    tr.calibrated <- readRDS(paste("tr_tree_calibrated_", dataset, ".rds", sep = ""))
+    trait.data <- readRDS(paste("trait_data_", dataset, ".rds", sep = ""))
+  }
+  
+  ## Subset
+  
+  if (subset %in% c("no", "all")) {
+    name_variable <- "all"
+  }
+  
+  if (subset == "only_highqual") {
+    trait.data <- trait.data[trait.data$confidence > 1,]
+    name_variable <- "only_highqual"
+  }
+  
+  if (subset == "only_ingroup") {
+    node_of_interest <- getMRCA(phy = tr.calibrated, tip = c("Lepidosiren_paradoxa", "Lutjanus_fulvus"))
+    tr.calibrated <- extract.clade(phy = tr.calibrated, node = node_of_interest)
+    trait.data <- trait.data[trait.data$species %in% tr.calibrated$tip.label,]
+    name_variable <- "only_ingroup"
+  }
+  
+  if (subset == "only_cartilaginous") {
+    node_of_interest <- getMRCA(tr.calibrated, tip = c("Rhizoprionodon_terraenovae", "Rhynchobatus_djiddensis"))
+    tr.calibrated <- extract.clade(phy = tr.calibrated, node = node_of_interest)
+    trait.data <- trait.data[trait.data$species %in% tr.calibrated$tip.label,]
+    name_variable <- "only_cartilaginous"
+  }
+  
+  # Just diurnal/nocturnal
+  trait.vector_n <- trait.data$diel1
+  names(trait.vector_n) <- trait.data$species
+  trait.vector_n <- trait.vector_n[trait.vector_n %in% c("diurnal", "nocturnal")]
+  trpy_n <- keep.tip(tr.calibrated, tip = names(trait.vector_n))
+  trpy_n$edge.length[trpy_n$edge.length == 0] <- 0.001 
+  trait.data_n <- trait.data[trait.data$species %in% trpy_n$tip.label,]
+  
+  if (subset == "custom") {
+    if (is.na(custom_tips) | length(custom_tips) != 2) {
+      stop("Custom subsets require 2 tip taxa names (tip labels)")
+    }
+    node_of_interest <- getMRCA(tr.calibrated, tip = custom_tips)
+    tr.calibrated <- extract.clade(phy = tr.calibrated, node = node_of_interest)
+    trait.data <- trait.data[trait.data$species %in% tr.calibrated$tip.label,]
+    name_variable <- "custom"
+  }
+  
+  
+  ## I need either just the phylo_tree (trpy_n) and/or the trait.data_n
+  if (return == "tree") {
+    return(trpy_n)
+  }
+  if (return == "trait_data") {
+    return(trait_data_n)
+  }
+  if (return == "both") {
+    return(list(trpy_n, trait_data_n))
+  }
+}
+
 
 ### Write a function to extract ancestral likelihoods from a model
 returnAncestralStates <- function(phylo_model = model, phylo_tree = trpy_n) {
@@ -46,6 +122,41 @@ returnAncestralStates <- function(phylo_model = model, phylo_tree = trpy_n) {
   return(ancestral_states)
 }
 
+### Function for running simulations
+
+simulateCustom <- function(phylo_tree = trpy_n, models_list = models, model_type = "ER", rates = c(0.1,0.1), states = c("nocturnal", "diurnal"), simulation_numb = 100) {
+  require(ape)
+  
+  if (model_type == "ER") {
+    if (length(rates) != 1) {
+      stop("ER models must have a single rate")
+    }
+    # Use the ER model (actually the ARD model but with symmetric rates, b/c I'm not sure how to code in ER model)
+    simulation <- replicate(simulation_numb, rTraitDisc(phy = phylo_tree, model = "SYM", k = 2, rate = rates, states = states, ancestor = T))
+  }
+  
+  if (model_type == "ARD") {
+    if (length(rates) != length(states)*(length(states)-1)) {
+      stop("ARD models must have rates equal to n*(n-1) states")
+    }
+    ## Simulate data based on the ARD model
+    simulation <- replicate(simulation_numb, rTraitDisc(phylo_tree, model = "ARD", k = 2, rate = rates, states = states, ancestor = T))
+  }
+  
+  if (model_type == "HR") {
+    # Use the best fit model
+    if (!(is.matrix(rates))) {
+      stop("for HR models, rates must be a solution matrix")
+    }
+    rates[is.na(rates)] <- 0
+    
+    simulation <- replicate(simulation_numb, rTraitDisc(trpy_n, model = rates, states = states, ancestor = T, root.value = 4))
+  }
+  
+  return(simulation)
+}
+
+
 ### Function to generate object from simulated data
 
 calculateSimulatedTransitions <- function(simulated_data = simulation, phylo_tree = trpy_n) {
@@ -74,16 +185,16 @@ calculateSimulatedTransitions <- function(simulated_data = simulation, phylo_tre
   transition <- Reduce(cbind, lapply(seq_along(1:ncol(simulated_data)), function(x) ifelse(ifelse(parent.diel[,x] > 0.5, 1, 0) != ifelse(simulated_data[,x] > 0.5, 1, 0), 1, 0) ))
   
   rownames(transition) <- node
-  colnames(transition) <- c(1:ncol(transition))
+  colnames(transition) <- c(paste("simulation", 1:ncol(transition), sep = "_"))
 
-  print(paste("Identified an average of", mean(colSums(transition)), "transitions between", ancestral_states$states[1], "and", ancestral_states$states[2], "across", ncol(simulated_data), "simulations", sep = " "))
+  print(paste("Identified an average of", mean(colSums(transition)), "transitions across", ncol(simulated_data), "simulations", sep = " "))
   
   return(transition)
 }
 
 
 ### Function to determine the number of transitions between states
-calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n) {
+calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, ancestor = 0) {
   
   states <- ancestral_states$states
   rate_states <- ancestral_states$rate_states
@@ -109,7 +220,7 @@ calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo
   ancestral_states$parental.node <- unlist(lapply(ancestral_states$node, function(x) Ancestors(phylo_tree, x, type = "parent")))
   ancestral_states$parent.diel <- unlist(lapply(ancestral_states$parental.node, function(x) ancestral_states$recon_states[match(x, ancestral_states$node)]))
   # parent of the root is NA
-  ancestral_states$parent.diel[is.na(ancestral_states$parent.diel)] <- 0
+  ancestral_states$parent.diel[is.na(ancestral_states$parent.diel)] <- ancestor
   
   ancestral_states$transition <- ifelse(ifelse(ancestral_states$parent.diel > 0.5, 1, 0) != ifelse(ancestral_states$recon_states > 0.5, 1, 0), 1, 0)
   # ancestral_states$transition[is.na(ancestral_states$transition)] <- 0
@@ -206,8 +317,17 @@ switchHisto <- function(ancestral_states = ancestral_states, replace_variable_na
   noc_levels <- length(levels_str[levels_str == "0"])
   di_levels <- length(levels_str[levels_str == "1"])
   
-  noc_colours <- brewer.pal(noc_levels, "Blues") 
-  di_colours <- brewer.pal(noc_levels, "Reds")
+  # This doesn't work if there are only 2 levels each
+  if (noc_levels < 3) {
+    noc_colours <- brewer.pal(3, "Blues")[(3-length(noc_levels)):3]
+  } else {
+    noc_colours <- brewer.pal(noc_levels, "Blues") 
+  }
+  if (di_levels < 3) {
+    di_colours <- brewer.pal(3, "Reds")[(3-length(di_levels)):3]
+  } else {
+    di_colours <- brewer.pal(di_levels, "Reds") 
+  }
   colours <- c(noc_colours, di_colours)
   colours <- colours[factor_order]
   
@@ -219,7 +339,7 @@ switchHisto <- function(ancestral_states = ancestral_states, replace_variable_na
     node.data$variable <- factor(node.data$variable, levels = variable_names[factor_order])
   }
   if (backfill) {
-    node.data[nrow(node.data)+1,] <- list(max(ancestral_states$node.age), "Noc", 1, 1)
+    node.data[nrow(node.data)+1,] <- list(max(ancestral_states$node.age), levels(node.data$variable)[1], 1, 1)
   }
   ## Should come up with function to make this? Yeah, and auto-find colors maybe from the red and blue scales
   plot <- ggplot(node.data, aes(x = node.age, y = percentage, fill = variable)) + theme_classic() + geom_area() + scale_x_reverse()
@@ -261,6 +381,27 @@ switchRatio <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n
   return(plot)
 }
 
+### This function returns cumsums for simulated transition data
+
+calculateSimualtedTransitionCumsums <- function(simulated_transitions = simulated_transitions, phylo_tree = trpy_n, include_node_age = TRUE) {
+  
+  node_heights <- nodeHeights(phylo_tree)
+  
+  extracted_data <- as.data.frame(simulated_transitions)
+  
+  extracted_data$node.age <- node_heights[match(rownames(extracted_data), phylo_tree$edge[,2]),2]
+  extracted_data$node.age[is.na(extracted_data$node.age)] <- 0 # This is the root (always node equal to Ntip(tree) + 1)
+  extracted_data$node.age <- (extracted_data$node.age - max(extracted_data$node.age))*-1
+  extracted_data <- extracted_data[order(extracted_data$node.age, decreasing = T),]
+  
+  extracted_data_2 <- as.data.frame(apply(extracted_data[,1:100], 2, function(x) cumsum(x)))
+  if(include_node_age) {
+    extracted_data_2$node.age <- extracted_data$node.age
+  }
+  
+  return(extracted_data_2)
+}
+
 
 ### Function to plot the lineages with X# of switches
 
@@ -289,6 +430,67 @@ switchTree <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n,
   return(tree)
 }
 
+## Function that plots switch ratio
+
+simulatedSwitchRatio <- function(simulated_cumsums = cumsums, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "red") {
+  require(ape)
+  
+  # If there is a supplied node.age, use it to order, otherwise assume rows are already ordered by node.age
+  if ('node.age' %in% colnames(simulated_cumsums)) {
+    node_order <- order(simulated_cumsums$node.age, decreasing = T)
+  } else {
+    node_order <- rownames(simulated_cumsums)
+  }
+  
+  simulated_cumsums <- simulated_cumsums[node_order,]
+  
+  df <- data.frame(node = rownames(simulated_cumsums)[node_order], node.age = simulated_cumsums$node.age[node_order])
+  
+  df$ltt_source <- ifelse(df$node %in% c(1:Ntip(phylo_tree)), -1, 1)
+  df$ltt_cumsum <- cumsum(df$ltt_source)
+  
+  ## Calculate the ratio
+  simulated_ratios <- apply(simulated_cumsums[,1:(ncol(simulated_cumsums)-1)], 2, function(x) x/df$ltt_cumsum )
+  
+  simulated_ratios[is.nan(simulated_ratios)] <- 0
+  simulated_ratios[is.infinite(simulated_ratios)] <- 0
+  
+  simulated_ratios <- as.data.frame(simulated_ratios)
+  
+  
+  if (plot_type == "summary") {
+    df$mean <- rowMeans(simulated_ratios)
+    df$stdev <- apply(simulated_ratios, 1, function(x) sd(x))
+    
+    plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = mean-stdev, ymax = mean+stdev), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
+    plot <- plot + xlab("Millions of years ago") + ylab("Fraction of lineages transitioning")
+  }  
+  
+  if (plot_type == "simulation") {
+    simulated_ratios$node.age <- df$node.age
+    simulated_ratios_2 <- gather(as.data.frame(simulated_ratios), "simulation", "Ratio", -node.age)
+    plot <- ggplot(simulated_ratios_2[simulated_ratios_2$node.age > node.age.cutoff,], aes(x = node.age, y = Ratio, color = simulation)) + geom_line() + theme_classic() + scale_x_reverse() + theme(legend.position = "none") #+ scale_x_reverse(limits = c(413,0.1)) + ylim(c(0,0.15)) # ltt would be the number of times it was possible to switch? Or something like that?
+  }
+  
+  if (plot_type == "overlay") {
+    simulated_ratios_2 <- simulated_ratios
+    simulated_ratios_2$mean <- rowMeans(simulated_ratios)
+    simulated_ratios_2$stdev <- apply(simulated_ratios, 1, function(x) sd(x))
+    
+    simulated_ratios_2$node.age <- df$node.age
+    simulated_ratios_2$colour <- "colour"
+    simulated_ratios_2 <- gather(as.data.frame(simulated_ratios_2), "simulation", "Ratio", -node.age, -mean, -stdev, -colour)
+    
+    # Plot the simulations
+    # then plot on top with the subsetted df
+    
+    plot <- ggplot(simulated_ratios_2[simulated_ratios_2$node.age > node.age.cutoff,], aes(x = node.age, y = Ratio, group = simulation)) + geom_line(colour = "grey85")
+    plot <- plot + new_scale("colour") + geom_line(data = simulated_ratios_2[simulated_ratios_2$node.age > node.age.cutoff & simulated_ratios_2$simulation == "simulation_1",], aes(x = node.age, y = mean), colour = highlight_colour) 
+    plot <- plot + new_scale("alpha") + geom_ribbon(data = simulated_ratios_2[simulated_ratios_2$node.age > node.age.cutoff & simulated_ratios_2$simulation == "simulation_1",], aes(ymin = mean-stdev, ymax = mean+stdev), fill = "blue", alpha = 0.2) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
+  }
+  
+  return(plot)
+}
 
 
 ## Write a function that takes the rate index from computed models of trat evolution and make a plot which shows the rates
