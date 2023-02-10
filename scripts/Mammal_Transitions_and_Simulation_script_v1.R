@@ -3,7 +3,7 @@ library(corHMM)
 library(xlsx)
 
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
 
 
 # load data for mammals from Cox et al
@@ -11,8 +11,15 @@ setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
 mam.table <- read.xlsx("Cox_mammal_data/Supplementary Data 2.xlsx", 1)
 
 mammal_trees <- read.nexus("Cox_mammal_phylo/Complete_phylogeny.nex")
-round(runif(1, 1,1000))
-mam.tree <- tree[410]$UNTITLED
+
+## Determine the consensus tree
+mam.tree <- maxCladeCred(mammal_trees, tree = TRUE)
+
+
+## There are two sources for diel activity, not sure which is which? Can I combine them?
+mam.table$diel.comb <- paste(mam.table$Activity_DD, mam.table$Activity_IM, sep = "_")
+
+
 mam.data <- mam.table[,c(1,7)]
 mam.data$Binomial_iucn <- str_replace(mam.data$Binomial_iucn, " ", "_")
 mam.data <- mam.data[!(is.na(mam.data$Activity_DD)),]
@@ -21,18 +28,47 @@ mam.data <- mam.data[mam.data$Activity_DD %in% c("Diurnal", "Nocturnal"),]
 # Reciprically determine matching names
 mam.data <- mam.data[mam.data$Binomial_iucn %in% mam.tree$tip.label,]
 mam.data <- mam.data[!(duplicated(mam.data)),]
-mam.tree <- keep.tip(mam.tree, tip = mam.data$Binomial_iucn)
+row.names(mam.data) <- mam.data$Binomial_iucn
 
-
-# Run corHMM to reconstruct ancestral
-
-mam.hmm <- corHMM(mam.tree, mam.data[,c(1,2)], rate.cat = 2, node.states = c("marginal"))
+trpy_n_mam <- keep.tip(mam.tree, tip = mam.data$Binomial_iucn)
 
 
 
-# 0 is Diurnal, 1 is Nocturnal for states
-model <- mam.hmm
-trpy_n <- mam.tree
+
+
+
+###############################################################################################################################################
+### Run Hidden Rates Models ### 
+###############################################################################################################################################
+
+# Run corHMM for just diel with 1 rat category (Markov model)
+MK_2state <- corHMM(phy = trpy_n_mam, data = mam.data[trpy_n_mam$tip.label, c("Binomial_iucn", "Activity_DD")], rate.cat = 1, model = "ARD")
+
+# Run corHMM for just diel, with 2 or 3 rate categories (large improvement for 2, diminishing returns for 3)
+HMM_2state_2rate <- corHMM(phy = trpy_n_mam, data = mam.data[trpy_n_mam$tip.label, c("Binomial_iucn", "Activity_DD")], rate.cat = 2, model = "ARD", get.tip.states = TRUE)
+
+# Save out 2 state and HMM with 2 rates
+standard_tests <- list(c(MK_2state, HMM_2state_2rate))
+saveRDS(standard_tests, file = paste("standard_tests", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
+
+HMM_2state_3rate <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 3, model = "ARD", get.tip.states = TRUE)
+standard_tests[[3]] <- HMM_2state_3rate
+saveRDS(standard_tests, file = paste("standard_tests", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #### Plot switches over time ####

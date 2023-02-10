@@ -30,15 +30,16 @@ trpy_n_all$node.label <- paste0("n", (1:trpy_n_all$Nnode) + Ntip(trpy_n_all))
 
 ## MRCAs for different groups
 mrca <- list()
-mrca$amphibians <- getMRCA(phy = trpy_n_all, tip = c("Allophryne_ruthveni", "Dermophis_mexicanus")) # Allophryne ruthveni (Anura), Dermophis mexicanus (Gymnophiona)
-mrca$mammals <- getMRCA(phy = trpy_n_all, tip = c("Ornithorhynchus_anatinus", "Acinonyx_jubatus")) # Ornithorhynchus anatinus (Monotremata),	Acinonyx jubatus (Carnivora)
+# mrca$amphibians <- getMRCA(phy = trpy_n_all, tip = c("Allophryne_ruthveni", "Dermophis_mexicanus")) # Allophryne ruthveni (Anura), Dermophis mexicanus (Gymnophiona)
+# mrca$mammals <- getMRCA(phy = trpy_n_all, tip = c("Ornithorhynchus_anatinus", "Acinonyx_jubatus")) # Ornithorhynchus anatinus (Monotremata),	Acinonyx jubatus (Carnivora)
 # mrca$lepidosaurs <- getMRCA(phy = trpy_n_all, tip = c("Anguis_fragilis", "Gonatodes_eladioi")) # Anguis fragilis (Anguimorpha), Gonatodes eladioi (Gekkota)
 # mrca$testudines <- getMRCA(phy = trpy_n_all, tip = c("Chelodina_longicollis", "Cyclanorbis_elegans")) # 	Chelodina_longicollis	 (Chelidae), Cyclanorbis elegans (Trionychidae)
 # mrca$crocodylia <- getMRCA(phy = trpy_n_all, tip = c("Gavialis_gangeticus", "Alligator_mississippiensis")) # Gavialis gangeticus (Gavialis), Alligator mississippiensis	(Alligatorinae)
 # mrca$aves <- getMRCA(phy = trpy_n_all, tip = c("Nothocrax_urumutum", "Acrocephalus_arundinaceus")) # Nothocrax urumutum (Galliformes), Acrocephalus arundinaceus (Passeriformes)
-mrca$sauropsida <- getMRCA(phy = trpy_n_all, tip = c("Phelsuma_madagascariensis", "Coracina_novaehollandiae"))
+# mrca$sauropsida <- getMRCA(phy = trpy_n_all, tip = c("Phelsuma_madagascariensis", "Coracina_novaehollandiae"))
 
-droptrees_all <- lapply(mrca, function(x) extract.clade(phy = trpy_n_all, node = x))
+# droptrees_all <- lapply(mrca, function(x) extract.clade(phy = trpy_n_all, node = x))
+
 names(droptrees_all) <- names(mrca)
 
 # Make the node index
@@ -63,6 +64,26 @@ for (i in 1:length(node_index)) {
 
 switch.plots.all <- list()
 switch.plots.all <- lapply(seq_along(new_states), function(x) switchRatio(ancestral_states = new_states[[x]], phylo_tree = droptrees_all[[x]], node.age.cutoff = 0.02))
+
+
+
+# ## Just remove fish
+# ## DOESN"T WORK
+# 
+# droptrees_all <- drop.tip(phy = trpy_n_all, tip = c(getDescendants(tree = trpy_n_all, node = getMRCA(phy = trpy_n_all, tip = c("Tetronarce_californica", "Squatina_squatina"))), getDescendants(tree = trpy_n_all, node = getMRCA(phy = trpy_n_all, tip = c("Lepisosteus_osseus", "Lutjanus_fulvus")))))
+# 
+# node_index <- data.frame(old.node = c( c(1:Ntip(trpy_n_all))[trpy_n_all$tip.label %in% droptrees_all$tip.label], as.numeric(str_sub(droptrees_all$node.label, start = 2, end = 10)) ), new.node = c(1:(Ntip(droptrees_all) + Nnode(droptrees_all))))
+# 
+# new_states <- anc_states_all[1:4]
+# 
+# new_states$lik.anc <- new_states$lik.anc[node_index$old.node,]
+# new_states[[2]] <- new_states$new.node
+# 
+# # re-make new_states data
+# new_states <- calculateStateTransitions(ancestral_states = new_states, phylo_tree = droptrees_all, ancestor = 0)
+# new_states <- calculateLinTransHist(ancestral_states = new_states, phylo_tree = droptrees_all)
+# new_states <- returnCumSums(ancestral_states = new_states, phylo_tree = droptrees_all)
+
 
 
 ## For fish

@@ -1,34 +1,19 @@
 library(ape)
 library(corHMM)
 
-
-
 # setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
 setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 
-# source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/Trait_rate_matrix_figure_script.R")
+source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/Fish_sleep_functions.R")
 
 ## Load files
+# Which tree?
+name_variable <- "all" # all, only_highqual, only_cartilaginous, or only_ingroup
+dataset_variable <- "AllGroups" # fish or AllGroups
 
-resolved_names <- readRDS("resolved_names_AllGroups.rds")
-tr.calibrated <- readRDS("tr_tree_calibrated_AllGroups.rds")
-trait.data <- readRDS("trait_data_AllGroups.rds")
+trpy_n <- loadTree(return = "tree", dataset = dataset_variable, subset = name_variable, custom_tips = c)
+trait.data_n <- loadTree(return = "trait_data", dataset = dataset_variable, subset = name_variable, custom_tips = c)
 
-name_variable <- "AllGroups"
-
-###############################################################################################################################################
-### Now subset the tree based on which traits you want to test ### 
-###############################################################################################################################################
-
-# Just diurnal/nocturnal
-trait.vector_n <- trait.data$diel1
-names(trait.vector_n) <- trait.data$species
-trait.vector_n <- trait.vector_n[trait.vector_n %in% c("diurnal", "nocturnal")]
-trpy_n <- keep.tip(tr.calibrated, tip = names(trait.vector_n))
-trpy_n$edge.length[trpy_n$edge.length == 0] <- 0.001 
-trait.data_n <- trait.data[trait.data$species %in% trpy_n$tip.label,]
-
-trpy_n$node.label <- Ntip(trpy_n):Nnode(trpy_n)
 
 ###############################################################################################################################################
 ### Run Hidden Rates Models ### 

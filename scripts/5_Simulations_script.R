@@ -22,7 +22,7 @@ name_variable <- "all"
 trpy_n <- loadTree(return = "tree", dataset = "fish", subset = name_variable, custom_tips = NA)
 
 ## Load the best model, which is the HMM 2 state 2 rate model
-models <- readRDS(file = paste("standard_tests", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
+# models <- readRDS(file = paste("standard_tests", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
 model <- readRDS(file = paste("best_fit_model", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
 
 ## Load the ancestral states data
@@ -35,10 +35,12 @@ anc_states <- readRDS(file = paste("fish_diel_ancestral_states", name_variable, 
 ## This runs a simulation based on some arguments (wrapper for rTraitDisc)
 ## I can pull the rates directly from the models I've loaded above
 model_type = "ER"
-simulation <- simulateCustom(phylo_tree = trpy_n, model_type = model_type, rates = models$fitER$rates, states = c("nocturnal", "diurnal"), simulation_numb = 1000)
+sim_numb <- 1000
+simulation <- simulateCustom(phylo_tree = trpy_n, model_type = model_type, rates = models$fitER$rates, states = c("nocturnal", "diurnal"), simulation_numb = sim_numb)
 
-saveRDS(simulation, file = paste("fish_diel_switch_simulations", name_variable, Ntip(trpy_n), "species", model_type, ncol(simulation), "rTraitDisc.rds", sep = "_"))
+saveRDS(simulation, file = paste("fish_diel_switch_simulations", name_variable, Ntip(trpy_n), "species", model_type, sim_numb, "rTraitDisc.rds", sep = "_"))
 
+simulation <- readRDS(file = paste("fish_diel_switch_simulations", name_variable, Ntip(trpy_n), "species", model_type, sim_numb, "rTraitDisc.rds", sep = "_"))
 ## This calculates for each node whether it is a switch from it's parental node
 simulated_transitions <- calculateSimulatedTransitions(simulated_data = simulation, phylo_tree = trpy_n)
 

@@ -75,7 +75,7 @@ loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapod
     return(trpy_n)
   }
   if (return == "trait_data") {
-    return(trait_data_n)
+    return(trait.data_n)
   }
   if (return == "both") {
     return(list(trpy_n, trait_data_n))
@@ -84,11 +84,12 @@ loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapod
 
 
 ### Write a function to extract ancestral likelihoods from a model
-returnAncestralStates <- function(phylo_model = model, phylo_tree = trpy_n) {
+returnAncestralStates <- function(phylo_model = model, phylo_tree = trpy_n, rate.cat = FALSE) {
   
   # Create a data frame with trait values from reconstruction
   lik.anc <- as.data.frame(rbind(phylo_model$tip.states, phylo_model$states))
   row.names(lik.anc) <- c(row.names(lik.anc)[1:length(phylo_tree$tip.label)], (Ntip(phylo_tree) + 1):(Ntip(phylo_tree) + Nnode(phylo_tree)))
+  
   if (phylo_model$rate.cat == 1) {
     print("model has single rate category")
     states <- unique(phylo_model$data[,2])
@@ -194,7 +195,7 @@ calculateSimulatedTransitions <- function(simulated_data = simulation, phylo_tre
 
 
 ### Function to determine the number of transitions between states
-calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, ancestor = 0) {
+calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, ancestor = 0, rate.cat = FALSE) {
   
   states <- ancestral_states$states
   rate_states <- ancestral_states$rate_states
@@ -204,6 +205,12 @@ calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo
     ancestral_states$recon_states <- ancestral_states$lik.anc[,states[[1]]]
   } else {
     ancestral_states$recon_states <- as.numeric(rowSums(ancestral_states$lik.anc[,rate_states[grep(states[[1]], rate_states)]]))
+  }
+  
+  ## Add functionality to do this for rate categories?
+  if (rate.cat) {
+    print("returning rate categories instead of states")
+    ancestral_states$recon_states <- as.numeric(rowSums(ancestral_states$lik.anc[,rate_states[grep("R1", rate_states)]]))
   }
   
   # Determine ages of each node
@@ -223,6 +230,9 @@ calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo
   ancestral_states$parent.diel[is.na(ancestral_states$parent.diel)] <- ancestor
   
   ancestral_states$transition <- ifelse(ifelse(ancestral_states$parent.diel > 0.5, 1, 0) != ifelse(ancestral_states$recon_states > 0.5, 1, 0), 1, 0)
+  # For those with transitions, I can just ask what they are, and that's the switch type!
+  ancestral_states$trans.ND <- ifelse(ancestral_states$transition == 1, ifelse(ancestral_states$recon_states > 0.5, 1, 0),0)
+  ancestral_states$trans.DN <- ifelse(ancestral_states$transition == 1, ifelse(ancestral_states$recon_states < 0.5, 1, 0),0)
   # ancestral_states$transition[is.na(ancestral_states$transition)] <- 0
   
   print(paste("Identified", table(ancestral_states$transition)[2], "transitions between", ancestral_states$states[1], "and", ancestral_states$states[2], sep = " "))
@@ -262,6 +272,8 @@ returnCumSums <- function(ancestral_states = ancestral_states, phylo_tree = trpy
   node_order <- order(ancestral_states$node.age, decreasing = T) # Oldest node first (root)
   
   ancestral_states$transition_cumsum <- cumsum(ancestral_states$transition[node_order])
+  ancestral_states$trans.DN_cumsum <- cumsum(ancestral_states$trans.DN[node_order])
+  ancestral_states$trans.ND_cumsum <- cumsum(ancestral_states$trans.ND[node_order])
   
   # This now no longer works, because it is the age of the branch points?
   
@@ -355,28 +367,34 @@ switchHisto <- function(ancestral_states = ancestral_states, replace_variable_na
 
 ### Function to make the Switch ratio plot (line)
 
-switchRatio <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, node.age.cutoff = 0.1) {
+switchRatio <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, node.age.cutoff = 0.1, use_types = FALSE) {
   require(ape)
   
   node_order <- order(ancestral_states$node.age, decreasing = T)
-  df <- data.frame(node = ancestral_states$node[node_order], node.age = ancestral_states$node.age[node_order], transition_cumsum = ancestral_states$transition_cumsum)
-  
-  # ltt.data <- as.data.frame(ltt.plot.coords(phy = phylo_tree, backward = TRUE, tol = 0, type = "S"))
-  # ltt.data$node.age <- (ltt.data$time - max(ltt.data$time))*-1
+  df <- data.frame(node = ancestral_states$node[node_order], node.age = ancestral_states$node.age[node_order], transition_cumsum = ancestral_states$transition_cumsum, trans.ND.cumsum = ancestral_states$trans.ND_cumsum, trans.DN.cumsum = ancestral_states$trans.DN_cumsum)
   
   ## calculate it the way the ape function does, but with my node.ages?
   ## This works close to the function, but neglects the node at the root
   df$ltt_source <- ifelse(df$node %in% c(1:Ntip(phylo_tree)), -1, 1)
   df$ltt_cumsum <- cumsum(df$ltt_source)
 
+  
   ## OK this seems to be really close. I can calculate ltt's properly, but it also makes a weird thing were ltt decreases near present day
   df$ratio <- df$transition_cumsum/df$ltt_cumsum
+  df$ratio_DN <- df$trans.DN.cumsum/df$ltt_cumsum
+  df$ratio_ND <- df$trans.ND.cumsum/df$ltt_cumsum
   
   df$ratio[is.nan(df$ratio)] <- 0
   df$ratio[is.infinite(df$ratio)] <- 0
   
-  plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = ratio)) + geom_line() + theme_classic() + scale_x_reverse() #+ scale_x_reverse(limits = c(413,0.1)) + ylim(c(0,0.15)) # ltt would be the number of times it was possible to switch? Or something like that?
-  plot <- plot + xlab("Millions of years ago") + ylab("Fraction of lineages transitioning")
+  if(use_types) {
+    df2 <- gather(df, key = "trans_type", value = "ratio", -node, -node.age, -transition_cumsum, -trans.ND.cumsum, -trans.DN.cumsum, -ltt_source, -ltt_cumsum, -ratio)
+    plot <- ggplot(df2[df2$node.age > node.age.cutoff,], aes(x = node.age, y = ratio, colour = trans_type)) + geom_line() + theme_classic() + scale_x_reverse() #+ scale_x_reverse(limits = c(413,0.1)) + ylim(c(0,0.15)) # ltt would be the number of times it was possible to switch? Or something like that?
+    plot <- plot + xlab("Millions of years ago") + ylab("Fraction of lineages transitioning")
+  } else {
+    plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = ratio)) + geom_line() + theme_classic() + scale_x_reverse() #+ scale_x_reverse(limits = c(413,0.1)) + ylim(c(0,0.15)) # ltt would be the number of times it was possible to switch? Or something like that?
+    plot <- plot + xlab("Millions of years ago") + ylab("Fraction of lineages transitioning")
+  }
   
   return(plot)
 }
