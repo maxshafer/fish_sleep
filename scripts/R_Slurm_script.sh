@@ -45,7 +45,20 @@ export CPATH=~/.local/include:~/.local/include/adolc:$CPATH
 # Rscript 1_Eutelostomi_tree.R
 
 # For the HMM script, requires two arguments
-# name_variable: all, only_highqual, only_cartilaginous, or only_ingroup
-# dataset_variable: # fish or AllGroups
+# name_variable can be all, only_highqual, only_cartilaginous, or only_ingroup, or not_mammals
+# dataset_variable can be fish or AllGroups, or mammals, or tetrapods
+
+## The following lines run all the current permutations, one after another
+
+Rscript 2_General_Hidden_Markov_Models_script.R all fish
+Rscript 2_General_Hidden_Markov_Models_script.R only_highqual fish
+Rscript 2_General_Hidden_Markov_Models_script.R only_cartilaginous fish
+Rscript 2_General_Hidden_Markov_Models_script.R only_ingroup fish
+
+Rscript 2_General_Hidden_Markov_Models_script.R all mammals
+
+Rscript 2_General_Hidden_Markov_Models_script.R all tetrapods
+Rscript 2_General_Hidden_Markov_Models_script.R not_mammals tetrapods
+
 Rscript 2_General_Hidden_Markov_Models_script.R all AllGroups
 

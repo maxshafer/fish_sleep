@@ -5,9 +5,11 @@
 ### and can be used with both data from fish, but also data from all vertebrates
 ### Updated 07.12.2022
 
-
+## Source the script that allows for new scales on a ggplot
 source("/Volumes/BZ/Home/gizevo30/R_Projects/Plot-multiple-scales-same-aes-ggplot2.R")
 
+## Source the script with the geom_gg scale
+source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/gggeo_scale.R")
 
 ### Need to make these work for if there is another trait involved (for example, marine/fresh). Would still be useful to plot the Di/Noc for these models
 
@@ -15,16 +17,9 @@ source("/Volumes/BZ/Home/gizevo30/R_Projects/Plot-multiple-scales-same-aes-ggplo
 loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapods", "mammals"), subset = c("no", "all", "only_highqual", "only_ingroup", "only_cartilaginous", "not_mammals", "custom"), custom_tips = NA) {
   require(ape)
   
-  ## Load the basic files
-  if (dataset == "fish") {
-    # resolved_names <- read.csv("resolved_names_local.csv", row.names = "X", header = TRUE)
-    tr.calibrated <- readRDS("calibrated_phylo.rds")
-    trait.data <- readRDS(paste("trait_data_", dataset, ".rds", sep = ""))
-  } else {
-    # resolved_names <- readRDS(paste("resolved_names_", dataset, ".rds", sep = ""))
-    tr.calibrated <- readRDS(paste("tr_tree_calibrated_", dataset, ".rds", sep = ""))
-    trait.data <- readRDS(paste("trait_data_", dataset, ".rds", sep = ""))
-  }
+  ## Load tree and trait data
+  tr.calibrated <- readRDS(paste("tr_tree_calibrated_", dataset, ".rds", sep = ""))
+  trait.data <- readRDS(paste("trait_data_", dataset, ".rds", sep = ""))
   
   ## Subset
   
