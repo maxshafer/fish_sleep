@@ -43,5 +43,9 @@ export CPATH=~/.local/include:~/.local/include/adolc:$CPATH
 #############################
 
 # Rscript 1_Eutelostomi_tree.R
-Rscript 2_Eutelostomi_Hidden_Markov_Models_script.R
+
+# For the HMM script, requires two arguments
+# name_variable: all, only_highqual, only_cartilaginous, or only_ingroup
+# dataset_variable: # fish or AllGroups
+Rscript 2_General_Hidden_Markov_Models_script.R all AllGroups
 

@@ -266,7 +266,7 @@ acanthomorpha <- extract.clade(tr.calibrated, node = getMRCA(tr.calibrated, tip 
 cartilagenous <- extract.clade(tr.calibrated, node = getMRCA(tr.calibrated, tip = c("Rhizoprionodon_terraenovae", "Rhynchobatus_djiddensis")))
 trait.data$acanthomorpha <- ifelse(trait.data$tips %in% acanthomorpha$tip.label, "acanthomorpha", ifelse(trait.data$tips %in% cartilagenous$tip.label, "cartilagenous", "outgroup"))
 
-saveRDS(trait.data, file = "trait_data.rds")
+saveRDS(trait.data, file = "trait_data_fish.rds")
 
 
 # trait.data$FeedingType <- fishbase_ecology$FeedingType[match(gsub("_", " ", trait.data$species), fishbase_ecology$Species)]

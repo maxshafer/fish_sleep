@@ -6,7 +6,8 @@ library(xlsx)
 
 ## OK, first part has to be run locally (because it needs internet access)
 
-setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
+setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
+# setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 
 ######################################################## 
 ###################### FIRST PART ###################### 

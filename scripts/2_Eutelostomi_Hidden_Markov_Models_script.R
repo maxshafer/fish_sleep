@@ -1,8 +1,8 @@
 library(ape)
 library(corHMM)
 
-# setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
-setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
+setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
+# setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 
 source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/Fish_sleep_functions.R")
 
@@ -26,12 +26,16 @@ MK_2state <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("speci
 HMM_2state_2rate <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 2, model = "ARD", get.tip.states = TRUE)
 
 # Save out 2 state and HMM with 2 rates
-standard_tests <- list(c(MK_2state, HMM_2state_2rate))
-saveRDS(standard_tests, file = paste("standard_tests", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
+standard_tests <- list()
+standard_tests[[1]] <- MK_2state
+standard_tests[[2]] <- HMM_2state_2rate
 
+saveRDS(standard_tests, file = paste("standard_tests", dataset_variable, name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
+
+# Run with 3 rates (takes long)
 HMM_2state_3rate <- corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 3, model = "ARD", get.tip.states = TRUE)
 standard_tests[[3]] <- HMM_2state_3rate
-saveRDS(standard_tests, file = paste("standard_tests", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
+saveRDS(standard_tests, file = paste("standard_tests", dataset_variable, name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
 
 
 # # Look at models

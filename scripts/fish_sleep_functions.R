@@ -12,16 +12,16 @@ source("/Volumes/BZ/Home/gizevo30/R_Projects/Plot-multiple-scales-same-aes-ggplo
 ### Need to make these work for if there is another trait involved (for example, marine/fresh). Would still be useful to plot the Di/Noc for these models
 
 ### This function loads either the tree or the trait data (only the tree and the model are required for the ancestral reconstruction)
-loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapods or amniotes", "mammals", "sauropsida"), subset = c("no", "all", "only_highqual", "only_ingroup", "only_cartilaginous", "custom"), custom_tips = NA) {
+loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapods", "mammals"), subset = c("no", "all", "only_highqual", "only_ingroup", "only_cartilaginous", "not_mammals", "custom"), custom_tips = NA) {
   require(ape)
   
   ## Load the basic files
   if (dataset == "fish") {
-    resolved_names <- read.csv("resolved_names_local.csv", row.names = "X", header = TRUE)
+    # resolved_names <- read.csv("resolved_names_local.csv", row.names = "X", header = TRUE)
     tr.calibrated <- readRDS("calibrated_phylo.rds")
-    trait.data <- readRDS("trait_data.rds")
+    trait.data <- readRDS(paste("trait_data_", dataset, ".rds", sep = ""))
   } else {
-    resolved_names <- readRDS(paste("resolved_names_", dataset, ".rds", sep = ""))
+    # resolved_names <- readRDS(paste("resolved_names_", dataset, ".rds", sep = ""))
     tr.calibrated <- readRDS(paste("tr_tree_calibrated_", dataset, ".rds", sep = ""))
     trait.data <- readRDS(paste("trait_data_", dataset, ".rds", sep = ""))
   }
@@ -49,6 +49,12 @@ loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapod
     tr.calibrated <- extract.clade(phy = tr.calibrated, node = node_of_interest)
     trait.data <- trait.data[trait.data$species %in% tr.calibrated$tip.label,]
     name_variable <- "only_cartilaginous"
+  }
+  
+  if (subset == "not_mammals") {
+    trait.data <- trait.data[!(trait.data$group %in% "Mammalia"),]
+    tr.calibrated <- keep.tip(phy = tr.calibrated, tip = trait.data$unique_name)
+    name_variable <- "not_mammals"
   }
   
   # Just diurnal/nocturnal
