@@ -6,10 +6,10 @@
 ### Updated 07.12.2022
 
 ## Source the script that allows for new scales on a ggplot
-source("/Volumes/BZ/Home/gizevo30/R_Projects/Plot-multiple-scales-same-aes-ggplot2.R")
+# source("/Volumes/BZ/Home/gizevo30/R_Projects/Plot-multiple-scales-same-aes-ggplot2.R")
 
 ## Source the script with the geom_gg scale
-source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/gggeo_scale.R")
+# source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/gggeo_scale.R")
 
 ### Need to make these work for if there is another trait involved (for example, marine/fresh). Would still be useful to plot the Di/Noc for these models
 

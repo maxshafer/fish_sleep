@@ -15,10 +15,10 @@ if (!(args[[2]] %in% c("fish", "AllGroups", "mammals", "tetrapods"))) {
 }
 
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
-# setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
+# setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 
-source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/fish_sleep_functions.R")
+source("scripts/fish_sleep_functions.R")
 
 ## Load files
 # Which tree?

@@ -10,11 +10,11 @@
 #SBATCH --qos=1week           #You will run in this queue
 
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
-#SBATCH --output=/scicore/home/schiera/gizevo30/projects/fish_sleep/scripts/logs/timecalib_stdout.txt     #These are the STDOUT and STDERR files
-#SBATCH --error=/scicore/home/schiera/gizevo30/projects/fish_sleep/scripts/logs/timecalib_stderr.txt
+#SBATCH --output=/scicore/home/schiera/gizevo30/projects/fish_sleep/scripts/logs/standardmodels_stdout.txt
+#SBATCH --error=/scicore/home/schiera/gizevo30/projects/fish_sleep/scripts/logs/standardmodels_stderr.txt
 
 #You selected an array of jobs from 1 to n with n simultaneous jobs
-#SBATCH --mail-type=END,FAIL,TIME_LIMIT
+#SBATCH --mail-type=END,FAIL,TIME_LIMIT,COMPLETE
 #SBATCH --mail-user=max.shafer@gmail.com        #You will be notified via email when your task ends or fails
 
 #This job runs from the current working directory
