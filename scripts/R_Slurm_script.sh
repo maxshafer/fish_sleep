@@ -50,15 +50,15 @@ export CPATH=~/.local/include:~/.local/include/adolc:$CPATH
 
 ## The following lines run all the current permutations, one after another
 
-Rscript 2_General_Hidden_Markov_Models_script.R all fish
-Rscript 2_General_Hidden_Markov_Models_script.R only_highqual fish
-Rscript 2_General_Hidden_Markov_Models_script.R only_cartilaginous fish
-Rscript 2_General_Hidden_Markov_Models_script.R only_ingroup fish
+# Rscript 2_General_Hidden_Markov_Models_script.R all fish
+# Rscript 2_General_Hidden_Markov_Models_script.R only_highqual fish
+# Rscript 2_General_Hidden_Markov_Models_script.R only_cartilaginous fish
+# Rscript 2_General_Hidden_Markov_Models_script.R only_ingroup fish
 
-Rscript 2_General_Hidden_Markov_Models_script.R all mammals
+# Rscript 2_General_Hidden_Markov_Models_script.R all mammals
 
 Rscript 2_General_Hidden_Markov_Models_script.R all tetrapods
 Rscript 2_General_Hidden_Markov_Models_script.R not_mammals tetrapods
 
-Rscript 2_General_Hidden_Markov_Models_script.R all AllGroups
+# Rscript 2_General_Hidden_Markov_Models_script.R all AllGroups
 

@@ -24,7 +24,9 @@ tet_tree <- read.nexus("tetrapod_data/Hackett1914.tree")
 # Reciprocally trim
 
 trait.data <- tet_data[tet_data$species %in% tet_tree$tip.label,]
-
+colnames(trait.data) <- c("species", "diel1", "genus", "family", "order", "group")
+rownames(trait.data) <- trait.data$species
+  
 trpy_n_tet <- keep.tip(tet_tree, tip = trait.data$species)
 
 ### Save out trait data and tree

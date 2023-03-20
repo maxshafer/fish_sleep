@@ -14,19 +14,18 @@ setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
 source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/Fish_sleep_functions.R")
 
 # Which tree?
-name_variable <- "all" # all, only_highqual, only_cartilaginous, or only_ingroup
-dataset_variable <- "AllGroups" # fish or AllGroups
+name_variable <- "all" # all, only_highqual, only_cartilaginous, or only_ingroup OR not_mammals
+dataset_variable <- "AllGroups" # fish, mammals, or AllGroups
 
 ## Load in the tree
 trpy_n <- loadTree(return = "tree", dataset = dataset_variable, subset = name_variable, custom_tips = c)
 
 ## Load the best model, which is the HMM 2 state 2 rate model
-models <- readRDS(file = paste("standard_tests", dataset_variable, name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
-if (dataset_variable == "AllGroups") {
-  model <- models[[2]]
-} else {
-  model <- readRDS(file = paste("best_fit_model", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
-}
+models <- readRDS(file = paste("marginal_and_joint_tests", dataset_variable, name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
+
+## I think I will always take the 2 rate model, 3 is too hard to comphrehend
+
+model <- 
 
 # View(unlist(lapply(models, function(x) x[names(x[grep("loglik", names(x))])])))
 

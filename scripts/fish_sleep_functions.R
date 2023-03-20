@@ -48,7 +48,7 @@ loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapod
   
   if (subset == "not_mammals") {
     trait.data <- trait.data[!(trait.data$group %in% "Mammalia"),]
-    tr.calibrated <- keep.tip(phy = tr.calibrated, tip = trait.data$unique_name)
+    tr.calibrated <- keep.tip(phy = tr.calibrated, tip = trait.data$species)
     name_variable <- "not_mammals"
   }
   
