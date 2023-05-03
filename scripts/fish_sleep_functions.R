@@ -85,11 +85,31 @@ loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapod
 
 
 ### Write a function to extract ancestral likelihoods from a model
-returnAncestralStates <- function(phylo_model = model, phylo_tree = trpy_n, rate.cat = FALSE) {
+returnAncestralStates <- function(phylo_model = model, phylo_tree = trpy_n, rate.cat = FALSE, recon = c("joint", "marg")) {
   
   # Create a data frame with trait values from reconstruction
-  lik.anc <- as.data.frame(rbind(phylo_model$tip.states, phylo_model$states))
-  row.names(lik.anc) <- c(row.names(lik.anc)[1:length(phylo_tree$tip.label)], (Ntip(phylo_tree) + 1):(Ntip(phylo_tree) + Nnode(phylo_tree)))
+  
+  # Joint reconstruction givs a state, rather than the likelyhood of each state (as in marginal)
+  # Easier to probably make joint look like marginal, to fit the rest of my functions
+  if (recon == "joint") {
+    tip_states <- data.frame(one_R1 = rep(NA, length(phylo_model$tip.states)), two_R1 = rep(NA, length(phylo_model$tip.states)), one_R2 = rep(NA, length(phylo_model$tip.states)), two_R2 = rep(NA, length(phylo_model$tip.states)))
+    tip_states$one_R1 <- ifelse(phylo_model$tip.states == 1, 1, 0)
+    tip_states$two_R1 <- ifelse(phylo_model$tip.states == 2, 1, 0)
+    tip_states$one_R2 <- ifelse(phylo_model$tip.states == 3, 1, 0)
+    tip_states$two_R2 <- ifelse(phylo_model$tip.states == 4, 1, 0)
+    states <- data.frame(one_R1 = rep(NA, length(phylo_model$states)), two_R1 = rep(NA, length(phylo_model$states)), one_R2 = rep(NA, length(phylo_model$states)), two_R2 = rep(NA, length(phylo_model$states)))
+    states$one_R1 <- ifelse(phylo_model$states == 1, 1, 0)
+    states$two_R1 <- ifelse(phylo_model$states == 2, 1, 0)
+    states$one_R2 <- ifelse(phylo_model$states == 3, 1, 0)
+    states$two_R2 <- ifelse(phylo_model$states == 4, 1, 0)
+    lik.anc <- rbind(tip_states, states)
+    row.names(lik.anc) <- c(phylo_tree$tip.label, c((Ntip(phylo_tree) + 1):(Ntip(phylo_tree) + Nnode(phylo_tree))))
+  }
+  
+  if (recon == "marg") {
+    lik.anc <- as.data.frame(rbind(phylo_model$tip.states, phylo_model$states))
+    row.names(lik.anc) <- c(row.names(lik.anc)[1:length(phylo_tree$tip.label)], (Ntip(phylo_tree) + 1):(Ntip(phylo_tree) + Nnode(phylo_tree)))
+  }
   
   if (phylo_model$rate.cat == 1) {
     print("model has single rate category")
@@ -126,7 +146,7 @@ returnAncestralStates <- function(phylo_model = model, phylo_tree = trpy_n, rate
 
 ### Function for running simulations
 
-simulateCustom <- function(phylo_tree = trpy_n, models_list = models, model_type = "ER", rates = c(0.1,0.1), states = c("nocturnal", "diurnal"), simulation_numb = 100) {
+simulateCustom <- function(phylo_tree = trpy_n, models_list = models, model_type = "ER", rates = c(0.1,0.1), states = c("nocturnal", "diurnal"), simulation_numb = 100, root_state = "nocturnal") {
   require(ape)
   
   if (model_type == "ER") {
@@ -134,7 +154,7 @@ simulateCustom <- function(phylo_tree = trpy_n, models_list = models, model_type
       stop("ER models must have a single rate")
     }
     # Use the ER model (actually the ARD model but with symmetric rates, b/c I'm not sure how to code in ER model)
-    simulation <- replicate(simulation_numb, rTraitDisc(phy = phylo_tree, model = "SYM", k = 2, rate = rates, states = states, ancestor = T))
+    simulation <- replicate(simulation_numb, rTraitDisc(phy = phylo_tree, model = "SYM", k = 2, rate = rates, states = states, ancestor = T, root.value = grep(root_state, states)))
   }
   
   if (model_type == "ARD") {
@@ -142,7 +162,7 @@ simulateCustom <- function(phylo_tree = trpy_n, models_list = models, model_type
       stop("ARD models must have rates equal to n*(n-1) states")
     }
     ## Simulate data based on the ARD model
-    simulation <- replicate(simulation_numb, rTraitDisc(phylo_tree, model = "ARD", k = 2, rate = rates, states = states, ancestor = T))
+    simulation <- replicate(simulation_numb, rTraitDisc(phylo_tree, model = "ARD", k = 2, rate = rates, states = states, ancestor = T, root.value = grep(root_state, states)))
   }
   
   if (model_type == "HR") {
@@ -152,7 +172,7 @@ simulateCustom <- function(phylo_tree = trpy_n, models_list = models, model_type
     }
     rates[is.na(rates)] <- 0
     
-    simulation <- replicate(simulation_numb, rTraitDisc(trpy_n, model = rates, states = states, ancestor = T, root.value = 4))
+    simulation <- replicate(simulation_numb, rTraitDisc(trpy_n, model = rates, states = states, ancestor = T, root.value = grep(root_state, states)))
   }
   
   return(simulation)
@@ -170,8 +190,8 @@ calculateSimulatedTransitions <- function(simulated_data = simulation, phylo_tre
   node.age[node[is.na(node.age)]] <- 0
   node.age <- (node.age - max(node.age))*-1
   
-  simulated_data[simulated_data == "diurnal"] <- 1  
-  simulated_data[simulated_data == "nocturnal"] <- 0 
+  simulated_data[simulated_data == "diurnal" | simulated_data == "R1"] <- 1  
+  simulated_data[simulated_data == "nocturnal" | simulated_data == "R2"] <- 0 
   
   ## I want to have this run it for all simulations, and return a df the same as simulation
   # ID parental nodes and parental states
@@ -413,7 +433,7 @@ calculateSimualtedTransitionCumsums <- function(simulated_transitions = simulate
   extracted_data$node.age <- (extracted_data$node.age - max(extracted_data$node.age))*-1
   extracted_data <- extracted_data[order(extracted_data$node.age, decreasing = T),]
   
-  extracted_data_2 <- as.data.frame(apply(extracted_data[,1:100], 2, function(x) cumsum(x)))
+  extracted_data_2 <- as.data.frame(apply(extracted_data[,], 2, function(x) cumsum(x)))
   if(include_node_age) {
     extracted_data_2$node.age <- extracted_data$node.age
   }
