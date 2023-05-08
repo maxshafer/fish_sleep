@@ -8,6 +8,12 @@ library(phangorn)
 library(ggplot2)
 library(patchwork)
 
+
+##### This script runs makeSimmap from the corrHMM package, to generate stochastic character maps from the distribution of
+##### states from either an ARD model, or a HR model (best fitting model in most cases)
+##### This then saves out the simmaps (typically 500 or 1000), which can be used downstream in plotting
+##### This also creates some basic figures, which show the mean +/- SD of cumulative transitions
+
 setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
 
 source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/fish_sleep_functions.R")
@@ -24,13 +30,15 @@ names(index_list) <- c("fish", "mammals", "tetrapods", "AllGroups")
 model_types <- c("ARD", "HR")
 sim_numb <- 500
 
+## This doesn't actually change anything, because both reconstruction methods use the same rates
+## It would just change which reconstruction to plot along side the SIMMAPs
 joint <- FALSE
 
 
 for (y in 2:length(model_types)) {
   model_type <- model_types[[y]]
   
-  for (i in 3:length(index_list)) {
+  for (i in 2:length(index_list)) {
     dataset_variable <- names(index_list)[[i]]
     
     for (j in 1:length(index_list[[i]])) {
@@ -66,7 +74,7 @@ for (y in 2:length(model_types)) {
       if (model_type == "ARD") {
         
         trait.data_n$diel_numb <- ifelse(trait.data_n$diel1 == "diurnal", 0, 1)
-        simmaps <- corHMM::makeSimmap(tree = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 1, model = model_ARD$solution, nSim = sim_numb, nCores = 5)
+        simmaps <- corHMM::makeSimmap(tree = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 1, model = model_ARD$solution, nSim = sim_numb, nCores = 3)
         
       }
       
@@ -75,6 +83,10 @@ for (y in 2:length(model_types)) {
         simmaps <- corHMM::makeSimmap(tree = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 2, model = model$solution, nSim = sim_numb, nCores = 5)
         
       }
+      
+      ## Save SIMMAP
+      
+      saveRDS(simmaps, file = paste(dataset_variable, "diel_switch_SIMMAP", name_variable, Ntip(trpy_n), "species", model_type, sim_numb, "corrHMM.rds", sep = "_"))
       
       ### Extract the node states from the simmaps
       
