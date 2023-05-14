@@ -11,9 +11,9 @@ source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/scripts/Trait_rate
 ## Load files
 
 resolved_names <- read.csv("resolved_names_local.csv", row.names = "X", header = TRUE)
-tr.calibrated <- readRDS("calibrated_phylo.rds")
-trait.data <- readRDS("trait_data.rds")
-trpy <- readRDS(file = "calibrated_phylo.rds")
+# tr.calibrated <- readRDS("calibrated_phylo.rds")
+trait.data <- readRDS("trait_data_fish.rds")
+# trpy <- readRDS(file = "calibrated_phylo.rds")
 
 #############  #############  #############  #############  #############  #############  #############  
 #############  #############  #############  #############  #############  #############  #############  
@@ -116,7 +116,7 @@ combined_ecology_metrics$Trophic <- ifelse(is.na(combined_ecology_metrics$mean_F
 
 
 #############  Subset for only those with diel information #############
-combined_ecology_metrics_diel <- combined_ecology_metrics[combined_ecology_metrics$Species %in% gsub("_", " ", trait.data$species),]
+# combined_ecology_metrics_diel <- combined_ecology_metrics[combined_ecology_metrics$Species %in% gsub("_", " ", trait.data$species),]
 
 combined_ecology_metrics_diel <- combined_ecology_metrics
 # View(lapply(combined_ecology_metrics_diel, function(x) table(is.na(x))))
@@ -137,6 +137,53 @@ complete_cases$RepGuild <- tolower(complete_cases$RepGuild)
 complete_cases$RepGuild <- factor(complete_cases$RepGuild, levels = c("open water/substratum egg scatterers", "nonguarders", "brood hiders", "guarders", "clutch tenders", "nesters", "external brooders", "internal live bearers"))
 
 # complete_cases$FeedingType <- factor(complete_cases$FeedingType, levels = c("variable", "grazing on aquatic plants", "browsing on substrate", "filtering plankton", "other", "selective plankton feeding", "hunting macrofauna (predator)", "feeding on a host (parasite)"))
+
+
+
+
+###############################################################################################################################################
+### Determine missing clades from complete cases ### 
+################################################################################################################################################
+
+## Figure out which Species are missing from the complete_cases df
+'%out%' <- Negate('%in%')
+
+species <- unique(complete_cases$Species)[unique(complete_cases$Species) %out% unique(resolved_names$unique_name)]
+
+
+
+new_df <- data.frame(species = species4, genus = fishbase_df$Genus[match(species4, fishbase_df$Species)], family = fishbase_df$Family[match(species4, fishbase_df$Species)], order = fishbase_df$Order[match(species4, fishbase_df$Species)], data = species4 %in% sleepy_fish$Species.name)
+new_df_family <- unique(data.frame(genus = fishbase_df$Genus[match(species3, fishbase_df$Species)], family = fishbase_df$Family[match(species3, fishbase_df$Species)], order = fishbase_df$Order[match(species3, fishbase_df$Species)], data = species3 %in% sleepy_fish$Species.name))
+
+scholar <- paste("https://scholar.google.com/scholar?start=0&q=%22", species, "%22+AND+(%22circadian%22+OR+%22diel%22+OR+%22diurnal%22+OR+%22nocturnal%22+OR+%22crepuscular%22)&hl=en&as_sdt=0,5", sep = "")
+
+library(clipr)
+write_clip(scholar)
+
+# Checked all Gobiesociformes, Amiiformes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Make histograms

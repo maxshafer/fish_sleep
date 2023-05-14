@@ -20,6 +20,8 @@ index_list[[3]] <- c("all", "not_mammals")
 index_list[[4]] <- c("all")
 names(index_list) <- c("fish", "mammals", "tetrapods", "AllGroups")
 
+recon <- "marg"
+
 for (i in 1:length(index_list)) {
   dataset_variable <- names(index_list)[[i]]
   
@@ -35,8 +37,12 @@ for (i in 1:length(index_list)) {
     ## I think I will always take the 2 rate model, 3 is too hard to comprehend
     
     ## If I want to use the joint reconstruction then the structure of the data changes (marginal gives % for tips + nodes, joint gives states as vectors)
-    # model <- models$HMM_2state_2rate_joint
-    model <- models$HMM_2state_2rate_marg
+    
+    if(recon == "joint") {
+      model <- models$HMM_2state_2rate_joint
+    } else {
+      model <- models$HMM_2state_2rate_marg
+    }
     
     # model <- models$MK_2state_marg
     
@@ -48,7 +54,7 @@ for (i in 1:length(index_list)) {
     ###############################################################################################################################################
     
     # First, extract the ancestral states from the best fit model
-    anc_states <- returnAncestralStates(phylo_model = model, phylo_tree = trpy_n, rate.cat = 2, recon = "marg")
+    anc_states <- returnAncestralStates(phylo_model = model, phylo_tree = trpy_n, rate.cat = 2, recon = recon)
     
     # Then, calculate transitions between states (or rate categories)
     anc_states <- calculateStateTransitions(ancestral_states = anc_states, phylo_tree = trpy_n, rate.cat = F)

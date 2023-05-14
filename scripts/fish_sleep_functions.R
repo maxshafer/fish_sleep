@@ -481,7 +481,7 @@ simulatedSwitchRatio <- function(simulated_cumsums = cumsums, phylo_tree = trpy_
     node_order <- rownames(simulated_cumsums)
   }
   
-  simulated_cumsums <- simulated_cumsums[node_order,]
+  simulated_cumsums <- simulated_cumsums[node_order,] # This isn't matching row names, but just row numbers!
   
   df <- data.frame(node = rownames(simulated_cumsums)[node_order], node.age = simulated_cumsums$node.age[node_order])
   
@@ -500,6 +500,8 @@ simulatedSwitchRatio <- function(simulated_cumsums = cumsums, phylo_tree = trpy_
   if (plot_type == "summary") {
     df$mean <- rowMeans(simulated_ratios)
     df$stdev <- apply(simulated_ratios, 1, function(x) sd(x))
+    # df$min <- apply(simulated_ratios, 1, function(x) min(x))
+    # df$max <- apply(simulated_ratios, 1, function(x) max(x))
     
     plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = mean-stdev, ymax = mean+stdev), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
     plot <- plot + xlab("Millions of years ago") + ylab("Fraction of lineages transitioning")

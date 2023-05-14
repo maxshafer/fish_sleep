@@ -35,10 +35,10 @@ sim_numb <- 500
 joint <- FALSE
 
 
-for (y in 2:length(model_types)) {
+for (y in 1:length(model_types)) {
   model_type <- model_types[[y]]
   
-  for (i in 2:length(index_list)) {
+  for (i in 1:length(index_list)) {
     dataset_variable <- names(index_list)[[i]]
     
     for (j in 1:length(index_list[[i]])) {
@@ -70,51 +70,73 @@ for (y in 2:length(model_types)) {
       anc_rates <- readRDS(file = paste(dataset_variable, "diel_ancestral_rates", name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
       
       ### Run simmap
-      
+
       if (model_type == "ARD") {
-        
-        trait.data_n$diel_numb <- ifelse(trait.data_n$diel1 == "diurnal", 0, 1)
-        simmaps <- corHMM::makeSimmap(tree = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 1, model = model_ARD$solution, nSim = sim_numb, nCores = 3)
-        
+        simmaps <- corHMM::makeSimmap(tree = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 1, model = model_ARD$solution, nSim = sim_numb, nCores = 5)
       }
-      
+
       if (model_type == "HR") {
-        trait.data_n$diel_numb <- ifelse(trait.data_n$diel1 == "diurnal", 0, 1)
         simmaps <- corHMM::makeSimmap(tree = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 2, model = model$solution, nSim = sim_numb, nCores = 5)
-        
       }
-      
+
       ## Save SIMMAP
-      
+
       saveRDS(simmaps, file = paste(dataset_variable, "diel_switch_SIMMAP", name_variable, Ntip(trpy_n), "species", model_type, sim_numb, "corrHMM.rds", sep = "_"))
+
+      simmaps <- readRDS(file = paste(dataset_variable, "diel_switch_SIMMAP", name_variable, Ntip(trpy_n), "species", model_type, sim_numb, "corrHMM.rds", sep = "_"))
+      
       
       ### Extract the node states from the simmaps
+      ### This was my code, but phytools already has an implementation
       
+      # simmap_simulations <- lapply(seq_along(simmaps), function(x) {
+      # 
+      #   simtree <- simmaps[[x]]
+      #   # This identifies the end node for each edge (the second column in simtree$edge, which is ordered by edge #)
+      #   # The root doesn't have an edge leading to it, so we have to add it here as well
+      # 
+      #   node_states <- data.frame(edge = 1:nrow(simtree$edge), tips = simtree$edge[,1], state = unlist(lapply(1:length(simtree$maps), function(x) names(simtree$maps[x][[1]])[length(simtree$maps[x])])))
+      #   # node_states <- node_states[unique(node_states$tips),]
+      # 
+      #   tip_states <- data.frame(edge = 1:nrow(simtree$edge), tips = simtree$edge[,2])
+      #   tip_states$state <- unlist(lapply(tip_states$edge, function(x) names(simtree$maps[x][[1]])[length(simtree$maps[x])]))
+      # 
+      #   # Add root
+      #   root_edge <- grep(Ntip(trpy_n)+1, simtree$edge[1,])
+      #   tip_states <- rbind(tip_states, data.frame(edge = NA, tips = Ntip(trpy_n)+1, state = names(simtree$maps[root_edge][[1]])[1]))
+      # 
+      #   # These are wrong for the tips (I think it's the last simulated data, not necessarily what is at the tip)
+      #   # Duh! This is also the same for all edges (node values are the beginning of the edge?)
+      #   # So replace tip values with actual tip values (this is what the plots do)
+      #   tip_states$state[match(1:Ntip(trpy_n), tip_states$tips)] <- trait.data_n$diel1
+      # 
+      #   ## Replace node state values in tip_states with those from node_states (should be different)
+      #   ## Match by edges (which should match)
+      #   tip_states$state[match(node_states$tips, tip_states$tips)] <- node_states$state
+      # 
+      # 
+      #   ## I need to convert tips to tip_names and node_x
+      #   tip_states <- tip_states[order(tip_states$tips),]
+      #   tip_states$node <- c(trpy_n$tip.label, (Ntip(trpy_n)+1):(Ntip(trpy_n)+Nnode(trpy_n)))
+      # 
+      #   ## Convert to character names
+      #   # tip_states$state <- ifelse(tip_states$state == 1, "diurnal", "nocturnal")
+      # 
+      #   colnames(tip_states) <- c("edge", "tips", paste("state", x, sep = "_"), "node")
+      # 
+      #   return(tip_states[,c(4,3)])
+      # 
+      # })
+      
+      ## This uses phytools function to extract tip and node states (should have looked for this before)
+      ## However, it gives me different downstream results (maybe because of the order!)
       simmap_simulations <- lapply(seq_along(simmaps), function(x) {
-        
-        simtree <- simmaps[[x]]
-        tip_states <- data.frame(edge = 1:nrow(simtree$edge), tips = simtree$edge[,2])
-        tip_states$state <- unlist(lapply(tip_states$edge, function(x) names(simtree$maps[x][[1]])[length(simtree$maps[x])]))
-        # Add root
-        root_edge <- grep(Ntip(trpy_n)+1, simtree$edge[1,])
-        tip_states <- rbind(tip_states, data.frame(edge = NA, tips = Ntip(trpy_n)+1, state = names(simtree$maps[root_edge][[1]])[1]))
-        
-        # These are wrong for the tips (I think it's the last simulated data, not necessarily what is at the tip)
-        # So replace tip values with actual tip values (this is what the plots do)
-        tip_states$state[match(1:Ntip(trpy_n), tip_states$tips)] <- trait.data_n$diel1
-        
-        ## I need to convert tips to tip_names and node_x
-        tip_states <- tip_states[order(tip_states$tips),]
-        tip_states$node <- c(trpy_n$tip.label, paste("Node", (Ntip(trpy_n)+1):(Ntip(trpy_n)+Nnode(trpy_n)), sep = ""))
-        
-        ## Convert to character names
-        # tip_states$state <- ifelse(tip_states$state == 1, "diurnal", "nocturnal")
-        
-        colnames(tip_states) <- c("edge", "tips", paste("state", x, sep = "_"), "node")
-        
-        return(tip_states[,c(4,3)])
-        
-      })
+        df <- getStates(simmaps[[x]], type ="both")
+        df <- data.frame(nodes = names(df), state = df)
+        colnames(df) <- c("node", paste("state", x, sep = "_"))
+        return(df)
+        }
+        )
       
       # Then full_join them together!
       simmap_simulations <- Reduce(full_join, simmap_simulations)
@@ -136,22 +158,48 @@ for (y in 2:length(model_types)) {
         simmap_simmulations_rates[simmap_simmulations_rates == "nocturnal"] <- "R1"
         
         simmap_simmulations_rates[simmap_simmulations_rates == 1] <- "R1"
-        simmap_simmulations_rates[simmap_simmulations_rates == 3] <- "R2"
         simmap_simmulations_rates[simmap_simmulations_rates == 2] <- "R1"
+        simmap_simmulations_rates[simmap_simmulations_rates == 3] <- "R2"
         simmap_simmulations_rates[simmap_simmulations_rates == 4] <- "R2"
         
-        simulated_transitions_simmap_rates <- calculateSimulatedTransitions(simulated_data = simmap_simmulations_rates, phylo_tree = trpy_n)
-        cumsums_simmap_rates <- calculateSimualtedTransitionCumsums(simulated_transitions = simulated_transitions_simmap_rates, phylo_tree = trpy_n, include_node_age = TRUE)
       } else {
         simmap_simulations[simmap_simulations == 1] <- "diurnal"
         simmap_simulations[simmap_simulations == 2] <- "nocturnal"
       }
+      
+      
+      ## Compare the output of simmaps to the marginal ancestral reconstruction, they should correlate well
+      
+      data <- simmap_simulations
+      data[data == "diurnal"] <- 1
+      data[data == "nocturnal"] <- 0
+      data <- data %>% mutate_if(is.character,as.numeric)
+      simmap_avg <- data.frame(names = row.names(data), lik.anc = rowMeans(data))
+      
+      lik.anc <- anc_states$lik.anc
+      lik.anc$diurnal <- lik.anc$diurnal_R1+lik.anc$diurnal_R2
+      lik.anc$simmap_avg_names <- simmap_avg$names[match(row.names(lik.anc), simmap_avg$names)]
+      lik.anc$simmap_avg <- simmap_avg$lik.anc[match(row.names(lik.anc), simmap_avg$names)]
+      lik.anc$diff <- abs(lik.anc$diurnal - lik.anc$simmap_avg)
+      
+      comp_anc_methods <- ggplot(lik.anc[], aes(x = diurnal, y = simmap_avg)) + geom_point()
+      pdf(file = paste(dataset_variable, "phylogeny_diel_plot_AncRec_SIMMAPvsSimulation", name_variable, length(trpy_n$tip.label), "species", model_type, ncol(simmap_simulations), "zoom.pdf", sep = "_"), width = 10, height = 10)
+      print(comp_anc_methods)
+      dev.off()
+      
+      ## Need to make sure the tips are in the correct order, then phytools::getStates matches what I was doing
+      simmap_simulations <- simmap_simulations[row.names(lik.anc),]
       
       ### Calculate transitions and then cummulative transitions through time
       simulated_transitions_simmap <- calculateSimulatedTransitions(simulated_data = simmap_simulations, phylo_tree = trpy_n)
       
       ## Function that returns cumsums, rows are now ordered by node.age, whether or it is included as a column in the output
       cumsums_simmap <- calculateSimualtedTransitionCumsums(simulated_transitions = simulated_transitions_simmap, phylo_tree = trpy_n, include_node_age = TRUE)
+      
+      if (model_type == "HR") {
+        simulated_transitions_simmap_rates <- calculateSimulatedTransitions(simulated_data = simmap_simmulations_rates, phylo_tree = trpy_n)
+        cumsums_simmap_rates <- calculateSimualtedTransitionCumsums(simulated_transitions = simulated_transitions_simmap_rates, phylo_tree = trpy_n, include_node_age = TRUE)
+      }
       
       ###############################################################################################################################################
       ### Plot the results of the simulation, along with the actual data ### 
