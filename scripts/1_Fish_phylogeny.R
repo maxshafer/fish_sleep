@@ -10,6 +10,7 @@ library(dplyr)
 library(phytools)
 library(rfishbase)
 library(xlsx)
+library(geiger)
 
 setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
 
@@ -76,8 +77,8 @@ resolved_names$order <- fishbase_df$Order[match(resolved_names$unique_name, fish
 ## Add data on traits (from sleepy_fish, and/or from fishbase)
 
 resolved_names$diel <- sleepy_fish$Diel_Pattern[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
-resolved_names$diel <- factor(resolved_names$diel, levels = c("diurnal", "nocturnal", "unclear", "crepuscular", "crepuscular/diurnal", "crepuscular/nocturnal", "crepuscular/unclear", ""))
-resolved_names$diel2 <- ifelse(resolved_names$diel == "diurnal", "diurnal", ifelse(resolved_names$diel == "nocturnal", "nocturnal", ifelse(resolved_names$diel == "crepuscular", "crepuscular", ifelse(resolved_names$diel == "crepuscular/diurnal", "crepuscular", ifelse(resolved_names$diel == "crepuscular/nocturnal", "crepuscular", ifelse(resolved_names$diel == "crepuscular/unclear", "crepuscular", "unknown"))))))
+resolved_names$diel <- factor(resolved_names$diel, levels = c("diurnal", "nocturnal", "unclear", "crepuscular", "crepuscular/diurnal", "crepuscular/nocturnal", "crepuscular/unclear", "unclear/diurnal", "unclear/nocturnal"))
+resolved_names$diel2 <- ifelse(resolved_names$diel == "diurnal", "diurnal", ifelse(resolved_names$diel == "nocturnal", "nocturnal", ifelse(resolved_names$diel == "crepuscular", "crepuscular", ifelse(resolved_names$diel == "crepuscular/diurnal", "crepuscular", ifelse(resolved_names$diel == "crepuscular/nocturnal", "crepuscular", ifelse(resolved_names$diel == "crepuscular/unclear", "crepuscular", ifelse(resolved_names$diel == "unclear/diurnal", "unclear", ifelse(resolved_names$diel == "unclear/nocturnal", "nocturnal", "unknown"))))))))
 resolved_names$diel_confidence <- sleepy_fish$Confidence[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
 resolved_names$genome <- sleepy_fish$Genome[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
 
@@ -218,7 +219,7 @@ saveRDS(tr.calibrated, file = "tr_tree_calibrated_fish.rds")
 trait.data <- data.frame(species = tr.calibrated$tip.label, diel = resolved_names$diel[match(tr.calibrated$tip.label, resolved_names$tips)]) # OK, some species tip labels are more complicated and cause issues here
 
 # Create vectors including crepuscular/unclear, or not
-trait.data$diel1 <- ifelse(trait.data$diel %in% c("diurnal", "crepuscular/diurnal"), "diurnal", ifelse(trait.data$diel %in% c("nocturnal", "crepuscular/nocturnal"), "nocturnal", "unclear/crepuscular"))
+trait.data$diel1 <- ifelse(trait.data$diel %in% c("diurnal", "crepuscular/diurnal", "unclear/diurnal"), "diurnal", ifelse(trait.data$diel %in% c("nocturnal", "crepuscular/nocturnal", "unclear/nocturnal"), "nocturnal", "unclear/crepuscular"))
 levels(trait.data$diel1) <- c("diurnal", "nocturnal", "unclear/crepuscular")
 trait.data$diel2 <- ifelse(trait.data$diel %in% c("diurnal"), "diurnal", ifelse(trait.data$diel %in% c("nocturnal"), "nocturnal", ifelse(trait.data$diel %in% c("crepuscular", "crepuscular/diurnal", "crepuscular/nocturnal"), "crepuscular", "unclear")))
 levels(trait.data$diel2) <- c("diurnal", "nocturnal", "crepuscular", "unclear")
@@ -263,7 +264,7 @@ coverage_plot <- ggplot(df, aes(x = level, y = percent, fill = level), color = "
 
 df <- data.frame(table(trait.data$diel))
 
-ggplot(df, aes(y = "", x = Freq, group = Var1, fill = Var1, label = Var1)) + geom_bar(stat = "identity") + coord_polar() + theme_void() + scale_fill_manual(values = c("goldenrod1", "goldenrod2", "goldenrod3", "goldenrod4", "firebrick3", "royalblue3", "lightgreen"))
+# ggplot(df, aes(y = "", x = Freq, group = Var1, fill = Var1, label = Var1)) + geom_bar(stat = "identity") + coord_polar() + theme_void() + scale_fill_manual(values = c("goldenrod1", "goldenrod2", "goldenrod3", "goldenrod4", "firebrick3", "royalblue3", "lightgreen"))
 
 
 pdf("outs/Figures/Diel_database_statistics.pdf", height = 7.5, width = 7.5)

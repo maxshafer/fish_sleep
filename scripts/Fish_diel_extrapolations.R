@@ -7,6 +7,7 @@ library(patchwork)
 library(ggpubr)
 library(dplyr)
 library(rfishbase)
+library(ggrepel)
 
 setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
 
@@ -15,7 +16,7 @@ fishbase_df <- load_taxa(collect = T)
 fishbase_df <- as.data.frame(fishbase_df)
 
 
-resolved_names <- read.csv(resolved_names, file = "resolved_names_local.csv")
+resolved_names <- read.csv(file = "resolved_names_local.csv", row.names = "X")
 
 ######### Can we extrapolate the numbers based on proportions?
 

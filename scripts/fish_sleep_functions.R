@@ -89,7 +89,7 @@ returnAncestralStates <- function(phylo_model = model, phylo_tree = trpy_n, rate
   
   # Create a data frame with trait values from reconstruction
   
-  # Joint reconstruction givs a state, rather than the likelyhood of each state (as in marginal)
+  # Joint reconstruction gives a state, rather than the likelihood of each state (as in marginal)
   # Easier to probably make joint look like marginal, to fit the rest of my functions
   if (recon == "joint") {
     tip_states <- data.frame(one_R1 = rep(NA, length(phylo_model$tip.states)), two_R1 = rep(NA, length(phylo_model$tip.states)), one_R2 = rep(NA, length(phylo_model$tip.states)), two_R2 = rep(NA, length(phylo_model$tip.states)))
@@ -107,6 +107,7 @@ returnAncestralStates <- function(phylo_model = model, phylo_tree = trpy_n, rate
   }
   
   if (recon == "marg") {
+    # state 2 is nocturnal, state 1 is diurnal
     lik.anc <- as.data.frame(rbind(phylo_model$tip.states, phylo_model$states))
     row.names(lik.anc) <- c(row.names(lik.anc)[1:length(phylo_tree$tip.label)], (Ntip(phylo_tree) + 1):(Ntip(phylo_tree) + Nnode(phylo_tree)))
   }
@@ -222,6 +223,8 @@ calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo
   rate_states <- ancestral_states$rate_states
   
   # Determine the number of transitions or diurnal/nocturnal taxa by age
+  
+  # Return the probability of diurnal (or state 1)
   if (length(ancestral_states$states) == length(ancestral_states$rate_states)){
     ancestral_states$recon_states <- ancestral_states$lik.anc[,states[[1]]]
   } else {
@@ -471,7 +474,7 @@ switchTree <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n,
 
 ## Function that plots switch ratio
 
-simulatedSwitchRatio <- function(simulated_cumsums = cumsums, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "red") {
+simulatedSwitchRatio <- function(simulated_cumsums = cumsums, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "red", error = "both") {
   require(ape)
   
   # If there is a supplied node.age, use it to order, otherwise assume rows are already ordered by node.age
@@ -499,11 +502,24 @@ simulatedSwitchRatio <- function(simulated_cumsums = cumsums, phylo_tree = trpy_
   
   if (plot_type == "summary") {
     df$mean <- rowMeans(simulated_ratios)
-    df$stdev <- apply(simulated_ratios, 1, function(x) sd(x))
-    # df$min <- apply(simulated_ratios, 1, function(x) min(x))
-    # df$max <- apply(simulated_ratios, 1, function(x) max(x))
+    df$sd <- apply(simulated_ratios, 1, function(x) sd(x))
+    df$moe <- apply(simulated_ratios, 1, function(x) sqrt( (sd(x)^2) / ncol(simulated_cumsums) ) * qt(0.95, df = ncol(simulated_cumsums)-1) )
+    df$quant <- apply(simulated_ratios, 1, function(x) quantile(x, 0.68))
+    df$min <- apply(simulated_ratios, 1, function(x) min(x))
+    df$max <- apply(simulated_ratios, 1, function(x) max(x))
     
-    plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = mean-stdev, ymax = mean+stdev), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
+    if (error == "moe") {
+      plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = mean-moe, ymax = mean+moe), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
+    } 
+    if (error == "min_max") {
+      plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = min, ymax = max), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
+    } 
+    if (error == "sd") {
+      plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = max(mean-sd, 0), ymax = mean+sd), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
+    }
+    if (error == "both") {
+      plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = min, ymax = max), fill = "grey50", alpha = 0.1) + geom_ribbon(aes(ymin = max(mean-sd, 0), ymax = mean+sd), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
+    }
     plot <- plot + xlab("Millions of years ago") + ylab("Fraction of lineages transitioning")
   }  
   

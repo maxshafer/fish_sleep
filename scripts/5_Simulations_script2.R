@@ -29,7 +29,7 @@ sim_numb <- 500
 
 joint <- FALSE
 
-for (y in 1:length(model_types)) {
+for (y in 2:length(model_types)) {
   model_type <- model_types[[y]]
   
   for (i in 1:length(index_list)) {
@@ -59,6 +59,7 @@ for (y in 1:length(model_types)) {
       
       ## Load the ancestral states data
       anc_states <- readRDS(file = paste(dataset_variable, "diel_ancestral_states", name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
+      anc_rates <- readRDS(file = paste(dataset_variable, "diel_ancestral_rates", name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
       
       ###############################################################################################################################################
       ### Simulate diel switchs based on derived model parameters ### 
@@ -89,23 +90,38 @@ for (y in 1:length(model_types)) {
       ## This calculates for each node whether it is a switch from it's parental node
       
       if (model_type == "HR") {
+        # Make different for rates vs states
+        simulation_rates <- simulation
+        
+        # Replace numbers with states
         simulation[simulation == "diurnal_R1"] <- "diurnal"
-        simulation[simulation == "diurnal_R2"] <- "nocturnal"
-        simulation[simulation == "nocturnal_R1"] <- "diurnal"
+        simulation[simulation == "diurnal_R2"] <- "diurnal"
+        simulation[simulation == "nocturnal_R1"] <- "nocturnal"
         simulation[simulation == "nocturnal_R2"] <- "nocturnal"
-      }
+        
+        simulation_rates[simulation_rates == "diurnal_R1"] <- "R1"
+        simulation_rates[simulation_rates == "nocturnal_R1"] <- "R1"
+        simulation_rates[simulation_rates == "diurnal_R2"] <- "R2"
+        simulation_rates[simulation_rates == "nocturnal_R2"] <- "R2"
+        
+      } 
       
       simulated_transitions <- calculateSimulatedTransitions(simulated_data = simulation, phylo_tree = trpy_n)
       
       ## Function that returns cumsums, rows are now ordered by node.age, whether or it is included as a column in the output
       cumsums <- calculateSimualtedTransitionCumsums(simulated_transitions = simulated_transitions, phylo_tree = trpy_n, include_node_age = TRUE)
       
+      if (model_type == "HR") {
+        simulated_transitions_rates <- calculateSimulatedTransitions(simulated_data = simulation_rates, phylo_tree = trpy_n)
+        cumsums_rates <- calculateSimualtedTransitionCumsums(simulated_transitions = simulated_transitions_rates, phylo_tree = trpy_n, include_node_age = TRUE)
+      }
+      
       ###############################################################################################################################################
       ### Plot the results of the simulation, along with the actual data ### 
       ###############################################################################################################################################
       
       ## Plot the results of the simulation, either the summary (mean +/- stdev), the simulations, or both ('overlay')
-      plot <- simulatedSwitchRatio(simulated_cumsums = cumsums, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "red") #+ ylim(c(0,0.15))
+      plot <- simulatedSwitchRatio(simulated_cumsums = cumsums, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "red", error = "both") #+ ylim(c(0,0.15))
       
       ## Can I add the computed value? Actual transitions
       ## Easy way is to make the plot, then use the data from it to add to the above
@@ -127,6 +143,19 @@ for (y in 1:length(model_types)) {
       pdf(file = paste(dataset_variable, "phylogeny_diel_plot_transitions_simulation", name_variable, length(trpy_n$tip.label), "species", model_type, ncol(simulation), "zoom.pdf", sep = "_"), width = 10, height = 10)
       print(recon_plot / geo_scale + plot_layout(nrow = 2, heights = c(5,0.5)))
       dev.off()
+      
+      if (model_type == "HR") {
+        plot_simulation_rates <- simulatedSwitchRatio(simulated_cumsums = cumsums_rates, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "red", error = "both") #+ ylim(c(0,0.15))
+        switch.ratio.rates <- switchRatio(ancestral_states = anc_rates, phylo_tree = trpy_n, node.age.cutoff = 0.02)
+        plot.rates <- plot_simulation_rates + geom_line(data = switch.ratio.rates$data, aes(x=node.age,y=ratio), colour = "black")
+        plot.rates <- plot.rates + ggtitle(paste(model_type, "model simulation (rates),", name_variable, Ntip(trpy_n), "species", sep = " "), subtitle = paste("# Simulations:", ncol(simulation), ", Avg. transitions:", mean(colSums(simulated_transitions_rates)), "+/-", round(sd(colSums(simulated_transitions_rates)),1), sep = " "))
+        recon_plot_rates <- plot.rates + coord_cartesian(ylim = c(0, layer_scales(plot.rates)$y$range$range[[2]]), xlim = abs(layer_scales(plot.rates)$x$range$range)) 
+        geo_scale_rates <- gggeo_scale(switch.ratio, pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme_void() + coord_cartesian(xlim = abs(layer_scales(plot.rates)$x$range$range))
+        
+        pdf(file = paste(dataset_variable, "phylogeny_diel_plot_transitions_simulation_rates", name_variable, length(trpy_n$tip.label), "species", model_type, ncol(simulation), "zoom.pdf", sep = "_"), width = 10, height = 10)
+        print(recon_plot_rates / geo_scale_rates + plot_layout(nrow = 2, heights = c(5,0.5)))
+        dev.off()
+      }
       
     }
   }

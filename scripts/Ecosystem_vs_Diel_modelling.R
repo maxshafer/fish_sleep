@@ -3,10 +3,11 @@ library(ggalt)
 library(ggbiplot)
 library(dplyr)
 library(patchwork)
+library(ggridges)
 
 setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
 
-source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/scripts/Trait_rate_matrix_figure_script.R")
+source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/scripts/fish_sleep_functions.R")
 
 ## Load files
 
@@ -20,20 +21,21 @@ trait.data <- readRDS("trait_data_fish.rds")
 
 ## Load fishbase data
 
-fishbase_df <- rfishbase::load_taxa()
-fishbase_species <- species()
-fishbase_diet <- diet()
-fishbase_ecology <- ecology() # Has troph and 
-fishbase_morph <- morphometrics()
-fishbase_ecosystem <- ecosystem() # Salinity is here duh
-fishbase_maturity <- maturity()
-fishbase_spawning <- spawning()
-fishbase_swimming <- swimming()
-fishbase_larvae <- larvae()
-fishbase_dietitems <- diet_items()
-fishbase_fecundity <- fecundity()
+# fishbase_df <- rfishbase::load_taxa()
+# fishbase_diet <- diet()
+# fishbase_morph <- morphometrics()
+# fishbase_maturity <- maturity()
+# fishbase_spawning <- spawning()
+# fishbase_swimming <- swimming()
+# fishbase_larvae <- larvae()
+# fishbase_dietitems <- diet_items()
+# fishbase_fecundity <- fecundity()
+
 fishbase_reproduction <- reproduction()
+fishbase_ecology <- ecology() # Has troph and 
 fishbase_length <- length_weight()
+fishbase_ecosystem <- ecosystem() # Salinity is here duh
+fishbase_species <- species()
 
 #############  #############  #############  #############  #############  #############  #############  
 #############  #############  #############  #############  #############  #############  #############  
@@ -46,14 +48,14 @@ fishbase_length <- length_weight()
 standard_size <- fishbase_length %>% group_by(Species) %>% dplyr::summarise(mean_LengthMax = mean(LengthMax), mean_Weight = mean(a*LengthMax^b))
 
 
-#############  Next is reproduction, rate, size, age ############# 
-
-# Max fecundity for 456 species (sad), SpawningCycles for 589, gestation values for 30-40 (boo)
-fecundity <- fishbase_spawning %>% group_by(Species) %>% dplyr::summarise(mean_FecundityMax = mean(FecundityMax), mean_SpawningCycles = mean(SpawningCycles))
-# Can also get 'spawning ground' from fishbase_spawning, which is a character vector for ~1500 species
-spawning_ground <- fishbase_spawning %>% group_by(Species) %>% dplyr::summarise(spawning_ground = paste(unique(SpawningGround), sep = "_"))
-# This gives me the age at maturity for 1015 species
-age_maturity <- fishbase_maturity %>% group_by(Species) %>% dplyr::summarize(mean_AgeMatMin = mean(c(AgeMatMin, AgeMatMin2), na.rm = TRUE))
+# #############  Next is reproduction, rate, size, age ############# 
+# 
+# # Max fecundity for 456 species (sad), SpawningCycles for 589, gestation values for 30-40 (boo)
+# fecundity <- fishbase_spawning %>% group_by(Species) %>% dplyr::summarise(mean_FecundityMax = mean(FecundityMax), mean_SpawningCycles = mean(SpawningCycles))
+# # Can also get 'spawning ground' from fishbase_spawning, which is a character vector for ~1500 species
+# spawning_ground <- fishbase_spawning %>% group_by(Species) %>% dplyr::summarise(spawning_ground = paste(unique(SpawningGround), sep = "_"))
+# # This gives me the age at maturity for 1015 species
+# age_maturity <- fishbase_maturity %>% group_by(Species) %>% dplyr::summarize(mean_AgeMatMin = mean(c(AgeMatMin, AgeMatMin2), na.rm = TRUE))
 
 
 ############# Next is trophic level, benthopelagic, and ecosystem breadth) #############  
@@ -83,23 +85,25 @@ combined_ecology_metrics <- combined_ecology_metrics[combined_ecology_metrics$ec
 
 #############  Calculate the ecosystem breadth (the number of ecosystem types x the number of zoogeographic realms)#############  
 
-realm_vector <- unlist(lapply(unique(zoo$Species), function(x) {
-  vector <- zoo[zoo$Species %in% x, "realm"]
-  vector <- paste(unique(sort(vector)), collapse = "_")
-  return(vector)
-}))
+## This isn't working correctly atm
 
-realm_count <- as.vector(table(zoo$Species))
-realm_df <- data.frame(Species = unique(zoo$Species)[!(is.na(unique(zoo$Species)))], realm_count = realm_count[!(is.na(unique(zoo$Species)))], realm_names = realm_vector[!(is.na(unique(zoo$Species)))])
+realm_vector <- lapply(unique(zoo$Species), function(x) {
+  vector <- unique(tolower(zoo[zoo$Species %in% x, "realm"]))
+  vector2 <- paste(unique(sort(vector)), collapse = "_")
+  df <- data.frame(Species = x, realm_names = vector2, realm_count = length(vector))
+  return(df)
+})
 
-ecosystem_vector <- unlist(lapply(unique(combined_ecology_metrics$Species), function(x) {
-  vector <- combined_ecology_metrics[combined_ecology_metrics$Species %in% x, "ecosystem_type"]
-  vector <- paste(unique(sort(vector)), collapse = "_")
-  return(vector)
-}))
+realm_df <- Reduce(rbind, realm_vector)
 
-ecosystem_count <- as.vector(table(combined_ecology_metrics$Species))
-ecosystem_df <- data.frame(Species = unique(combined_ecology_metrics$Species)[!(is.na(unique(combined_ecology_metrics$Species)))], ecosystem_count = ecosystem_count[!(is.na(unique(combined_ecology_metrics$Species)))], ecosystem_names = ecosystem_vector[!(is.na(unique(combined_ecology_metrics$Species)))])
+ecosystem_vector <- lapply(unique(combined_ecology_metrics$Species), function(x) {
+  vector <- unique(tolower(combined_ecology_metrics[combined_ecology_metrics$Species %in% x, "ecosystem_type"]))
+  vector2 <- paste(unique(sort(vector)), collapse = "_")
+  df <- data.frame(Species = x, ecosystem_names = vector2, ecosystem_count = length(vector))
+  return(df)
+})
+
+ecosystem_df <- Reduce(rbind, ecosystem_vector)
 
 #############  Combine back with all data ############# 
 
@@ -119,10 +123,36 @@ combined_ecology_metrics$Trophic <- ifelse(is.na(combined_ecology_metrics$mean_F
 # combined_ecology_metrics_diel <- combined_ecology_metrics[combined_ecology_metrics$Species %in% gsub("_", " ", trait.data$species),]
 
 combined_ecology_metrics_diel <- combined_ecology_metrics
-# View(lapply(combined_ecology_metrics_diel, function(x) table(is.na(x))))
+combined_ecology_metrics_diel$diel <- trait.data$diel2[match(combined_ecology_metrics_diel$Species, gsub("_", " ", trait.data$species))]
+
+combined_ecology_metrics_diel <- combined_ecology_metrics_diel[!(is.na(combined_ecology_metrics_diel$diel)),]
+
+combined_ecology_metrics_diel$mean_Weight <- log(as.numeric(combined_ecology_metrics_diel$mean_Weight))
+combined_ecology_metrics_diel$benthopelagic <- factor(combined_ecology_metrics_diel$benthopelagic, levels = c("demersal", "reef-associated", "benthopelagic", "pelagic-neritic", "pelagic", "pelagic-oceanic"))
+combined_ecology_metrics_diel$RepGuild <- tolower(combined_ecology_metrics_diel$RepGuild)
+combined_ecology_metrics_diel$RepGuild <- factor(combined_ecology_metrics_diel$RepGuild, levels = c("open water/substratum egg scatterers", "nonguarders", "brood hiders", "guarders", "clutch tenders", "nesters", "external brooders", "internal live bearers"))
+
+
+# Make histograms
+
+p_mean_LengthMax <- ggplot(combined_ecology_metrics_diel, aes(x = log(as.numeric(mean_LengthMax)), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme_classic()
+p_mean_Weight <- ggplot(combined_ecology_metrics_diel, aes(x = mean_Weight, y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme_classic()
+p_mean_FoodTroph <- ggplot(combined_ecology_metrics_diel, aes(x = as.numeric(Trophic), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme_classic()
+p_benthopelagic <- ggplot(combined_ecology_metrics_diel, aes(x = as.numeric(benthopelagic), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme_classic()
+p_ecosystem_count <- ggplot(combined_ecology_metrics_diel, aes(x = as.numeric(ecosystem_count), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme_classic()
+p_RepGuild <- ggplot(combined_ecology_metrics_diel, aes(x = as.numeric(RepGuild), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme_classic()
+
+## This shows that the distribution among the individual ecological traits is similar across diel niches
+## Individually they have more species info
+
+histograms <- p_mean_LengthMax + p_mean_Weight + p_mean_FoodTroph + p_benthopelagic + p_RepGuild + p_ecosystem_count + plot_layout(ncol = 2, guides = "collect")
+
+
+
 
 #############  Subset to only complete cases #############  
-complete_cases <- combined_ecology_metrics_diel[complete.cases(combined_ecology_metrics_diel[,c("Species","mean_Weight", "Trophic","ecosystem_count", "benthopelagic", "RepGuild")]), c("Species", "mean_LengthMax", "mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")]
+complete_cases <- tibble(combined_ecology_metrics[,c("Species", "mean_LengthMax", "mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count", "realm_count")])
+complete_cases <- complete_cases[complete.cases(complete_cases),]
 # complete_cases <- combined_ecology_metrics_diel[complete.cases(combined_ecology_metrics_diel[,c("Species","Trophic","benthopelagic")]), c("Species", "mean_LengthMax", "mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")]
 
 complete_cases$diel <- trait.data$diel2[match(complete_cases$Species, gsub("_", " ", trait.data$species))]
@@ -140,52 +170,6 @@ complete_cases$RepGuild <- factor(complete_cases$RepGuild, levels = c("open wate
 
 
 
-
-###############################################################################################################################################
-### Determine missing clades from complete cases ### 
-################################################################################################################################################
-
-## Figure out which Species are missing from the complete_cases df
-'%out%' <- Negate('%in%')
-
-species <- unique(complete_cases$Species)[unique(complete_cases$Species) %out% unique(resolved_names$unique_name)]
-
-
-
-new_df <- data.frame(species = species4, genus = fishbase_df$Genus[match(species4, fishbase_df$Species)], family = fishbase_df$Family[match(species4, fishbase_df$Species)], order = fishbase_df$Order[match(species4, fishbase_df$Species)], data = species4 %in% sleepy_fish$Species.name)
-new_df_family <- unique(data.frame(genus = fishbase_df$Genus[match(species3, fishbase_df$Species)], family = fishbase_df$Family[match(species3, fishbase_df$Species)], order = fishbase_df$Order[match(species3, fishbase_df$Species)], data = species3 %in% sleepy_fish$Species.name))
-
-scholar <- paste("https://scholar.google.com/scholar?start=0&q=%22", species, "%22+AND+(%22circadian%22+OR+%22diel%22+OR+%22diurnal%22+OR+%22nocturnal%22+OR+%22crepuscular%22)&hl=en&as_sdt=0,5", sep = "")
-
-library(clipr)
-write_clip(scholar)
-
-# Checked all Gobiesociformes, Amiiformes
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Make histograms
 
 p_mean_LengthMax <- ggplot(complete_cases, aes(x = log(as.numeric(mean_LengthMax)))) + geom_histogram(color = "black", fill = "grey", binwidth = 1) + theme_classic()
@@ -196,10 +180,10 @@ p_benthopelagic <- ggplot(complete_cases, aes(x = as.numeric(benthopelagic))) + 
 p_ecosystem_count <- ggplot(complete_cases, aes(x = as.numeric(ecosystem_count))) + geom_histogram(color = "seagreen", fill = "seagreen2", binwidth = 1) + theme_classic()
 p_RepGuild <- ggplot(complete_cases, aes(x = as.numeric(RepGuild))) + geom_histogram(color = "mediumpurple4", fill = "mediumpurple1", binwidth = 1) + theme_classic()
 
-histograms <- p_mean_LengthMax + p_mean_Weight + p_mean_FoodTroph + p_benthopelagic + p_RepGuild + p_ecosystem_count + plot_layout(ncol = 1)
+histograms_complete <- p_mean_LengthMax + p_mean_Weight + p_mean_FoodTroph + p_benthopelagic + p_RepGuild + p_ecosystem_count + plot_layout(ncol = 1)
 
-
-pca.data <- complete_cases[,c("mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")]
+# can include "realm_count" here as well if wanted
+pca.data <- as.data.frame(complete_cases[,c("mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")])
 row.names(pca.data) <- complete_cases$Species
 for (i in 1:ncol(pca.data)) {
   pca.data[,i] <- as.numeric(pca.data[,i])
@@ -215,11 +199,30 @@ hull <- biplot$data %>% group_by(groups) %>% slice(chull(xvar, yvar))
 biplot <- biplot + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + geom_polygon(data = hull, aes(fill = groups, colour = groups), alpha = 0, show.legend = FALSE) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme(legend.position = c(0.15,0.15))
 
 pdf(file = "outs/Figures/Ecological_economics_summary_figure.pdf", width = 7.5, height = 15)
-biplot + histograms + plot_layout(ncol = 1, heights = c(7.5,10), widths = c(7.5,7.5))
+biplot + histograms_complete + plot_layout(ncol = 1, heights = c(7.5,10), widths = c(7.5,7.5))
 dev.off()
 
 
 pca.data <- as.data.frame(diel.pca$x)
+
+
+nesters <- c("Cottus gobio", "Heteropneustes fossilis", "Butis koilomatodon")
+scatterers <- c("Vimba vimba", "Oligoplites palometa", "Pangasianodon hypophthalmus")
+big_nesters <- c("Protopterus aethiopicus", "Amia calva", "Wallago attu", "Centrarchus macropterus")
+loweco_tenders <- c("Andinoacara pulcher", "Synodontis nigriventris", "Pterophyllum scalare")
+
+combined_ecology_metrics_diel[combined_ecology_metrics_diel$Species %in% c(scatterers, big_nesters, loweco_tenders),]
+
+resolved_names[resolved_names$unique_name %in% c(scatterers, big_nesters, loweco_tenders),]
+
+biplot$data$sof <- ifelse(rownames(biplot$data) %in% c(scatterers, big_nesters, loweco_tenders), rownames(biplot$data), NA)
+
+pdf(file = "outs/Figures/Ecological_economics_summary_figure_labels.pdf", width = 15, height = 15)
+biplot + geom_label_repel(data = biplot$data, aes(x = xvar, y = yvar, label = sof))
+dev.off()
+
+
+
 pca.data$diel <- complete_cases$diel
 
 ggplot(pca.data, aes(x = PC1, group = diel, color = diel, fill = diel)) + geom_density(alpha = 0.25) + theme_classic() + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35", "green"))

@@ -138,6 +138,14 @@ for (y in 1:length(model_types)) {
         }
         )
       
+      # Add the marginal reconstruction states, to see if it is calculated the same way
+      marg_states <- apply(anc_states$lik.anc, 1, function(x) which.max(x))
+      marg_states <- data.frame(node = names(marg_states), marg_states = marg_states)
+      marg_states <- marg_states[row.names(simmap_simulations[[1]]),]
+      
+      
+      # simmap_simulations[[501]] <- marg_states
+      
       # Then full_join them together!
       simmap_simulations <- Reduce(full_join, simmap_simulations)
       rownames(simmap_simulations) <- simmap_simulations$node
@@ -232,7 +240,7 @@ for (y in 1:length(model_types)) {
         plot_simmap_rates <- simulatedSwitchRatio(simulated_cumsums = cumsums_simmap_rates, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "blue") #+ ylim(c(0,0.15))
         switch.ratio.rates <- switchRatio(ancestral_states = anc_rates, phylo_tree = trpy_n, node.age.cutoff = 0.02)
         plot.rates <- plot_simmap_rates + geom_line(data = switch.ratio.rates$data, aes(x=node.age,y=ratio), colour = "black")
-        plot.rates <- plot.rates + ggtitle(paste(model_type, "model SIMMAP (rates),", name_variable, Ntip(trpy_n), "species", sep = " "), subtitle = paste("# Simulations:", ncol(simmap_simulations), ", Avg. transitions:", mean(colSums(simulated_transitions_simmap)), "+/-", round(sd(colSums(simulated_transitions_simmap)),1), sep = " "))
+        plot.rates <- plot.rates + ggtitle(paste(model_type, "model SIMMAP (rates),", name_variable, Ntip(trpy_n), "species", sep = " "), subtitle = paste("# Simulations:", ncol(simmap_simulations), ", Avg. transitions:", mean(colSums(simulated_transitions_simmap_rates)), "+/-", round(sd(colSums(simulated_transitions_simmap_rates)),1), sep = " "))
         recon_plot_rates <- plot.rates + coord_cartesian(ylim = c(0, layer_scales(plot.rates)$y$range$range[[2]]), xlim = abs(layer_scales(plot.rates)$x$range$range)) 
         geo_scale_rates <- gggeo_scale(switch.ratio, pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme_void() + coord_cartesian(xlim = abs(layer_scales(plot.rates)$x$range$range))
         

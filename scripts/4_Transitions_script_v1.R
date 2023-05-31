@@ -20,7 +20,7 @@ index_list[[3]] <- c("all", "not_mammals")
 index_list[[4]] <- c("all")
 names(index_list) <- c("fish", "mammals", "tetrapods", "AllGroups")
 
-recon <- "marg"
+recon <- "joint"
 
 for (i in 1:length(index_list)) {
   dataset_variable <- names(index_list)[[i]]
