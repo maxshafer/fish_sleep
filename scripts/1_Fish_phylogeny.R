@@ -11,13 +11,17 @@ library(phytools)
 library(rfishbase)
 library(xlsx)
 library(geiger)
+library(here)
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
+setwd(here())
 
 ### LOAD IN OTHER DATA ### 
 
 # Fetch the taxonomic levels from fishbase for all of the species and make it into a dataframe
-fishbase_df <- load_taxa(collect = T)
+# available_releases()
+# [1] "23.01" "23.05" "21.06" "19.04"
+
+fishbase_df <- load_taxa(collect = T, version = "21.06")
 fishbase_df <- as.data.frame(fishbase_df)
 
 ### LOAD IN GOOGLE SHEET DATA ### 
@@ -29,7 +33,7 @@ url <- 'https://docs.google.com/spreadsheets/d/18aNqHT73hX06cGRlf6oj7Y4TVKf6jd_Q
 sleepy_fish <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
 sleepy_fish$Diel_Pattern <- tolower(sleepy_fish$Diel_Pattern)
 
-write.csv(sleepy_fish, file = "sleepy_fish_database_local.csv")
+write.csv(sleepy_fish, file = here("sleepy_fish_database_local.csv"))
 
 # ################################################################################################################################################
 # ### OUTPUT DATA FOR ZUZANNA ### 
@@ -88,9 +92,9 @@ resolved_names$genome <- sleepy_fish$Genome[match(resolved_names$search_string, 
 # c("infraspecific", "sibling_higher")
 # resolved_names <- resolved_names[resolved_names$flags %out% c("incertae_sedis_inherited", "unplaced_inherited", "incertae_sedis", "not_otu, incertae_sedis", "extinct_inherited, incertae_sedis"),]
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
+setwd(here())
 
-write.csv(resolved_names, file = "resolved_names_local.csv")
+write.csv(resolved_names, file = here("resolved_names_local.csv"))
 
 print(paste("Sleepy fish database covers ", round((length(unique(resolved_names$tips))/length(unique(fishbase_df$Species)))*100), "% of Species, ", round((length(unique(resolved_names$genus))/length(unique(fishbase_df$Genus)))*100), "% of Genuses, ", round((length(unique(resolved_names$family))/length(unique(fishbase_df$Family)))*100), "% of Families, and ", round((length(unique(resolved_names$order))/length(unique(fishbase_df$Order)))*100), "% of Orders", sep = ""))
 
@@ -128,7 +132,7 @@ print(paste("Sleepy fish database covers ", round((length(unique(resolved_names$
 ### FETCH AND TIME-CALIBRATE THE TREE ### 
 ################################################################################################################################################
 
-resolved_names <- read.csv(file = "resolved_names_local.csv", row.names = "X")
+resolved_names <- read.csv(file = here("resolved_names_local.csv"), row.names = "X")
 
 # Fetch the combined tree from tree of life for the species ids found in resolved_names
 # "sibling_higher" is the only flag that can be included where I can both fetch the tree and time calibrate it
@@ -160,24 +164,24 @@ rownames(reference.df) <- reference.df$tips
 reference.df <- reference.df[!duplicated(reference.df$unique_name),]
 reference.df <- reference.df[!is.na(reference.df$unique_name),]
 
-saveRDS(reference.df, file = "reference_df.rds")
+saveRDS(reference.df, file = here("reference_df.rds"))
 
 # Load the timetree tree (genus level data works, but not species)
 # Have download timetree data for species, genus, family, and order
 # Genus level data has the most calibration points
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd(here())
 
-timetree_order <- ape::read.tree("timetree_data/actinopterygii_order.nwk")
-timetree_family <- ape::read.tree("timetree_data/actinopterygii_family.nwk")
-timetree_genus <- ape::read.tree("timetree_data/actinopterygii_genus.nwk")
+timetree_order <- ape::read.tree(here("timetree_data/actinopterygii_order.nwk"))
+timetree_family <- ape::read.tree(here("timetree_data/actinopterygii_family.nwk"))
+timetree_genus <- ape::read.tree(here("timetree_data/actinopterygii_genus.nwk"))
 
 # Use geiger to congruify the tree, works with treePL
 # This seems to work up to genus, but not species (by replacing tip.labels with the same names)
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd(here())
 geiger.order <- congruify.phylo(reference = timetree_order, target = tr, taxonomy = reference.df, tol = 0, scale = "treePL")
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd(here())
 geiger.family <- congruify.phylo(reference = timetree_family, target = geiger.order$phy, taxonomy = reference.df, tol = 0, scale = "treePL")
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd(here())
 geiger.genus <- congruify.phylo(reference = timetree_genus, target = geiger.family$phy, taxonomy = reference.df, tol = 0, scale = "treePL")
 
 tr.calibrated <- geiger.genus$phy
@@ -202,9 +206,9 @@ tr.calibrated <- readRDS("calibrated_phylo.rds")
 trace(geiger:::heights.phylo, edit = TRUE)
 # depth = max(xx[!(is.na(xx))])
 # Also have to do it manually - which is ugh!
-timetree_species <- ape::read.tree("timetree_data/actinopterygii_species.nwk")
+timetree_species <- ape::read.tree(here("timetree_data/actinopterygii_species.nwk"))
 timetree_species <- multi2di(timetree_species)
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd(here())
 
 geiger.species <- congruify.phylo(reference = timetree_species, target = tr.calibrated, taxonomy = reference.df, tol = 0, scale = "treePL")
 tr.calibrated <- geiger.species$phy
@@ -234,9 +238,9 @@ trait.data$confidence <- resolved_names$diel_confidence[match(trait.data$species
 trait.data$crepuscular <- ifelse(trait.data$diel2 == "crepuscular", "crepuscular", ifelse(trait.data$confidence > 4, "non_crepuscular", NA))
 trait.data$diel_continuous <- ifelse(trait.data$diel1 == "diurnal", trait.data$confidence, ifelse(trait.data$diel1 == "nocturnal", trait.data$confidence*-1, NA))
 
-# Add fresh/marine to trait.data
-fishbase_ecosystem <- ecosystem() # Salinity is here duh
-trait.data$marine <- fishbase_ecosystem$Salinity[match(gsub("_", " ", trait.data$species), fishbase_ecosystem$Species)]
+# # Add fresh/marine to trait.data
+# fishbase_ecosystem <- ecosystem() # Salinity is here duh
+# trait.data$marine <- fishbase_ecosystem$Salinity[match(gsub("_", " ", trait.data$species), fishbase_ecosystem$Species)]
 
 # Add acanthomorpha
 acanthomorpha <- extract.clade(tr.calibrated, node = getMRCA(tr.calibrated, tip = c("Saccogaster_melanomycter", "Apolemichthys_xanthopunctatus")))

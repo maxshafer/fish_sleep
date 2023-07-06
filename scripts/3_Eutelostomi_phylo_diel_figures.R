@@ -12,17 +12,17 @@ library(phytools)
 library(rfishbase)
 library(xlsx)
 library(RColorBrewer)
+library(here)
 
-
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
 
 ## Load files
 
-resolved_names <- readRDS("resolved_names_AllGroups.rds")
-tr.calibrated <- readRDS("tr_tree_calibrated_AllGroups.rds")
-trait.data <- readRDS("trait_data_AllGroups.rds")
+resolved_names <- readRDS(here("resolved_names_AllGroups.rds"))
+tr.calibrated <- readRDS(here("tr_tree_calibrated_AllGroups.rds"))
+trait.data <- readRDS(here("trait_data_AllGroups.rds"))
 
 name_variable <- "AllGroups"
+dataset_variable <- "all"
 
 ################################################################################################################################################
 ### Make phylogenetic tree plots showing activity patterns ###
@@ -129,7 +129,7 @@ trpy_n$edge.length[trpy_n$edge.length == 0] <- 0.001
 trait.data_n <- trait.data[trait.data$species %in% trpy_n$tip.label,]
 
 # Load most likely model from script #2
-standard_tests <- readRDS(paste("standard_tests", name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
+standard_tests <- readRDS(paste("marginal_and_joint_tests", name_variable, dataset_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
 best_fit_model <- standard_tests[[3]]
   
 # Extract the liklihood for each node and make it into a ggplotable data frame
@@ -160,7 +160,7 @@ if (ncol(lik.anc) == 4) {
 
 # Plot just nocturnal vs diurnal, regardless of rate class (this is what I want to known anyway)
 ancestral_plot <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
-ancestral_plot <- ggtree(trpy_n, layout = "fan", open.angle = 120) %<+% lik.anc + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+# ancestral_plot <- ggtree(trpy_n, layout = "fan", open.angle = 120) %<+% lik.anc + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
 # ancestral_plot <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_gradient(low = "#2c7bb6", high = "#ffffbf")
 
 ancestral_plot_rect <- ggtree(trpy_n) %<+% lik.anc + aes(color = di.sum - noc.sum) + geom_tippoint(aes(color = di.sum - noc.sum), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")

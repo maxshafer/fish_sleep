@@ -7,6 +7,7 @@ library(tibble)
 library(phangorn)
 library(ggplot2)
 library(patchwork)
+library(here)
 
 
 ##### This script runs makeSimmap from the corrHMM package, to generate stochastic character maps from the distribution of
@@ -14,9 +15,8 @@ library(patchwork)
 ##### This then saves out the simmaps (typically 500 or 1000), which can be used downstream in plotting
 ##### This also creates some basic figures, which show the mean +/- SD of cumulative transitions
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
 
-source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/fish_sleep_functions.R")
+source(here("scripts/fish_sleep_functions.R"))
 
 
 index_list <- list()
