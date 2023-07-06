@@ -6,29 +6,27 @@ library(xlsx)
 
 ## OK, first part has to be run locally (because it needs internet access)
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
-# setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
-
 ######################################################## 
 ###################### FIRST PART ###################### 
 ######################################################## 
 
-# setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+# library(here)
+# setwd(here())
 # 
 # # Load in data files with names and activity patterns
 # # Modify, subset, and combine
 # 
-# fish_data <- read.csv("resolved_names_local.csv", row.names = "X", header = TRUE)
+# fish_data <- read.csv(here("resolved_names_local.csv"), row.names = "X", header = TRUE)
 # fish_data <- fish_data[,c("unique_name", "diel", "genus", "family", "order")]
 # fish_data$group <- "fish"
 # 
-# mam_data <- read.xlsx("Cox_mammal_data/Supplementary Data 2.xlsx", 1)
+# mam_data <- read.xlsx(here("Cox_mammal_data/Supplementary Data 2.xlsx"), 1)
 # mam_data <- mam_data[,c("Binomial_iucn", "Activity_DD", "Genus", "Family", "Order")]
 # colnames(mam_data) <- c("unique_name", "diel", "genus", "family", "order")
 # mam_data$group <- "mammals"
 # mam_data <- mam_data[mam_data$diel != "NA",]
 # 
-# tet_data <- read.csv("tetrapod_data/suppfile10appendix1914.csv")
+# tet_data <- read.csv(here("tetrapod_data/suppfile10appendix1914.csv"))
 # tet_data <- tet_data[tet_data$Species %in% tet_data$Species[tet_data$Class != "Mammalia"],]
 # tet_data$group <- tet_data$Class
 # tet_data$Genus <- gsub("\\_.*","",tet_data$Species)
@@ -85,6 +83,8 @@ setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
 ######################################################## 
 ###################### SECOND PART #####################
 ######################################################## 
+
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 
 ## This part is done on the cluster (calibrating with the timetrees)
 ## Run the 1st part, commit and then run this part
