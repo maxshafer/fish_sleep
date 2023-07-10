@@ -1,38 +1,7 @@
 Loading required package: nloptr
 Loading required package: GenSA
-Loading required package: nloptr
-Loading required package: GenSA
-Loading required package: nloptr
-Loading required package: GenSA
-Loading required package: nloptr
-Loading required package: GenSA
-Loading required package: nloptr
-Loading required package: GenSA
-Warning in corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species",  :
-  Branch lengths of 0 detected. Adding 1e-5 to these branches.
-Warning in corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species",  :
-  Branch lengths of 0 detected. Adding 1e-5 to these branches.
-Warning in corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species",  :
-  Branch lengths of 0 detected. Adding 1e-5 to these branches.
-Warning in corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species",  :
-  Branch lengths of 0 detected. Adding 1e-5 to these branches.
-Warning in corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species",  :
-  Branch lengths of 0 detected. Adding 1e-5 to these branches.
-Warning in corHMM(phy = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species",  :
-  Branch lengths of 0 detected. Adding 1e-5 to these branches.
-Loading required package: nloptr
-Loading required package: GenSA
-Error in names(trait.vector_n) <- trait.data$species : 
-  attempt to set an attribute on NULL
-Calls: loadTree
+Error in keep.tip(tr.calibrated, tip = names(trait.vector_n)) : 
+  unmatched tip labels:
+Opsarichthys_uncirostris Bagrus_meridionalis Haemulon_steindachneri
+Calls: loadTree -> keep.tip
 Execution halted
-Loading required package: nloptr
-Loading required package: GenSA
-Error in names(trait.vector_n) <- trait.data$species : 
-  attempt to set an attribute on NULL
-Calls: loadTree
-In addition: Warning message:
-In drop.tip(phy, toDrop) : drop all tips of the tree: returning NULL
-Execution halted
-Loading required package: nloptr
-Loading required package: GenSA

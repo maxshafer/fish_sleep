@@ -6,7 +6,7 @@
 #SBATCH --tmp=16G
 #Total memory reserved: 16GB
 
-#SBATCH --time=168:00:00        #This is the time that your task will run
+#SBATCH --time=167:00:00        #This is the time that your task will run
 #SBATCH --qos=1week           #You will run in this queue
 
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
@@ -48,7 +48,7 @@ export CPATH=~/.local/include:~/.local/include/adolc:$CPATH
 # name_variable can be all, only_highqual, only_cartilaginous, or only_ingroup, or not_mammals
 # dataset_variable can be fish or AllGroups, or mammals, or tetrapods
 
-## The following lines run all the current permutations, one after another
+# The following lines run all the current permutations, one after another
 
 # Rscript 2_General_Hidden_Markov_Models_script.R all fish
 # Rscript 2_General_Hidden_Markov_Models_script.R only_highqual fish
@@ -57,8 +57,8 @@ export CPATH=~/.local/include:~/.local/include/adolc:$CPATH
 
 # Rscript 2_General_Hidden_Markov_Models_script.R all mammals
 
-Rscript 2_General_Hidden_Markov_Models_script.R all tetrapods
-Rscript 2_General_Hidden_Markov_Models_script.R not_mammals tetrapods
+# Rscript 2_General_Hidden_Markov_Models_script.R all tetrapods
+# Rscript 2_General_Hidden_Markov_Models_script.R not_mammals tetrapods
 
-# Rscript 2_General_Hidden_Markov_Models_script.R all AllGroups
+Rscript 2_General_Hidden_Markov_Models_script.R all AllGroups
 
