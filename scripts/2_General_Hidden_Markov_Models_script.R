@@ -15,7 +15,7 @@ if (!(args[[2]] %in% c("fish", "AllGroups", "mammals", "tetrapods"))) {
 }
 
 
-# setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
+# setwd("/Users/maxwellshafer/Documents/R_Projects/fish_sleep")
 setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
 
 source("scripts/fish_sleep_functions.R")
