@@ -14,7 +14,7 @@
 ### Need to make these work for if there is another trait involved (for example, marine/fresh). Would still be useful to plot the Di/Noc for these models
 
 ### This function loads either the tree or the trait data (only the tree and the model are required for the ancestral reconstruction)
-loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapods", "mammals"), subset = c("no", "all", "only_highqual", "only_ingroup", "only_cartilaginous", "not_mammals", "custom"), custom_tips = NA, only_model_data = TRUE) {
+loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapods", "mammals"), subset = c("no", "all", "only_highqual", "only_ingroup", "only_cartilaginous", "not_mammals", "custom", "amphibians", "sauropsids", "lepidosauria", "testudines", "crocodylia", "aves"), custom_tips = NA, only_model_data = TRUE) {
   require(ape)
   
   ## Load tree and trait data
@@ -48,6 +48,42 @@ loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapod
   
   if (subset == "not_mammals") {
     trait.data <- trait.data[!(trait.data$group %in% "Mammalia"),]
+    tr.calibrated <- keep.tip(phy = tr.calibrated, tip = trait.data$species)
+    name_variable <- "not_mammals"
+  }
+  
+  if (subset == "amphibians") {
+    trait.data <- trait.data[trait.data$group %in% "Amphibia",]
+    tr.calibrated <- keep.tip(phy = tr.calibrated, tip = trait.data$species)
+    name_variable <- "not_mammals"
+  }
+  
+  if (subset == "sauropsids") {
+    trait.data <- trait.data[trait.data$group %in% c("Lepidosauria","Testudines","Crocodylia","Aves"),]
+    tr.calibrated <- keep.tip(phy = tr.calibrated, tip = trait.data$species)
+    name_variable <- "not_mammals"
+  }
+  
+  if (subset == "lepidosauria") {
+    trait.data <- trait.data[trait.data$group %in% "Lepidosauria",]
+    tr.calibrated <- keep.tip(phy = tr.calibrated, tip = trait.data$species)
+    name_variable <- "not_mammals"
+  }
+  
+  if (subset == "testudines") {
+    trait.data <- trait.data[trait.data$group %in% "Testudines",]
+    tr.calibrated <- keep.tip(phy = tr.calibrated, tip = trait.data$species)
+    name_variable <- "not_mammals"
+  }
+  
+  if (subset == "crocodylia") {
+    trait.data <- trait.data[trait.data$group %in% "Crocodylia",]
+    tr.calibrated <- keep.tip(phy = tr.calibrated, tip = trait.data$species)
+    name_variable <- "not_mammals"
+  }
+  
+  if (subset == "aves") {
+    trait.data <- trait.data[trait.data$group %in% "Aves",]
     tr.calibrated <- keep.tip(phy = tr.calibrated, tip = trait.data$species)
     name_variable <- "not_mammals"
   }

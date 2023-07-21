@@ -2,18 +2,18 @@ library(ape)
 library(corHMM)
 
 args = commandArgs(trailingOnly=TRUE)
+
 if (length(args) != 2) {
   stop("must have 2 arguments for this Rscript command, 1) the name_variable,  2) the dataset_variable")
 }
 
-if (!(args[[1]] %in% c("all", "only_highqual", "only_cartilaginous", "only_ingroup", "not_mammals"))) {
+if (!(args[[1]] %in% c("all", "only_highqual", "only_ingroup", "only_cartilaginous", "not_mammals", "amphibians", "sauropsids", "lepidosauria", "testudines", "crocodylia", "aves"))) {
   stop("wrong name_variable")
 }
 
 if (!(args[[2]] %in% c("fish", "AllGroups", "mammals", "tetrapods"))) {
   stop("wrong dataset_variable")
 }
-
 
 # setwd("/Users/maxwellshafer/Documents/R_Projects/fish_sleep")
 setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
