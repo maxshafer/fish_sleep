@@ -18,6 +18,7 @@ library(here)
 
 source(here("scripts/fish_sleep_functions.R"))
 
+run_simmap <- TRUE
 
 index_list <- list()
 index_list[[1]] <- c("all", "only_highqual", "only_cartilaginous", "only_ingroup")
@@ -32,7 +33,8 @@ sim_numb <- 500
 
 ## This doesn't actually change anything, because both reconstruction methods use the same rates
 ## It would just change which reconstruction to plot along side the SIMMAPs
-joint <- FALSE
+## Also, the anc_states object is from marginal (have to rerun for joint)
+recon <- "marg"
 
 
 for (y in 1:length(model_types)) {
@@ -44,7 +46,7 @@ for (y in 1:length(model_types)) {
     for (j in 1:length(index_list[[i]])) {
       name_variable <- index_list[[i]][[j]]
       
-      setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
+      setwd(here())
       
       ## Load in the tree
       trpy_n <- loadTree(return = "tree", dataset = dataset_variable, subset = name_variable, custom_tips = c)
@@ -52,39 +54,41 @@ for (y in 1:length(model_types)) {
       trait.data_n <- loadTree(return = "trait_data", dataset = dataset_variable, subset = name_variable)
       
       ## Load the best model, which is the HMM 2 state 2 rate model
-      models <- readRDS(file = paste("marginal_and_joint_tests", dataset_variable, name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
+      models <- readRDS(file = here(paste("marginal_and_joint_tests", dataset_variable, name_variable, length(trpy_n$tip.label), "species.rds", sep = "_")))
       
       ## I think I will always take the 2 rate model, 3 is too hard to comprehend
       
       ## If I want to use the joint reconstruction then the structure of the data changes (marginal gives % for tips + nodes, joint gives states as vectors)
-      if (joint == TRUE) {
+      if (recon == "joint") {
         model <- models$HMM_2state_2rate_joint
         model_ARD <- models$MK_2state_joint
-      } else {
+      } 
+      if (recon == "marg") {
         model <- models$HMM_2state_2rate_marg
         model_ARD <- models$MK_2state_marg
       }
       
       ## Load the ancestral states and rates data
-      anc_states <- readRDS(file = paste(dataset_variable, "diel_ancestral_states", name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
-      anc_rates <- readRDS(file = paste(dataset_variable, "diel_ancestral_rates", name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
+      anc_states <- readRDS(file = here(paste("diel_ancestral_states", dataset_variable, name_variable, Ntip(trpy_n), "species.rds", sep = "_")))
+      anc_rates <- readRDS(file = here(paste("diel_ancestral_rates", dataset_variable, name_variable, Ntip(trpy_n), "species.rds", sep = "_")))
       
       ### Run simmap
-
-      if (model_type == "ARD") {
-        simmaps <- corHMM::makeSimmap(tree = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 1, model = model_ARD$solution, nSim = sim_numb, nCores = 5)
-      }
-
-      if (model_type == "HR") {
-        simmaps <- corHMM::makeSimmap(tree = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 2, model = model$solution, nSim = sim_numb, nCores = 5)
-      }
-
-      ## Save SIMMAP
-
-      saveRDS(simmaps, file = paste(dataset_variable, "diel_switch_SIMMAP", name_variable, Ntip(trpy_n), "species", model_type, sim_numb, "corrHMM.rds", sep = "_"))
-
-      simmaps <- readRDS(file = paste(dataset_variable, "diel_switch_SIMMAP", name_variable, Ntip(trpy_n), "species", model_type, sim_numb, "corrHMM.rds", sep = "_"))
       
+      if (run_simmap) {
+        if (model_type == "ARD") {
+          simmaps <- corHMM::makeSimmap(tree = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 1, model = model_ARD$solution, nSim = sim_numb, nCores = 5)
+        }
+        
+        if (model_type == "HR") {
+          simmaps <- corHMM::makeSimmap(tree = trpy_n, data = trait.data_n[trpy_n$tip.label, c("species", "diel1")], rate.cat = 2, model = model$solution, nSim = sim_numb, nCores = 5)
+        }
+        
+        ## Save SIMMAP
+        
+        saveRDS(simmaps, file = here(paste("diel_switch_SIMMAP", dataset_variable, name_variable, Ntip(trpy_n), "species", model_type, sim_numb, "corrHMM.rds", sep = "_")))
+      }
+
+      simmaps <- readRDS(file = here(paste("diel_switch_SIMMAP", dataset_variable, name_variable, Ntip(trpy_n), "species", model_type, sim_numb, "corrHMM.rds", sep = "_")))
       
       ### Extract the node states from the simmaps
       ### This was my code, but phytools already has an implementation
@@ -191,7 +195,8 @@ for (y in 1:length(model_types)) {
       lik.anc$diff <- abs(lik.anc$diurnal - lik.anc$simmap_avg)
       
       comp_anc_methods <- ggplot(lik.anc[], aes(x = diurnal, y = simmap_avg)) + geom_point()
-      pdf(file = paste(dataset_variable, "phylogeny_diel_plot_AncRec_SIMMAPvsSimulation", name_variable, length(trpy_n$tip.label), "species", model_type, ncol(simmap_simulations), "zoom.pdf", sep = "_"), width = 10, height = 10)
+      
+      pdf(file = here(paste("outs/Figures/plot_17_SIMMAPvsSimulation", dataset_variable, name_variable, length(trpy_n$tip.label), "species", model_type, ncol(simmap_simulations), "zoom.pdf", sep = "_")), width = 10, height = 10)
       print(comp_anc_methods)
       dev.off()
       
@@ -214,7 +219,7 @@ for (y in 1:length(model_types)) {
       ###############################################################################################################################################
       
       ## Plot the results of the simulation, either the summary (mean +/- stdev), the simulations, or both ('overlay')
-      plot_simmap <- simulatedSwitchRatio(simulated_cumsums = cumsums_simmap, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "blue") #+ ylim(c(0,0.15))
+      plot_simmap <- simulatedSwitchRatio(simulated_cumsums = cumsums_simmap, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "blue", error = "sd") #+ ylim(c(0,0.15))
       
       ## Can I add the computed value? Actual transitions
       ## Easy way is to make the plot, then use the data from it to add to the above
@@ -230,21 +235,20 @@ for (y in 1:length(model_types)) {
       geo_scale <- gggeo_scale(switch.ratio, pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme_void() + coord_cartesian(xlim = abs(layer_scales(plot)$x$range$range)) 
       
       ## Save out the plot
-      setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/outs/Figures")
       
-      pdf(file = paste(dataset_variable, "phylogeny_diel_plot_transitions_SIMMAP", name_variable, length(trpy_n$tip.label), "species", model_type, ncol(simmap_simulations), "zoom.pdf", sep = "_"), width = 10, height = 10)
+      pdf(file = here(paste("outs/Figures/plot_18_SIMMAPs_states", dataset_variable, name_variable, length(trpy_n$tip.label), "species", model_type, ncol(simmap_simulations), "zoom.pdf", sep = "_")), width = 10, height = 10)
       print(recon_plot / geo_scale + plot_layout(nrow = 2, heights = c(5,0.5)))
       dev.off()
       
       if (model_type == "HR") {
-        plot_simmap_rates <- simulatedSwitchRatio(simulated_cumsums = cumsums_simmap_rates, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "blue") #+ ylim(c(0,0.15))
+        plot_simmap_rates <- simulatedSwitchRatio(simulated_cumsums = cumsums_simmap_rates, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "blue", error = "sd") #+ ylim(c(0,0.15))
         switch.ratio.rates <- switchRatio(ancestral_states = anc_rates, phylo_tree = trpy_n, node.age.cutoff = 0.02)
         plot.rates <- plot_simmap_rates + geom_line(data = switch.ratio.rates$data, aes(x=node.age,y=ratio), colour = "black")
         plot.rates <- plot.rates + ggtitle(paste(model_type, "model SIMMAP (rates),", name_variable, Ntip(trpy_n), "species", sep = " "), subtitle = paste("# Simulations:", ncol(simmap_simulations), ", Avg. transitions:", mean(colSums(simulated_transitions_simmap_rates)), "+/-", round(sd(colSums(simulated_transitions_simmap_rates)),1), sep = " "))
         recon_plot_rates <- plot.rates + coord_cartesian(ylim = c(0, layer_scales(plot.rates)$y$range$range[[2]]), xlim = abs(layer_scales(plot.rates)$x$range$range)) 
         geo_scale_rates <- gggeo_scale(switch.ratio, pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme_void() + coord_cartesian(xlim = abs(layer_scales(plot.rates)$x$range$range))
         
-        pdf(file = paste(dataset_variable, "phylogeny_diel_plot_transitions_SIMMAP_rates", name_variable, length(trpy_n$tip.label), "species", model_type, ncol(simmap_simulations), "zoom.pdf", sep = "_"), width = 10, height = 10)
+        pdf(file = here(paste("outs/Figures/plot_19_SIMMAPs_rates", dataset_variable, name_variable, length(trpy_n$tip.label), "species", model_type, ncol(simmap_simulations), "zoom.pdf", sep = "_")), width = 10, height = 10)
         print(recon_plot_rates / geo_scale_rates + plot_layout(nrow = 2, heights = c(5,0.5)))
         dev.off()
       }

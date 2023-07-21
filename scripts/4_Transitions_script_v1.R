@@ -7,11 +7,11 @@ library(rfishbase)
 library(stringr)
 library(zoo)
 library(ggtree)
+library(here)
 
+setwd(here())
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
-
-source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/scripts/Fish_sleep_functions.R")
+source(here("scripts/Fish_sleep_functions.R"))
 
 index_list <- list()
 index_list[[1]] <- c("all", "only_highqual", "only_cartilaginous", "only_ingroup")
@@ -20,7 +20,7 @@ index_list[[3]] <- c("all", "not_mammals")
 index_list[[4]] <- c("all")
 names(index_list) <- c("fish", "mammals", "tetrapods", "AllGroups")
 
-recon <- "joint"
+recon <- "marg"
 
 for (i in 1:length(index_list)) {
   dataset_variable <- names(index_list)[[i]]
@@ -66,9 +66,9 @@ for (i in 1:length(index_list)) {
     anc_states <- returnCumSums(ancestral_states = anc_states, phylo_tree = trpy_n)
     
     ## Save out the file (to be re-used in #5)
-    saveRDS(anc_states, file = paste(dataset_variable, "diel_ancestral_states", name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
+    saveRDS(anc_states, file = paste("diel_ancestral_states", dataset_variable, name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
     
-    anc_states <- readRDS(file = paste(dataset_variable, "diel_ancestral_states", name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
+    anc_states <- readRDS(file = paste("diel_ancestral_states", dataset_variable, name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
     
     
     ###############################################################################################################################################
@@ -104,19 +104,19 @@ for (i in 1:length(index_list)) {
     
     xlims <- c(max(anc_states$node.age), min(anc_states$node.age))
     
-    pdf(file = paste("outs/Figures/phylogeny_diel_plot_transitions_histo", dataset_variable, name_variable, length(trpy_n$tip.label), "species.pdf", sep = "_"), width = 10, height = 5)
+    pdf(file = here(paste("outs/Figures/plot_10_transitions_histo", dataset_variable, name_variable, length(trpy_n$tip.label), "species.pdf", sep = "_")), width = 10, height = 5)
     print(((switch.histo / geo_scale) & xlim(xlims)) + plot_layout(nrow = 2, heights = c(5,0.5)))
     dev.off()
     
-    pdf(file = paste("outs/Figures/phylogeny_diel_plot_transitions_swithTypes", dataset_variable, name_variable, length(trpy_n$tip.label), "species.pdf", sep = "_"), width = 10, height = 5)
+    pdf(file = here(paste("outs/Figures/plot_11_transitions_switchTypes", dataset_variable, name_variable, length(trpy_n$tip.label), "species.pdf", sep = "_")), width = 10, height = 5)
     print(((switch.ratio.types / geo_scale) & xlim(xlims)) + plot_layout(nrow = 2, heights = c(5,0.5)))
     dev.off()
     
-    pdf(file = paste("outs/Figures/phylogeny_diel_plot_transitions_swith", dataset_variable, name_variable, length(trpy_n$tip.label), "species.pdf", sep = "_"), width = 10, height = 5)
+    pdf(file = here(paste("outs/Figures/plot_12_transitions_switch", dataset_variable, name_variable, length(trpy_n$tip.label), "species.pdf", sep = "_")), width = 10, height = 5)
     print(((switch.ratio / geo_scale) & xlim(xlims)) + plot_layout(nrow = 2, heights = c(5,0.5)))
     dev.off()
     
-    pdf(file = paste("outs/Figures/phylogeny_diel_highswitchlineages", dataset_variable, name_variable, length(trpy_n$tip.label), "species.pdf", sep = "_"), height = 60, width = 60)
+    pdf(file = here(paste("outs/Figures/plot_13_highSwitchLineages", dataset_variable, name_variable, length(trpy_n$tip.label), "species.pdf", sep = "_")), height = 60, width = 60)
     print(numb_switch_tree)
     dev.off()
     
@@ -128,14 +128,14 @@ for (i in 1:length(index_list)) {
     ### Create the object with lineages through time and diel switches data ### 
     ###############################################################################################################################################
     
-    anc_rates <- returnAncestralStates(phylo_model = model, phylo_tree = trpy_n)
+    anc_rates <- returnAncestralStates(phylo_model = model, phylo_tree = trpy_n, rate.cat = 2, recon = recon)
     anc_rates <- calculateStateTransitions(ancestral_states = anc_rates, phylo_tree = trpy_n, rate.cat = T)
     anc_rates <- calculateLinTransHist(ancestral_states = anc_rates, phylo_tree = trpy_n)
     anc_rates <- returnCumSums(ancestral_states = anc_rates, phylo_tree = trpy_n)
     
     ## Save out the file (to be re-used in #5)
-    saveRDS(anc_rates, file = paste(dataset_variable, "diel_ancestral_rates", name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
-    anc_rates <- readRDS(file = paste(dataset_variable, "diel_ancestral_rates", name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
+    saveRDS(anc_rates, file = paste("diel_ancestral_rates", dataset_variable, name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
+    anc_rates <- readRDS(file = paste("diel_ancestral_rates", dataset_variable, name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
     
     
     ###############################################################################################################################################
@@ -151,7 +151,7 @@ for (i in 1:length(index_list)) {
     
     xlims <- c(max(anc_rates$node.age), min(anc_rates$node.age))
     
-    pdf(file = paste("outs/Figures/phylogeny_diel_plot_transitions_rates_switch", dataset_variable, name_variable, length(trpy_n$tip.label), "species.pdf", sep = "_"), width = 10, height = 5)
+    pdf(file = here(paste("outs/Figures/plot_14_transitions_rates_switch", dataset_variable, name_variable, length(trpy_n$tip.label), "species.pdf", sep = "_")), width = 10, height = 5)
     print(((switch.ratio / geo_scale) & xlim(xlims)) + plot_layout(nrow = 2, heights = c(5,0.5)))
     dev.off()
     

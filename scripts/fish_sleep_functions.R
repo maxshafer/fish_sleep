@@ -14,7 +14,7 @@
 ### Need to make these work for if there is another trait involved (for example, marine/fresh). Would still be useful to plot the Di/Noc for these models
 
 ### This function loads either the tree or the trait data (only the tree and the model are required for the ancestral reconstruction)
-loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapods", "mammals"), subset = c("no", "all", "only_highqual", "only_ingroup", "only_cartilaginous", "not_mammals", "custom"), custom_tips = NA) {
+loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapods", "mammals"), subset = c("no", "all", "only_highqual", "only_ingroup", "only_cartilaginous", "not_mammals", "custom"), custom_tips = NA, only_model_data = TRUE) {
   require(ape)
   
   ## Load tree and trait data
@@ -53,12 +53,18 @@ loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapod
   }
   
   # Just diurnal/nocturnal
-  trait.vector_n <- trait.data$diel1
-  names(trait.vector_n) <- trait.data$species
-  trait.vector_n <- trait.vector_n[trait.vector_n %in% c("diurnal", "nocturnal")]
-  trpy_n <- keep.tip(tr.calibrated, tip = names(trait.vector_n))
-  trpy_n$edge.length[trpy_n$edge.length == 0] <- 0.001 
-  trait.data_n <- trait.data[trait.data$species %in% trpy_n$tip.label,]
+  if (only_model_data == TRUE) {
+    trait.vector_n <- trait.data$diel1
+    names(trait.vector_n) <- trait.data$species
+    trait.vector_n <- trait.vector_n[trait.vector_n %in% c("diurnal", "nocturnal")]
+    trpy_n <- keep.tip(tr.calibrated, tip = names(trait.vector_n))
+    trpy_n$edge.length[trpy_n$edge.length == 0] <- 0.001 
+    trait.data_n <- trait.data[trait.data$species %in% trpy_n$tip.label,]
+  } else {
+    trait.data_n <- trait.data
+    trpy_n <- keep.tip(tr.calibrated, tip = trait.data_n$species)
+  }
+  
   
   if (subset == "custom") {
     if (is.na(custom_tips) | length(custom_tips) != 2) {
@@ -389,9 +395,9 @@ switchHisto <- function(ancestral_states = ancestral_states, replace_variable_na
 }
 
 
-### Function to make the Switch ratio plot (line)
+### Function that plots the ratio of cumulative transitions divided by cumulative lineages (transitions through time plot, ttt)
 
-switchRatio <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, node.age.cutoff = 0.1, use_types = FALSE) {
+switchRatio <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, node.age.cutoff = 0.1, use_types = FALSE, smooth = "no") {
   require(ape)
   
   node_order <- order(ancestral_states$node.age, decreasing = T)
@@ -403,13 +409,21 @@ switchRatio <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n
   df$ltt_cumsum <- cumsum(df$ltt_source)
 
   
-  ## OK this seems to be really close. I can calculate ltt's properly, but it also makes a weird thing were ltt decreases near present day
+  ## OK this seems to be really close. I can calculate ltt's properly, but it also makes a weird thing were ltt decreases near present day (this is also in phytools approach, and the default behaviour is to not plot)
   df$ratio <- df$transition_cumsum/df$ltt_cumsum
   df$ratio_DN <- df$trans.DN.cumsum/df$ltt_cumsum
   df$ratio_ND <- df$trans.ND.cumsum/df$ltt_cumsum
   
   df$ratio[is.nan(df$ratio)] <- 0
   df$ratio[is.infinite(df$ratio)] <- 0
+  
+  if (smooth != "no") {
+    require(dplyr)
+    df$node.age <- cut_width(df$node.age, smooth, label = FALSE)
+    df <- df %>% group_by(node.age) %>% summarise(ratio = mean(ratio))
+    df <- df[2:nrow(df),]
+    df$node.age <- df$node.age*smooth
+  }
   
   if(use_types) {
     df2 <- gather(df, key = "trans_type", value = "ratio", -node, -node.age, -transition_cumsum, -trans.ND.cumsum, -trans.DN.cumsum, -ltt_source, -ltt_cumsum, -ratio)
@@ -474,7 +488,7 @@ switchTree <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n,
 
 ## Function that plots switch ratio
 
-simulatedSwitchRatio <- function(simulated_cumsums = cumsums, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "red", error = "both") {
+simulatedSwitchRatio <- function(simulated_cumsums = cumsums, phylo_tree = trpy_n, node.age.cutoff = 0.02, plot_type = "summary", highlight_colour = "red", error = "both", smooth = "no") {
   require(ape)
   
   # If there is a supplied node.age, use it to order, otherwise assume rows are already ordered by node.age
@@ -504,18 +518,39 @@ simulatedSwitchRatio <- function(simulated_cumsums = cumsums, phylo_tree = trpy_
     df$mean <- rowMeans(simulated_ratios)
     df$sd <- apply(simulated_ratios, 1, function(x) sd(x))
     df$moe <- apply(simulated_ratios, 1, function(x) sqrt( (sd(x)^2) / ncol(simulated_cumsums) ) * qt(0.95, df = ncol(simulated_cumsums)-1) )
-    df$quant <- apply(simulated_ratios, 1, function(x) quantile(x, 0.68))
+    # df$quant <- apply(simulated_ratios, 1, function(x) quantile(x, 0.68))
     df$min <- apply(simulated_ratios, 1, function(x) min(x))
     df$max <- apply(simulated_ratios, 1, function(x) max(x))
     
+    if (smooth != "no") {
+      require(dplyr)
+      test <- lapply(simulated_ratios, function(x) {
+        test.df <- data.frame(node.age = cut_width(df$node.age, smooth, label = FALSE), x = x)
+        test.df <- test.df %>% group_by(node.age) %>% summarise(x = mean(x))
+        return(test.df$x)
+      })
+      test <- Reduce(cbind, test)
+      df$node.age <- cut_width(df$node.age, smooth, label = FALSE)
+      df <- df %>% group_by(node.age) %>% summarise(node.age = mean(node.age))
+      df$mean <- rowMeans(test)
+      df$sd <- apply(test, 1, function(x) sd(x))
+      df$moe <- apply(test, 1, function(x) sqrt( (sd(x)^2) / ncol(simulated_cumsums) ) * qt(0.95, df = ncol(simulated_cumsums)-1) )
+      # df$quant <- apply(simulated_ratios, 1, function(x) quantile(x, 0.68))
+      df$min <- apply(test, 1, function(x) min(x))
+      df$max <- apply(test, 1, function(x) max(x))
+      df <- df[2:nrow(df),]
+      df$node.age <- df$node.age*smooth
+    }
+    
+    
     if (error == "moe") {
-      plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = mean-moe, ymax = mean+moe), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
+      plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = ifelse(mean-moe < 0, 0, mean-moe), ymax = mean+moe), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
     } 
     if (error == "min_max") {
       plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = min, ymax = max), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
     } 
     if (error == "sd") {
-      plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = max(mean-sd, 0), ymax = mean+sd), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
+      plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = ifelse(mean-sd < 0, 0, mean-sd), ymax = mean+sd), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
     }
     if (error == "both") {
       plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = mean)) + geom_line(colour = highlight_colour) + geom_ribbon(aes(ymin = min, ymax = max), fill = "grey50", alpha = 0.1) + geom_ribbon(aes(ymin = max(mean-sd, 0), ymax = mean+sd), fill = "blue", alpha = 0.1) + theme_classic() + scale_x_reverse() + theme(legend.position = "none")
@@ -647,7 +682,51 @@ plotRateIndex <- function(model = model, HMM = FALSE, levels = NA) {
   return(plot)
 }
 
+## This function add order highlights to a ggtree plot
 
+addOrderLabels <- function(diel.plot.orders = diel.plot.orders, colours = my_colors, orders = orders, resolved_names = trait.data_n, tr.calibrated = trpy_n, highlight = TRUE, offset = 45, alpha = 0.25) {
+  
+  for (p in 1:length(orders)) {
+    tips <- resolved_names$species[resolved_names$order %in% orders[[p]]]
+    tips <- tips[!(is.na(tips))]
+    anchor.point <- round(median(1:length(tips)))
+    anchor.point <- tips[anchor.point]
+    
+    
+      if(length(tips) > 1) {
+        node <- getMRCA(tr.calibrated, tips)
+        if (highlight) {
+          diel.plot.orders <- diel.plot.orders + geom_hilight(node = node, fill = my_colors[[p]], alpha = alpha)
+        }
+        angle <- mean(diel.plot.orders$data$angle[diel.plot.orders$data$label %in% tips])
+        if(between(angle, 90, 270)) {
+          angle <- angle + 180
+          hjust <- 1
+        } else {
+          angle <- angle
+          hjust <- 0
+        }
+        diel.plot.orders <- diel.plot.orders + geom_cladelabel(node = node, label = orders[[p]], color = my_colors[[p]], offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5)
+      } 
+      
+      if(length(tips) == 1) {
+        node <- diel.plot.orders$data$node[match(tips, diel.plot.orders$data$label)]
+        diel.plot.orders <- diel.plot.orders + geom_hilight(node =  node, fill = my_colors[[p]], alpha = alpha)
+        # angle = diel.plot.orders$data$angle[match(tips, diel.plot.orders$data$node)]
+        angle <- mean(diel.plot.orders$data$angle[diel.plot.orders$data$label %in% tips])
+        if(between(angle, 90, 270)) {
+          angle <- angle + 180
+          hjust <- 1
+        } else {
+          angle <- angle
+          hjust <- 0
+        }
+        diel.plot.orders <- diel.plot.orders + geom_cladelab(node = node, label = orders[[p]], color = my_colors[[p]], offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5)
+      }
+  }
+  
+  return(diel.plot.orders)
+}
 
 gggeo_scale <- function(gg, fill = NULL, color = "black", alpha = 1, height = .05, size = 5, quat = FALSE, pos = "bottom", abbrv = TRUE, periods = NULL, neg = FALSE, blank.gg = FALSE) {
   #This is a function to add a geologic time scale to a ggplot object.
@@ -733,3 +812,6 @@ gggeo_scale <- function(gg, fill = NULL, color = "black", alpha = 1, height = .0
   }
   gg
 }
+
+
+colMax <- function(data) sapply(data, max, na.rm = TRUE)
