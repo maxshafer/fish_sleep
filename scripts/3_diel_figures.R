@@ -21,7 +21,7 @@ source(here("scripts/Fish_sleep_functions.R"))
 index_list <- list()
 index_list[[1]] <- c("all", "only_highqual", "only_cartilaginous", "only_ingroup")
 index_list[[2]] <- c("all")
-index_list[[3]] <- c("all", "not_mammals")
+index_list[[3]] <- c(c("all", "not_mammals", "amphibians", "sauropsids", "lepidosauria", "testudines", "aves"))
 index_list[[4]] <- c("all")
 names(index_list) <- c("fish", "mammals", "tetrapods", "AllGroups")
 

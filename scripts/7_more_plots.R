@@ -13,6 +13,7 @@ library(patchwork)
 library(here)
 library(xlsx)
 library(gsheet)
+library(viridis)
 
 #### This script to make some extra figures, based on extinction, fossil, and other data
 
@@ -22,9 +23,11 @@ source(here("scripts/Fish_sleep_functions.R"))
 
 index_list <- list()
 index_list[[1]] <- c("all")
-index_list[[2]] <- c("all")
-index_list[[3]] <- c("not_mammals")
-names(index_list) <- c("fish", "mammals", "tetrapods")
+index_list[[2]] <- c("only_cartilaginous")
+index_list[[3]] <- c("all")
+index_list[[4]] <- c("sauropsids")
+index_list[[5]] <- c("amphibians")
+names(index_list) <- c("fish", "fish", "mammals", "tetrapods", "tetrapods")
 
 # Set simulation parameters (type and #)
 model_types <- "HR"
@@ -32,7 +35,9 @@ sim_numb <- 500
 
 recon <- "marg"
 
-anc_rates <- list()
+smooth <- 5
+
+anc_states <- list()
 switch.ratio <- list()
 
 for (i in 1:length(index_list)) {
@@ -67,7 +72,7 @@ for (i in 1:length(index_list)) {
       ## Load the ancestral states data
       anc_states[[i]] <- readRDS(file = paste("diel_ancestral_states", dataset_variable, name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
 
-      switch.ratio[[i]] <- switchRatio(ancestral_states = anc_states[[i]], phylo_tree = trpy_n, node.age.cutoff = 0.02, smooth = 5)
+      switch.ratio[[i]] <- switchRatio(ancestral_states = anc_states[[i]], phylo_tree = trpy_n, node.age.cutoff = 0.02, smooth = smooth)
       
 }
 
@@ -79,14 +84,19 @@ rohde_data <- rohde_data[,c("Time_Ma", "Extinction_Intensity", "Origination_Inte
 colnames(rohde_data) <- c("node.age", "extinction", "origination")
 
 ## Smooth the data by 5 my (same as mine)
-rohde_data$node.age <- cut_width(rohde_data$node.age, 5, label = FALSE)
-rohde_data <- rohde_data %>% group_by(node.age) %>% summarise(extinction = mean(extinction), origination = mean(origination))
-rohde_data$node.age <- rohde_data$node.age*5
+# rohde_data$node.age <- cut_width(rohde_data$node.age, smooth, label = FALSE)
+# rohde_data <- rohde_data %>% group_by(node.age) %>% summarise(extinction = mean(extinction), origination = mean(origination))
+# rohde_data$node.age <- (rohde_data$node.age*smooth)#-smooth
 
 
 ## Make a combined plot
-combined.data <- Reduce(rbind, list(switch.ratio[[1]]$data, switch.ratio[[2]]$data, switch.ratio[[3]]$data))
-combined.data$group <- c(rep("fish", 49), rep("mammals", 21), rep("tetrapods", 46))
+names(switch.ratio) <- unlist(lapply(seq_along(index_list), function(x) paste(names(index_list)[x], index_list[x], sep = "_")))
+combined.data <- Reduce(rbind, lapply(seq_along(switch.ratio), function(x) {
+  df <- switch.ratio[[x]]$data
+  df$group <- names(switch.ratio)[[x]]
+  return(df)
+}))
+
 combined.plot <- ggplot(combined.data, aes(x = node.age, y = ratio, group = group, colour = group)) + geom_line(size = 2, alpha = 0.75) + scale_color_viridis(discrete = TRUE, option = "D") + theme_classic() + scale_x_reverse()
 
 
@@ -96,10 +106,14 @@ origination <- ggplot(rohde_data, aes(x = node.age, y = origination)) + geom_lin
 
 geo_scale <- gggeo_scale(combined.plot, pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme_void() + coord_cartesian(xlim = abs(layer_scales(combined.plot)$x$range$range)) 
 
+
+pdf(file = here("outs/Figures/plot_XX_transitions_vs_extinction.pdf"), width = 10, height = 10)
 combined.plot / geo_scale / extinction  + plot_layout(nrow = 3, heights = c(5,0.5,5))
+dev.off()
 
+pdf(file = here("outs/Figures/plot_XX_transitions_vs_origination.pdf"), width = 10, height = 10)
 combined.plot / geo_scale / origination + plot_layout(nrow = 3, heights = c(5,0.5,5))
-
+dev.off()
 
 ### What about fossil data?
 file_list <- list.files(here("paleobiodb/"), pattern = "summary")
@@ -121,6 +135,6 @@ db_data <- Reduce(rbind, db_data)
 
 fossil_plot <- ggplot(db_data[db_data$group != "tetrapoda",], aes(x = node.age, y = fossil, group = group, colour = group)) + geom_line() + scale_x_reverse() + xlim(c(max(combined.plot$data$node.age),0)) + theme_classic()
 
-
+pdf(file = here("outs/Figures/plot_XX_transitions_vs_fossils.pdf"), width = 10, height = 10)
 combined.plot / geo_scale / fossil_plot + plot_layout(nrow = 3, heights = c(5,0.5,5))
-
+dev.off()

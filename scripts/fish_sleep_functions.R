@@ -259,7 +259,7 @@ calculateSimulatedTransitions <- function(simulated_data = simulation, phylo_tre
 
 
 ### Function to determine the number of transitions between states
-calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, ancestor = 0, rate.cat = FALSE) {
+calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, rate.cat = FALSE) {
   
   states <- ancestral_states$states
   rate_states <- ancestral_states$rate_states
@@ -273,7 +273,7 @@ calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo
     ancestral_states$recon_states <- as.numeric(rowSums(ancestral_states$lik.anc[,rate_states[grep(states[[1]], rate_states)]]))
   }
   
-  ## Add functionality to do this for rate categories?
+  ## Added functionality to do this for rate categories
   if (rate.cat) {
     print("returning rate categories instead of states")
     ancestral_states$recon_states <- as.numeric(rowSums(ancestral_states$lik.anc[,rate_states[grep("R1", rate_states)]]))
@@ -281,6 +281,8 @@ calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo
   
   # Determine ages of each node
   node_heights <- nodeHeights(phylo_tree)
+  
+  ancestor <- round(ancestral_states$recon_states[Ntip(phylo_tree)+1])
   
   ancestral_states$node.age <- node_heights[match(ancestral_states$node, phylo_tree$edge[,2]),2] # This extracts all but one that is missing from phylo_tree$edge[,2], and generates an NA
   ancestral_states$node.age[ancestral_states$node[is.na(ancestral_states$node.age)]] <- 0 # This is the root
@@ -293,7 +295,7 @@ calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo
   ancestral_states$parental.node <- unlist(lapply(ancestral_states$node, function(x) Ancestors(phylo_tree, x, type = "parent")))
   ancestral_states$parent.diel <- unlist(lapply(ancestral_states$parental.node, function(x) ancestral_states$recon_states[match(x, ancestral_states$node)]))
   # parent of the root is NA
-  ancestral_states$parent.diel[is.na(ancestral_states$parent.diel)] <- ancestor
+  ancestral_states$parent.diel[is.na(ancestral_states$parent.diel)] <- as.numeric(ancestor)
   
   ancestral_states$transition <- ifelse(ifelse(ancestral_states$parent.diel > 0.5, 1, 0) != ifelse(ancestral_states$recon_states > 0.5, 1, 0), 1, 0)
   # For those with transitions, I can just ask what they are, and that's the switch type!
