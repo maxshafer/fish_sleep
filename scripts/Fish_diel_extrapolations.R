@@ -8,22 +8,33 @@ library(ggpubr)
 library(dplyr)
 library(rfishbase)
 library(ggrepel)
+library(here)
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
+setwd(here())
 
+source(here("scripts", "fish_sleep_functions.R"))
 # Fetch the taxonomic levels from fishbase for all of the species and make it into a dataframe
-fishbase_df <- load_taxa(collect = T)
+fishbase_df <- load_taxa(collect = T, version = "21.06")
 fishbase_df <- as.data.frame(fishbase_df)
 
 
 resolved_names <- read.csv(file = "resolved_names_local.csv", row.names = "X")
+
+dataset_variable <- "fish"
+name_variable <- "all"
+
+trpy_n <- loadTree(return = "tree", dataset = dataset_variable, subset = name_variable, custom_tips = c, only_model_data = FALSE)
+trait.data_n <- loadTree(return = "trait_data", dataset = dataset_variable, subset = name_variable, only_model_data = FALSE)
+
+trait.data_n$family <- fishbase_df$Family[match(str_replace(trait.data_n$species, "_", " "), fishbase_df$Species)]
+trait.data_n$genus <- fishbase_df$Genus[match(str_replace(trait.data_n$species, "_", " "), fishbase_df$Species)]
 
 ######### Can we extrapolate the numbers based on proportions?
 
 # Maybe Family, since order is a bit messed up in fishbase? Or can do for all
 
 
-number_order <- table(resolved_names$order, resolved_names$diel2)
+number_order <- table(trait.data_n$order, trait.data_n$diel2)
 percent_order <- as.data.frame(number_order/rowSums(number_order))
 phylum_numb <- table(fishbase_df$Order)
 phylum_numb <- phylum_numb[names(phylum_numb) %in% percent_order$Var1]
@@ -32,19 +43,20 @@ predicted_numb_order$Freq <- as.numeric(predicted_numb_order$Freq*as.vector(phyl
 
 order_numb <- predicted_numb_order %>% group_by(Var2) %>% summarise(Freq = sum(Freq))
 
-number_family <- table(resolved_names$family, resolved_names$diel2)
+number_family <- table(trait.data_n$family, trait.data_n$diel2)
 percent_family <- as.data.frame(number_family/rowSums(number_family))
-phylum_numb <- table(fishbase_df$Family)
-phylum_numb <- phylum_numb[names(phylum_numb) %in% percent_family$Var1]
+phylum_numb <- table(fishbase_df$Family)[unique(fishbase_df$Family) %in% trait.data_n$family[!(is.na(trait.data_n$family))]]
+# phylum_numb <- phylum_numb[names(phylum_numb) %in% percent_family$Var1]
 predicted_numb_family <- percent_family
 predicted_numb_family$Freq <- as.numeric(predicted_numb_family$Freq*as.vector(phylum_numb))
+predicted_numb_family <- predicted_numb_family[!(is.na(predicted_numb_family$Freq)),]
 
-family_numb <- predicted_numb_family %>% group_by(Var2) %>% summarise(Freq = sum(Freq))
+family_numb <- predicted_numb_family %>% group_by(Var2) %>% summarise(Freq = sum(as.numeric(Freq)))
 
-number_genus <- table(resolved_names$genus, resolved_names$diel2)
+number_genus <- table(trait.data_n$genus, trait.data_n$diel2)
 percent_genus <- as.data.frame(number_genus/rowSums(number_genus))
-phylum_numb <- table(fishbase_df$Genus)
-phylum_numb <- phylum_numb[names(phylum_numb) %in% percent_genus$Var1]
+phylum_numb <- table(fishbase_df$Genus)[unique(fishbase_df$Genus) %in% trait.data_n$genus[!(is.na(trait.data_n$genus))]]
+# phylum_numb <- phylum_numb[names(phylum_numb) %in% percent_genus$Var1]
 predicted_numb_genus <- percent_genus
 predicted_numb_genus$Freq <- as.numeric(predicted_numb_genus$Freq*as.vector(phylum_numb))
 
@@ -52,15 +64,18 @@ genus_numb <- predicted_numb_genus %>% group_by(Var2) %>% summarise(Freq = sum(F
 
 
 predicted_df <- data.frame(order = order_numb$Freq, family = family_numb$Freq, genus = genus_numb$Freq)
+predicted_df$average <- rowMeans(predicted_df)
 
 predicted_frac <- sweep(predicted_df,2,colSums(predicted_df),`/`)
+predicted_frac$average <- rowMeans(predicted_frac)
+predicted_frac$number <- predicted_frac$average*sum(predicted_df$order)
 
-actual_frac <- data.frame(table(trait.data$diel2))
+actual_frac <- data.frame(table(trait.data_n$diel2))
 actual_frac$Perc <- actual_frac$Freq/sum(actual_frac$Freq)*100
 
 
 ### ID which clades are underrepresented (with the lowest % of total species richness)
-database_numb <- table(resolved_names$order)
+database_numb <- table(trait.data_n$order)
 phylum_numb <- table(fishbase_df$Order)
 phylum_numb <- phylum_numb[names(phylum_numb) %in% names(database_numb)]
 

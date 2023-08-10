@@ -75,7 +75,7 @@ for (i in 1:length(index_list)) {
     ### Make Plots! ### 
     ###############################################################################################################################################
     
-    switch.histo <- switchHisto(ancestral_states = anc_states, replace_variable_names = F, backfill = T)
+    switch.histo <- switchHisto(ancestral_states = anc_states, replace_variable_names = T, backfill = F, states = T)
     
     # So, this works now, and I think correctly
     # One question is though, because all the tips are clustered at the same age, there's a lot of tips and transitions right near the end of the tree
@@ -142,7 +142,9 @@ for (i in 1:length(index_list)) {
     ### Make Plots! ### 
     ###############################################################################################################################################
     
-    switch.ratio <- switchRatio(ancestral_states = anc_rates, phylo_tree = trpy_n, node.age.cutoff = 0.02, use_types = F)
+    switch.histo <- switchHisto(ancestral_states = anc_rates, replace_variable_names = T, backfill = F, states = F, rates = T)
+    
+    switch.ratio <- switchRatio(ancestral_states = anc_rates, phylo_tree = trpy_n, node.age.cutoff = 0.02, use_types = T)
     geo_scale <- gggeo_scale(switch.ratio, pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme_void()
     
     ###############################################################################################################################################
@@ -152,7 +154,7 @@ for (i in 1:length(index_list)) {
     xlims <- c(max(anc_rates$node.age), min(anc_rates$node.age))
     
     pdf(file = here(paste("outs/Figures/plot_14_transitions_rates_switch", dataset_variable, name_variable, length(trpy_n$tip.label), "species.pdf", sep = "_")), width = 10, height = 5)
-    print(((switch.ratio / geo_scale) & xlim(xlims)) + plot_layout(nrow = 2, heights = c(5,0.5)))
+    print(((switch.histo / switch.ratio / geo_scale) & xlim(xlims)) + plot_layout(nrow = 3, heights = c(5,5,0.5)))
     dev.off()
     
   }

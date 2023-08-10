@@ -21,7 +21,7 @@ setwd(here())
 source(here("scripts/Fish_sleep_functions.R"))
 
 index_list <- list()
-index_list[[1]] <- c("all", "only_cartilaginous", "only_ingroup", "only_highqual")
+index_list[[1]] <- c("all", "only_cartilaginous", "only_ingroup") # , "only_highqual"
 index_list[[2]] <- c("all")
 index_list[[3]] <- c("all", "not_mammals", "amphibians", "sauropsids", "lepidosauria", "testudines", "aves")
 index_list[[4]] <- c("all")
@@ -33,11 +33,19 @@ sim_numb <- 500
 
 recon <- "marg"
 
+theme_set(theme_classic(base_size = 8))
+
+sIMs_states_plots <- list()
+sIMs_rates_plots <- list()
+
 for (y in 1:length(model_types)) {
   model_type <- model_types[[y]]
   
   for (i in 1:length(index_list)) {
     dataset_variable <- names(index_list)[[i]]
+    
+    sIMs_states_plots[[i]] <- list()
+    sIMs_rates_plots[[i]] <- list()
     
     for (j in 1:length(index_list[[i]])) {
       name_variable <- index_list[[i]][[j]]
@@ -133,7 +141,7 @@ for (y in 1:length(model_types)) {
       recon_plot <- plot + coord_cartesian(ylim = c(0, layer_scales(plot)$y$range$range[[2]]), xlim = abs(layer_scales(plot)$x$range$range)) 
       
       # Make an ggplot that is just the scale (plot on top of switch.ratio and cut the scales with blank.gg = TRUE)
-      geo_scale <- gggeo_scale(switch.ratio, pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme_void() + coord_cartesian(xlim = abs(layer_scales(plot)$x$range$range)) 
+      geo_scale <- gggeo_scale(switch.ratio, pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme_void() + coord_cartesian(xlim = c(415,0)) 
       
       simmap_recon_plot <- recon_plot / geo_scale + plot_layout(nrow = 2, heights = c(5,0.5))
       
@@ -172,19 +180,25 @@ for (y in 1:length(model_types)) {
       
       merge_data <- merge(plot_simulation$data, plot_simmap$data, by = "node.age", suffixes = c("_simulation", "_simmap"))
       merge_plot <- ggplot(merge_data, aes(x = node.age)) + geom_line(aes(x=node.age,y=mean_simulation), colour = "red") + geom_line(aes(x=node.age, y=mean_simmap), colour = "blue") + geom_ribbon(aes(ymin = ifelse(mean_simulation-sd_simulation < 0, 0, mean_simulation-sd_simulation), ymax = mean_simulation+sd_simulation), fill = "red", alpha = 0.1) + geom_ribbon(aes(ymin = ifelse(mean_simmap-sd_simmap < 0, 0, mean_simmap-sd_simmap), ymax = mean_simmap+sd_simmap), fill = "blue", alpha = 0.1)
-      merge_plot <- merge_plot + theme_classic() + scale_x_reverse() + ylab("Fraction of lineages transitioning") + xlab("Millions of years ago")
+      merge_plot <- merge_plot + theme_classic() + scale_x_reverse() + ylab("Fraction of lineages transitioning") + xlab("Millions of years ago") + xlim(c(415,0))
       merge_plot <- merge_plot + ggtitle(paste(model_type, "model STATES: Simulations vs SIMMAP", sep = " "), subtitle = paste("# Simulations:", sim_numb, "-", dataset_variable, name_variable, Ntip(trpy_n), "species", sep = " "))
+      sIMs_states_plots[[i]][[j]] <- merge_plot
+      
       merge_plot <- merge_plot / geo_scale + plot_layout(nrow = 2, heights = c(5,0.5))
       
       pdf(file = here(paste("outs/Figures/plot_20_simulations_vs_SIMMAPs_states", dataset_variable, name_variable, length(trpy_n$tip.label), "species", model_type, sim_numb, "zoom.pdf", sep = "_")), width = 10, height = 10)
       print(merge_plot)
       dev.off()
       
+      
+      
       if (model_type == "HR") {
         merge_data_rates <- merge(plot_simulation_rates$data, plot_simmap_rates$data, by = "node.age", suffixes = c("_simulation", "_simmap"))
         merge_plot_rates <- ggplot(merge_data_rates, aes(x = node.age)) + geom_line(aes(x=node.age,y=mean_simulation), colour = "red") + geom_line(aes(x=node.age, y=mean_simmap), colour = "blue") + geom_ribbon(aes(ymin = ifelse(mean_simulation-sd_simulation < 0, 0, mean_simulation-sd_simulation), ymax = mean_simulation+sd_simulation), fill = "red", alpha = 0.1) + geom_ribbon(aes(ymin = ifelse(mean_simmap-sd_simmap < 0, 0, mean_simmap-sd_simmap), ymax = mean_simmap+sd_simmap), fill = "blue", alpha = 0.1)
-        merge_plot_rates <- merge_plot_rates + theme_classic() + scale_x_reverse() + ylab("Fraction of lineages transitioning") + xlab("Millions of years ago")
+        merge_plot_rates <- merge_plot_rates + theme_classic() + scale_x_reverse() + ylab("Fraction of lineages transitioning") + xlab("Millions of years ago") + xlim(c(415,0))
         merge_plot_rates <- merge_plot_rates + ggtitle(paste(model_type, "model RATES: Simulations vs SIMMAP", sep = " "), subtitle = paste("# Simulations:", sim_numb, "-", dataset_variable, name_variable, Ntip(trpy_n), "species", sep = " "))
+        sIMs_rates_plots[[i]][[j]] <- merge_plot_rates
+        
         merge_plot_rates <- merge_plot_rates / geo_scale_rates + plot_layout(nrow = 2, heights = c(5,0.5))
         
         pdf(file = here(paste("outs/Figures/plot_21_simulations_vs_SIMMAPs_rates", dataset_variable, name_variable, length(trpy_n$tip.label), "species", model_type, sim_numb, "zoom.pdf", sep = "_")), width = 10, height = 10)
@@ -199,4 +213,39 @@ for (y in 1:length(model_types)) {
 }
 
 
+## Make a combined plot for figures
+actinos <- sIMs_states_plots[[1]][[3]] + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.y = element_text(colour = "black")) + ggtitle(element_blank(), subtitle = element_blank())
+actinos <- actinos + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1)
+mammals <- sIMs_states_plots[[2]][[1]] + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.y = element_text(colour = "black")) + ggtitle(element_blank(), subtitle = element_blank())
+mammals <- mammals + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1)
+amphibians <- sIMs_states_plots[[3]][[3]] + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.y = element_text(colour = "black")) + ggtitle(element_blank(), subtitle = element_blank())
+amphibians <- amphibians + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1)
+sauropsids <- sIMs_states_plots[[3]][[4]] + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.y = element_text(colour = "black")) + ggtitle(element_blank(), subtitle = element_blank())
+sauropsids <- sauropsids + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1)
 
+geo_scale <- gggeo_scale(sIMs_states_plots[[1]][[3]], pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme(axis.line.y = element_blank(), axis.title.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank(), legend.position = "none", axis.text.x = element_text(colour = "black"), axis.title.x = element_text(colour = "black"))  + coord_cartesian(xlim = abs(layer_scales(actinos)$x$range$range)) 
+geo_scale <- geo_scale + xlab("Millions of years ago (mya)") + ggtitle(element_blank(), subtitle = element_blank())
+
+
+pdf(file = here("outs/Figures/plot_XX_models_combined.pdf"), width = 4, height = 6)
+actinos + amphibians + mammals + sauropsids + geo_scale + plot_layout(nrow = 5, heights = c(5,5,5,5,1.5))
+dev.off()
+
+
+## Make a combined plot for figures
+actinos <- sIMs_rates_plots[[1]][[3]] + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.y = element_text(colour = "black")) + ggtitle(element_blank(), subtitle = element_blank())
+actinos <- actinos + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1)
+mammals <- sIMs_rates_plots[[2]][[1]] + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.y = element_text(colour = "black")) + ggtitle(element_blank(), subtitle = element_blank())
+mammals <- mammals + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1)
+amphibians <- sIMs_rates_plots[[3]][[3]] + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.y = element_text(colour = "black")) + ggtitle(element_blank(), subtitle = element_blank())
+amphibians <- amphibians + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1)
+sauropsids <- sIMs_rates_plots[[3]][[4]] + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.y = element_text(colour = "black")) + ggtitle(element_blank(), subtitle = element_blank())
+sauropsids <- sauropsids + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1)
+
+geo_scale <- gggeo_scale(sIMs_rates_plots[[1]][[3]], pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme(axis.line.y = element_blank(), axis.title.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank(), legend.position = "none", axis.text.x = element_text(colour = "black"), axis.title.x = element_text(colour = "black"))  + coord_cartesian(xlim = abs(layer_scales(actinos)$x$range$range)) 
+geo_scale <- geo_scale + xlab("Millions of years ago (mya)") + ggtitle(element_blank(), subtitle = element_blank())
+
+
+pdf(file = here("outs/Figures/plot_XX_models_combined_rates.pdf"), width = 4, height = 6)
+actinos + amphibians + mammals + sauropsids + geo_scale + plot_layout(nrow = 5, heights = c(5,5,5,5,1.5))
+dev.off()
