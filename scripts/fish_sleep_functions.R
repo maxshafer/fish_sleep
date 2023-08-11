@@ -445,7 +445,7 @@ switchHisto <- function(ancestral_states = ancestral_states, replace_variable_na
     di_colours <- brewer.pal(di_levels, "Reds") 
   }
   colours <- c(noc_colours, di_colours)
-  colours <- colours[factor_order]
+  colours <- colours[rev(factor_order)]
   
   if(replace_variable_names & states) {
     variable_names <- strReverse(levels)
@@ -772,15 +772,18 @@ plotRateIndex <- function(model = model, HMM = FALSE, levels = NA) {
 
 ## This function add order highlights to a ggtree plot
 
-addOrderLabels <- function(diel.plot.orders = diel.plot.orders, colours = my_colors, orders = orders, resolved_names = trait.data_n, tr.calibrated = trpy_n, highlight = TRUE, offset = 45, alpha = 0.25) {
+addOrderLabels <- function(diel.plot.orders = diel.plot.orders, custom = "no", label = FALSE, colours = my_colors, orders = orders, resolved_names = trait.data_n, tr.calibrated = trpy_n, highlight = TRUE, offset = 45, alpha = 0.25, text_size = 2) {
   
-  for (p in 1:length(orders)) {
-    tips <- resolved_names$species[resolved_names$order %in% orders[[p]]]
-    tips <- tips[!(is.na(tips))]
-    anchor.point <- round(median(1:length(tips)))
-    anchor.point <- tips[anchor.point]
-    
-    
+  if (any(custom  != "no")) {
+    if (length(custom) < 2) {
+      stop("custom must be at least 2 tip names")
+    }
+    if (all(custom %in% tr.calibrated$tip.label)) {
+      tips <- custom
+      
+      anchor.point <- round(median(1:length(tips)))
+      anchor.point <- tips[anchor.point]
+      
       if(length(tips) > 1) {
         node <- getMRCA(tr.calibrated, tips)
         if (highlight) {
@@ -794,7 +797,51 @@ addOrderLabels <- function(diel.plot.orders = diel.plot.orders, colours = my_col
           angle <- angle
           hjust <- 0
         }
-        diel.plot.orders <- diel.plot.orders + geom_cladelabel(node = node, label = orders[[p]], color = my_colors[[p]], offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5)
+        diel.plot.orders <- diel.plot.orders + geom_cladelabel(node = node, label = label, color = colours, offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5, fontsize = text_size)
+      } 
+    
+      if(length(tips) == 1) {
+        node <- diel.plot.orders$data$node[match(tips, diel.plot.orders$data$label)]
+        diel.plot.orders <- diel.plot.orders + geom_hilight(node =  node, fill = my_colors[[p]], alpha = alpha)
+        # angle = diel.plot.orders$data$angle[match(tips, diel.plot.orders$data$node)]
+        angle <- mean(diel.plot.orders$data$angle[diel.plot.orders$data$label %in% tips])
+        if(between(angle, 90, 270)) {
+          angle <- angle + 180
+          hjust <- 1
+        } else {
+          angle <- angle
+          hjust <- 0
+        }
+        diel.plot.orders <- diel.plot.orders + geom_cladelabel(node = node, label = label, color = colours, offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5, fontsize = text_size)
+      }
+      
+    } else {
+      stop("tips not found in trait data")
+    }
+  }
+  
+  if (custom == "no") {
+    for (p in 1:length(orders)) {
+      tips <- resolved_names$species[resolved_names$order %in% orders[[p]]]
+      tips <- tips[!(is.na(tips))]
+      anchor.point <- round(median(1:length(tips)))
+      anchor.point <- tips[anchor.point]
+      
+      
+      if(length(tips) > 1) {
+        node <- getMRCA(tr.calibrated, tips)
+        if (highlight) {
+          diel.plot.orders <- diel.plot.orders + geom_hilight(node = node, fill = my_colors[[p]], alpha = alpha)
+        }
+        angle <- mean(diel.plot.orders$data$angle[diel.plot.orders$data$label %in% tips])
+        if(between(angle, 90, 270)) {
+          angle <- angle + 180
+          hjust <- 1
+        } else {
+          angle <- angle
+          hjust <- 0
+        }
+        diel.plot.orders <- diel.plot.orders + geom_cladelabel(node = node, label = orders[[p]], color = my_colors[[p]], offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5, fontsize = text_size)
       } 
       
       if(length(tips) == 1) {
@@ -811,6 +858,7 @@ addOrderLabels <- function(diel.plot.orders = diel.plot.orders, colours = my_col
         }
         diel.plot.orders <- diel.plot.orders + geom_cladelab(node = node, label = orders[[p]], color = my_colors[[p]], offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5)
       }
+    }
   }
   
   return(diel.plot.orders)

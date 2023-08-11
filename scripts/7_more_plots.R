@@ -27,7 +27,8 @@ index_list[[2]] <- c("only_cartilaginous")
 index_list[[3]] <- c("all")
 index_list[[4]] <- c("sauropsids")
 index_list[[5]] <- c("amphibians")
-names(index_list) <- c("fish", "fish", "mammals", "tetrapods", "tetrapods")
+index_list[[6]] <- c("all")
+names(index_list) <- c("fish", "fish", "mammals", "tetrapods", "tetrapods", "fish")
 
 # Set simulation parameters (type and #)
 model_types <- "HR"
@@ -39,6 +40,7 @@ smooth <- 5
 
 anc_states <- list()
 anc_rates <- list()
+switch.histo <- list()
 switch.ratio <- list()
 switch.ratio.rates <- list()
 
@@ -73,6 +75,7 @@ for (i in 1:length(index_list)) {
       anc_states[[i]] <- readRDS(file = paste("diel_ancestral_states", dataset_variable, name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
       anc_rates[[i]] <- readRDS(file = paste("diel_ancestral_rates", dataset_variable, name_variable, Ntip(trpy_n), "species.rds", sep = "_"))
       
+      switch.histo[[i]] <- switchHisto(ancestral_states = anc_states[[i]], replace_variable_names = T, backfill = F, states = T, rates = F)
       switch.ratio[[i]] <- switchRatio(ancestral_states = anc_states[[i]], phylo_tree = trpy_n, node.age.cutoff = 0.02, smooth = smooth)
       switch.ratio.rates[[i]] <- switchRatio(ancestral_states = anc_rates[[i]], phylo_tree = trpy_n, node.age.cutoff = 0.02, smooth = smooth)
       
@@ -180,3 +183,37 @@ pdf(file = here("outs/Figures/plot_XX_fossils.pdf"), width = 4, height = 6)
 fossil_plot / geo_scale + plot_layout(nrow = 2, heights = c(10,1))
 dev.off()
 
+
+#### Combine histographs
+
+xlims <- c(max(switch.histo[[6]]$data$node.age), min(switch.histo[[6]]$data$node.age))
+
+amphibians <- switch.histo[[5]] + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = "none") + xlim(xlims)
+sauropsids <- switch.histo[[4]] + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), legend.position = "none") + xlim(xlims)
+mammals <- switch.histo[[3]] + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = "none") + xlim(xlims)
+
+geo_scale <- gggeo_scale(switch.histo[[6]], pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme(axis.line.y = element_blank(), axis.title.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank(), legend.position = "none", axis.text.x = element_text(colour = "black"), axis.title.x = element_text(colour = "black"))  + coord_cartesian(xlim = abs(layer_scales(switch.histo[[6]])$x$range$range)) 
+geo_scale <- geo_scale + xlab("Millions of years ago (mya)")
+
+pdf(file = here("outs/Figures/plot_XX_supp_histos.pdf"), width = 3.45, height = 6)
+amphibians / sauropsids / mammals / geo_scale + plot_layout(nrow = 4, heights = c(5,5,5,1), guides = "collect")
+dev.off()
+
+
+
+### Calculate total numbers for bar plot
+
+
+total_numbers <- data.frame(group = paste(names(index_list[1:5]), unlist(index_list[1:5]), sep = "_"), transitions = unlist(lapply(anc_states[1:5], function(x) max(x$transition_cumsum))), lineages = unlist(lapply(anc_states[1:5], function(x) (length(x$node)+1)/2)))
+total_numbers$group <- factor(c("Osteichthyes", "Chondrichthyes", "Mammalia", "Sauropsida", "Amphibia"), levels = rev(c("Chondrichthyes", "Osteichthyes", "Amphibia", "Mammalia", "Sauropsida")))
+trans_plot <- ggplot(total_numbers, aes(y = group, x = transitions, fill = group)) + geom_bar(stat = "identity") + theme_classic() + scale_fill_viridis_d(direction = -1) + theme(legend.position = "none", axis.text = element_text(colour = "black"), axis.title.y = element_blank())
+trans_norm_plot <- ggplot(total_numbers, aes(y = group, x = transitions/lineages, fill = group)) + geom_bar(stat = "identity") + theme_classic() + scale_fill_viridis_d(direction = -1)
+trans_norm_plot <- trans_norm_plot + theme(axis.text = element_text(colour = "black"), axis.text.y = element_blank(), axis.title.y = element_blank(), legend.position = "none")
+
+fish_histo <- switch.histo[[1]] + theme(legend.position = "none", axis.text = element_text(colour = "black"), axis.text.x = element_blank(), axis.title.x = element_blank()) + xlim(max(ancestral_plot$data$x), 0)
+geo_scale <- gggeo_scale(switch.histo[[6]], pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme(axis.line.y = element_blank(), axis.title.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank(), legend.position = "none", axis.text.x = element_text(colour = "black"), axis.title.x = element_text(colour = "black"), axis.ticks = element_line(colour = "black", size = 2))  + coord_cartesian(xlim = abs(layer_scales(switch.histo[[6]])$x$range$range)) 
+geo_scale <- geo_scale + xlab("Millions of years ago (mya)")
+
+pdf(file = here("outs/Figures/plot_XX_trans_numb.pdf"), width = 4, height = 3)
+(trans_plot + trans_norm_plot) / fish_histo / geo_scale + plot_layout(heights = c(2,5,0.5))
+dev.off()

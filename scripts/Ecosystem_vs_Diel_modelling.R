@@ -4,10 +4,11 @@ library(ggbiplot)
 library(dplyr)
 library(patchwork)
 library(ggridges)
+library(here)
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/")
+setwd(here())
 
-source("/Volumes/BZ/Scientific Data/RG-AS04-Data01/Fish_sleep/scripts/fish_sleep_functions.R")
+source(here("scripts/fish_sleep_functions.R"))
 
 ## Load files
 
@@ -31,11 +32,11 @@ trait.data <- readRDS("trait_data_fish.rds")
 # fishbase_dietitems <- diet_items()
 # fishbase_fecundity <- fecundity()
 
-fishbase_reproduction <- reproduction()
-fishbase_ecology <- ecology() # Has troph and 
-fishbase_length <- length_weight()
-fishbase_ecosystem <- ecosystem() # Salinity is here duh
-fishbase_species <- species()
+fishbase_reproduction <- reproduction(version = "21.06")
+fishbase_ecology <- ecology(version = "21.06") # Has troph and 
+fishbase_length <- length_weight(version = "21.06")
+fishbase_ecosystem <- ecosystem(version = "21.06") # Salinity is here duh
+fishbase_species <- species(version = "21.06")
 
 #############  #############  #############  #############  #############  #############  #############  
 #############  #############  #############  #############  #############  #############  #############  
@@ -135,17 +136,19 @@ combined_ecology_metrics_diel$RepGuild <- factor(combined_ecology_metrics_diel$R
 
 # Make histograms
 
-p_mean_LengthMax <- ggplot(combined_ecology_metrics_diel, aes(x = log(as.numeric(mean_LengthMax)), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme_classic()
-p_mean_Weight <- ggplot(combined_ecology_metrics_diel, aes(x = mean_Weight, y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme_classic()
-p_mean_FoodTroph <- ggplot(combined_ecology_metrics_diel, aes(x = as.numeric(Trophic), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme_classic()
-p_benthopelagic <- ggplot(combined_ecology_metrics_diel, aes(x = as.numeric(benthopelagic), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme_classic()
-p_ecosystem_count <- ggplot(combined_ecology_metrics_diel, aes(x = as.numeric(ecosystem_count), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme_classic()
-p_RepGuild <- ggplot(combined_ecology_metrics_diel, aes(x = as.numeric(RepGuild), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + scale_fill_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme_classic()
+combined_ecology_metrics_diel$diel <- factor(combined_ecology_metrics_diel$diel, levels = c("nocturnal","diurnal","crepuscular","unclear"))
+
+p_mean_LengthMax <- ggplot(combined_ecology_metrics_diel, aes(x = log(as.numeric(mean_LengthMax)), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + theme_classic() + scale_color_viridis_d(option = "H") + scale_fill_viridis_d(option = "H")
+p_mean_Weight <- ggplot(combined_ecology_metrics_diel, aes(x = mean_Weight, y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_viridis_d(option = "H") + scale_fill_viridis_d(option = "H") + theme_classic()
+p_mean_FoodTroph <- ggplot(combined_ecology_metrics_diel, aes(x = as.numeric(Trophic), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_viridis_d(option = "H") + scale_fill_viridis_d(option = "H") + theme_classic()
+p_benthopelagic <- ggplot(combined_ecology_metrics_diel, aes(x = as.numeric(benthopelagic), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_viridis_d(option = "H") + scale_fill_viridis_d(option = "H") + theme_classic()
+p_ecosystem_count <- ggplot(combined_ecology_metrics_diel, aes(x = as.numeric(ecosystem_count), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_viridis_d(option = "H") + scale_fill_viridis_d(option = "H") + theme_classic()
+p_RepGuild <- ggplot(combined_ecology_metrics_diel, aes(x = as.numeric(RepGuild), y = diel, colour = diel, fill = diel)) + geom_density_ridges(alpha = 0.25, scale = 2, jittered_points = T, point_size = 0.5) + scale_color_viridis_d(option = "H") + scale_fill_viridis_d(option = "H") + theme_classic()
 
 ## This shows that the distribution among the individual ecological traits is similar across diel niches
 ## Individually they have more species info
 
-histograms <- p_mean_LengthMax + p_mean_Weight + p_mean_FoodTroph + p_benthopelagic + p_RepGuild + p_ecosystem_count + plot_layout(ncol = 2, guides = "collect")
+histograms <- ((p_mean_LengthMax + p_mean_Weight + p_mean_FoodTroph + p_benthopelagic + p_RepGuild + p_ecosystem_count) & theme(axis.title.y = element_blank())) + plot_layout(ncol = 2, guides = "collect")
 
 
 
@@ -182,24 +185,32 @@ p_RepGuild <- ggplot(complete_cases, aes(x = as.numeric(RepGuild))) + geom_histo
 
 histograms_complete <- p_mean_LengthMax + p_mean_Weight + p_mean_FoodTroph + p_benthopelagic + p_RepGuild + p_ecosystem_count + plot_layout(ncol = 1)
 
+complete_cases_2 <- complete_cases[complete_cases$diel %in% c("crepuscular", "diurnal", "nocturnal", "unclear"),]
 # can include "realm_count" here as well if wanted
-pca.data <- as.data.frame(complete_cases[,c("mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")])
-row.names(pca.data) <- complete_cases$Species
+pca.data <- as.data.frame(complete_cases_2[,c("mean_Weight", "Trophic", "benthopelagic", "RepGuild", "ecosystem_count")])
+row.names(pca.data) <- complete_cases_2$Species
 for (i in 1:ncol(pca.data)) {
   pca.data[,i] <- as.numeric(pca.data[,i])
 }
 diel.pca <- prcomp(pca.data, center = TRUE, scale. = TRUE)
 
 
-
-biplot <- ggbiplot(diel.pca, groups = complete_cases$diel, choices = c(1,2)) + theme_classic() 
+complete_cases_2$diel <- factor(complete_cases_2$diel, levels = c("nocturnal","diurnal","crepuscular","unclear"))
+biplot <- ggbiplot(diel.pca, groups = complete_cases_2$diel, choices = c(1,2)) + theme_classic() 
 # Find the convex hull of the points plotted
 hull <- biplot$data %>% group_by(groups) %>% slice(chull(xvar, yvar))
 
-biplot <- biplot + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + geom_polygon(data = hull, aes(fill = groups, colour = groups), alpha = 0, show.legend = FALSE) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme(legend.position = c(0.15,0.15))
+# biplot <- biplot + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + geom_polygon(data = hull, aes(fill = groups, colour = groups), alpha = 0, show.legend = FALSE) + scale_color_manual(values = c("royalblue4", "goldenrod1", "mediumpurple1", "grey35")) + theme(legend.position = c(0.15,0.15))
 
-pdf(file = "outs/Figures/Ecological_economics_summary_figure.pdf", width = 7.5, height = 15)
-biplot + histograms_complete + plot_layout(ncol = 1, heights = c(7.5,10), widths = c(7.5,7.5))
+biplot2 <- biplot + geom_polygon(data = hull, aes(fill = groups, colour = groups), alpha = 0.05, show.legend = FALSE) + scale_color_viridis_d(option = "H") #+ theme(legend.position = c(0.15,0.15))
+
+
+pdf(file = "outs/Figures/Ecological_economics_histograms_all.pdf", width = 8, height = 8)
+histograms
+dev.off()
+
+pdf(file = "outs/Figures/Ecological_economics_biplot.pdf", width = 4, height = 4)
+biplot2
 dev.off()
 
 

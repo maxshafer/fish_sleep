@@ -255,25 +255,7 @@ saveRDS(trait.data, file = "trait_data_fish.rds")
 
 
 
-## Maybe make some figures of the distribution of species by confidence and by order?
 
-diel_conf_plot <- ggplot(trait.data, aes(x = diel_continuous, fill = factor(diel_continuous)), color = "black") + geom_bar(stat = "count") + theme_classic() + scale_fill_brewer(palette = "RdBu", direction = -1) + theme(legend.position = "none") + xlab("Nocturanl vs diurnal confidence") + ylab("# of species")
-
-conf_by_diel_plot <- ggplot(trait.data, aes(x = confidence, fill = factor(diel2)), color = "black") + geom_bar(stat = "count") + theme_classic() + scale_fill_manual(values = c("goldenrod1", "firebrick3", "royalblue3", "lightgreen")) + xlab("Diel pattern confidence") + ylab("# of species") + theme(legend.position = c(0.8, 0.8), legend.title = element_blank())
-
-
-df <- data.frame(level = factor(c("Species", "Genus", "Family", "Order"), levels = c("Order", "Family", "Genus", "Species")), percent = c((length(unique(resolved_names$tips))/length(unique(fishbase_df$Species)))*100, (length(unique(resolved_names$genus))/length(unique(fishbase_df$Genus)))*100, (length(unique(resolved_names$family))/length(unique(fishbase_df$Family)))*100, (length(unique(resolved_names$order))/length(unique(fishbase_df$Order)))*100))
-
-coverage_plot <- ggplot(df, aes(x = level, y = percent, fill = level), color = "black") + geom_bar(stat = "identity") + theme_classic() + theme(legend.position = "none") + xlab("Taxonomic rank") + ylab("% in database")
-
-df <- data.frame(table(trait.data$diel))
-
-# ggplot(df, aes(y = "", x = Freq, group = Var1, fill = Var1, label = Var1)) + geom_bar(stat = "identity") + coord_polar() + theme_void() + scale_fill_manual(values = c("goldenrod1", "goldenrod2", "goldenrod3", "goldenrod4", "firebrick3", "royalblue3", "lightgreen"))
-
-
-pdf("outs/Figures/Diel_database_statistics.pdf", height = 7.5, width = 7.5)
-(coverage_plot + conf_by_diel_plot + plot_layout(nrow = 1)) / diel_conf_plot + plot_layout(nrow = 2)
-dev.off()
 
 
 
