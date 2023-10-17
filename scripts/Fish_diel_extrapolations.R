@@ -89,7 +89,7 @@ genus_numb <- predicted_numb_genus %>% group_by(Var2) %>% summarise(Freq = sum(F
 predicted_df <- data.frame(order = order_numb$Freq, family = family_numb$Freq, genus = genus_numb$Freq)
 predicted_df <- sweep(predicted_df,2,colSums(predicted_df),`/`)
 predicted_df$average <- rowMeans(predicted_df)
-predicted_df$number <- predicted_df$average*sum(predicted_df$order)
+predicted_df$number <- predicted_df$average*sum(order_numb$Freq)
 
 
 
@@ -145,7 +145,7 @@ DEF"
 pdf("outs/Figures/Diel_database_statistics.pdf", height = 10, width = 10)
 coverage_plot + conf_by_diel_plot + diel_conf_plot + bar_plot + count_plot + count_plot_predicted + plot_layout(design = design, heights = c(2,12), widths = c(5,5,10), guides = "collect")
 dev.off()
-
+ 
 
 
 pdf("outs/Figures/CountsAndEstimates_TemporalNiche_Orders_Inconsistancies.pdf", height = 8, width = 8)

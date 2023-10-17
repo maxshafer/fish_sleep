@@ -6,9 +6,9 @@ library(patchwork)
 library(ggridges)
 library(here)
 
-setwd(here())
+setwd(here::here())
 
-source(here("scripts/fish_sleep_functions.R"))
+source(here::here("scripts/fish_sleep_functions.R"))
 
 ## Load files
 
@@ -232,7 +232,7 @@ pdf(file = "outs/Figures/Ecological_economics_summary_figure_labels.pdf", width 
 biplot + geom_label_repel(data = biplot$data, aes(x = xvar, y = yvar, label = sof))
 dev.off()
 
-
+biplot + geom_label_repel(data= biplot$data, aes(x = xvar, y = yvar, label = rownames(biplot$data))) + xlim(0.5,2) + ylim(0.5,2)
 
 pca.data$diel <- complete_cases$diel
 

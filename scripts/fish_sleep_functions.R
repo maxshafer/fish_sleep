@@ -103,7 +103,7 @@ loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapod
   
   
   if (subset == "custom") {
-    if (is.na(custom_tips) | length(custom_tips) != 2) {
+    if (length(custom_tips) != 2) {
       stop("Custom subsets require 2 tip taxa names (tip labels)")
     }
     node_of_interest <- getMRCA(tr.calibrated, tip = custom_tips)

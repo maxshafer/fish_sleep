@@ -141,7 +141,7 @@ extinction_song <- ggplot(song_data[complete.cases(song_data$extinction_gf),], a
 extinction_song <- extinction_song + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + geom_line(size = 1) 
 extinction_song <- extinction_song + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), axis.text.y = element_text(colour = "black")) + ylab("Extinction\nrate")
 
-temp_song <- ggplot(song_data[complete.cases(song_data$extinction_gf),], aes(x = node.age-time.span, y = abs(temp))) + scale_x_reverse() + xlim(c(max(combined.plot$data$node.age),0)) + theme_classic() + coord_cartesian(xlim = abs(layer_scales(combined.plot)$x$range$range))
+temp_song <- ggplot(song_data[complete.cases(song_data$extinction_gf),], aes(x = node.age-time.span, y = temp)) + scale_x_reverse() + xlim(c(max(combined.plot$data$node.age),0)) + theme_classic() + coord_cartesian(xlim = abs(layer_scales(combined.plot)$x$range$range))
 temp_song <- temp_song + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + geom_line(size = 1, colour = "red")
 temp_song <- temp_song + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), axis.text.y = element_text(colour = "black")) + ylab("Temperature\nchange")
 
