@@ -29,8 +29,9 @@ for (i in 1:length(index_list)) {
     name_variable <- index_list[[i]][[j]]
     
     ## Load in the tree
-    trpy_n <- loadTree(return = "tree", dataset = dataset_variable, subset = name_variable)
-    trait.data_n <- loadTree(return = "trait_data", dataset = dataset_variable, subset = name_variable)
+
+    trpy_n <- loadTree(return = "tree", dataset = dataset_variable, subset = name_variable, custom_tips = c)
+    trait.data_n <- loadTree(return = "trait_data", dataset = dataset_variable, subset = name_variable, custom_tips = c)
     
     ## Load the best model, which is the HMM 2 state 2 rate model
     models <- readRDS(file = paste("marginal_and_joint_tests", dataset_variable, name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))

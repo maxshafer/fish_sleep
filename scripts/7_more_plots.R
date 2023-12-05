@@ -42,7 +42,9 @@ anc_states <- list()
 anc_rates <- list()
 switch.histo <- list()
 switch.ratio <- list()
+
 switch.ratio.types <- list()
+
 switch.ratio.rates <- list()
 
 for (i in 1:length(index_list)) {
@@ -79,6 +81,7 @@ for (i in 1:length(index_list)) {
       switch.histo[[i]] <- switchHisto(ancestral_states = anc_states[[i]], replace_variable_names = T, backfill = F, states = T, rates = F)
       switch.ratio[[i]] <- switchRatio(ancestral_states = anc_states[[i]], phylo_tree = trpy_n, node.age.cutoff = 0.02, smooth = smooth, use_types = F)
       switch.ratio.types[[i]] <- switchRatio(ancestral_states = anc_states[[i]], phylo_tree = trpy_n, node.age.cutoff = 0.02, smooth = smooth, use_types = T)
+
       switch.ratio.rates[[i]] <- switchRatio(ancestral_states = anc_rates[[i]], phylo_tree = trpy_n, node.age.cutoff = 0.02, smooth = smooth)
       
 }
@@ -156,6 +159,31 @@ combined.plot.rates <- combined.plot.rates + annotate("rect", xmin = 145-15, xma
 combined.plot.rates <- combined.plot.rates + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), axis.text.y = element_text(colour = "black"))
 combined.plot.rates <- combined.plot.rates + ylab("Cummulative\ntransitions / lineages")  + theme(legend.position = "none")
 
+names(switch.ratio.rates) <- unlist(lapply(seq_along(index_list), function(x) paste(names(index_list)[x], index_list[x], sep = "_")))
+combined.data.rates <- Reduce(rbind, lapply(seq_along(switch.ratio.rates), function(x) {
+  df <- switch.ratio.rates[[x]]$data
+  df$group <- names(switch.ratio.rates)[[x]]
+  return(df)
+}))
+
+## Make plots for diel transitions and extinction/temp
+
+theme_set(theme_classic(base_size = 8))
+
+## Make test figure 2a
+combined.plot <- ggplot(combined.data[combined.data$group %in% c("fish_only_ingroup", "mammals_all", "tetrapods_amphibians", "tetrapods_sauropsids"),], aes(x = node.age, y = ratio, group = group, colour = group)) + scale_color_viridis(discrete = TRUE, option = "D") + theme_classic() + scale_x_reverse()
+geo_scale <- gggeo_scale(combined.plot, pos = "top", blank.gg = TRUE) + scale_x_reverse() + theme(axis.line.y = element_blank(), axis.title.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank(), legend.position = "none", axis.text.x = element_text(colour = "black"), axis.title.x = element_text(colour = "black"))  + coord_cartesian(xlim = abs(layer_scales(combined.plot)$x$range$range)) 
+geo_scale <- geo_scale + xlab("Millions of years ago (mya)")
+
+combined.plot <- combined.plot + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + geom_line(size = 2, alpha = 0.75)
+combined.plot <- combined.plot + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), axis.text.y = element_text(colour = "black"))
+combined.plot <- combined.plot + ylab("Cummulative\ntransitions / lineages")  + theme(legend.position = "none")
+
+combined.plot.rates <- ggplot(combined.data.rates[combined.data.rates$group %in% c("fish_only_ingroup", "mammals_all", "tetrapods_amphibians", "tetrapods_sauropsids"),], aes(x = node.age, y = ratio, group = group, colour = group)) + scale_color_viridis(discrete = TRUE, option = "D") + theme_classic() + scale_x_reverse()
+combined.plot.rates <- combined.plot.rates + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + geom_line(size = 2, alpha = 0.75)
+combined.plot.rates <- combined.plot.rates + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), axis.text.y = element_text(colour = "black"))
+combined.plot.rates <- combined.plot.rates + ylab("Cummulative\ntransitions / lineages")  + theme(legend.position = "none")
+
 extinction_song <- ggplot(song_data[complete.cases(song_data$extinction_gf),], aes(x = node.age-time.span, y = extinction_gf)) + scale_x_reverse() + xlim(c(max(combined.plot$data$node.age),0)) + theme_classic() + coord_cartesian(xlim = abs(layer_scales(combined.plot)$x$range$range))
 extinction_song <- extinction_song + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + geom_line(size = 1) 
 extinction_song <- extinction_song + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), axis.text.y = element_text(colour = "black")) + ylab("Extinction\nrate")
@@ -163,6 +191,7 @@ extinction_song <- extinction_song + theme(axis.text.x = element_blank(), axis.t
 temp_song <- ggplot(song_data[complete.cases(song_data$extinction_gf),], aes(x = node.age-time.span, y = temp)) + scale_x_reverse() + xlim(c(max(combined.plot$data$node.age),0)) + theme_classic() + coord_cartesian(xlim = abs(layer_scales(combined.plot)$x$range$range))
 temp_song <- temp_song + annotate("rect", xmin = 145-15, xmax = 145+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + annotate("rect", xmin = 66-15, xmax = 66+15, ymin = -Inf, ymax = Inf, fill = "black", alpha = 0.1) + geom_line(size = 1, colour = "red")
 temp_song <- temp_song + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), axis.text.y = element_text(colour = "black")) + ylab("Temperature\nchange")
+
 
 # pdf(file = here("outs/Figures/plot_XX_transitions_vs_song_data.pdf"), width = 4, height = 6)
 # combined.plot / extinction_song / temp_song / geo_scale + plot_layout(nrow = 4, heights = c(10,5,5,1.5), guides = "collect")
@@ -174,6 +203,14 @@ dev.off()
 
 pdf(file = here("outs/Figures/plot_XX_transitions_rates.pdf"), width = 4, height = 5)
 combined.plot.DN / combined.plot.rates / geo_scale + plot_layout(nrow = 3, heights = c(10,10,1.5), guides = "collect")
+
+pdf(file = here("outs/Figures/plot_XX_transitions_vs_song_data.pdf"), width = 4, height = 6)
+combined.plot / extinction_song / temp_song / geo_scale + plot_layout(nrow = 4, heights = c(10,5,5,1.5), guides = "collect")
+dev.off()
+
+pdf(file = here("outs/Figures/plot_XX_transitions_rates.pdf"), width = 4, height = 4)
+combined.plot.rates / geo_scale + plot_layout(nrow = 2, heights = c(10,1.5), guides = "collect")
+
 dev.off()
 
 ### What about fossil data?
