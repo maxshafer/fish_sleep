@@ -3,13 +3,14 @@ library(corHMM)
 library(xlsx)
 library(phangorn)
 library(stringr)
+library(here)
 
-setwd("/Volumes/BZ/Scientific Data/RG-AS04-Data01/fish_sleep/")
+setwd(here())
 
 # load data for mammals from Cox et al
 
 mam.table <- read.xlsx("Cox_mammal_data/Supplementary Data 2.xlsx", 1)
-mammal_trees <- read.nexus("Cox_mammal_phylo/Complete_phylogeny.nex")
+mammal_trees <- read.nexus("Cox_mammal_data/Complete_phylogeny.nex")
 
 ## Determine the consensus tree
 mam.tree <- maxCladeCred(mammal_trees, tree = TRUE)
@@ -28,8 +29,8 @@ mam.table$diel <- tolower(apply(mam.table, 1, function(x) {
   return(out)
 }))
 
-mam.table$diel1 <- ifelse(mam.table$diel == "diurnal", "diurnal", ifelse(mam.table$diel == "nocturnal", "nocturnal", ifelse(mam.table$diel == "crepuscular", "crepuscular", ifelse(mam.table$diel == "crepuscular/diurnal", "diurnal", ifelse(mam.table$diel == "crepuscular/nocturnal", "nocturnal", ifelse(mam.table$diel == "crepuscular/unclear", "crepuscular", "unknown"))))))
-mam.table$diel2 <- ifelse(mam.table$diel == "diurnal", "diurnal", ifelse(mam.table$diel == "nocturnal", "nocturnal", ifelse(mam.table$diel == "crepuscular", "crepuscular", ifelse(mam.table$diel == "crepuscular/diurnal", "crepuscular", ifelse(mam.table$diel == "crepuscular/nocturnal", "crepuscular", ifelse(mam.table$diel == "crepuscular/unclear", "crepuscular", "unknown"))))))
+mam.table$diel1 <- ifelse(mam.table$diel == "diurnal", "diurnal", ifelse(mam.table$diel == "nocturnal", "nocturnal", ifelse(mam.table$diel == "crepuscular", "crepuscular", ifelse(mam.table$diel == "crepuscular/diurnal", "diurnal", ifelse(mam.table$diel == "crepuscular/nocturnal", "nocturnal", ifelse(mam.table$diel == "crepuscular/unclear", "crepuscular", ifelse(mam.table$diel == "cathemeral", "cathemeral", "unknown")))))))
+mam.table$diel2 <- ifelse(mam.table$diel == "diurnal", "diurnal", ifelse(mam.table$diel == "nocturnal", "nocturnal", ifelse(mam.table$diel == "crepuscular", "crepuscular", ifelse(mam.table$diel == "crepuscular/diurnal", "crepuscular", ifelse(mam.table$diel == "crepuscular/nocturnal", "crepuscular", ifelse(mam.table$diel == "crepuscular/unclear", "crepuscular", ifelse(mam.table$diel == "cathemeral", "cathemeral", "unknown")))))))
 
 ## diel is raw (crep/di, crep/noc, di, noc)
 ## diel1 is only di or noc

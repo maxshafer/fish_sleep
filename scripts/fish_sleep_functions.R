@@ -103,12 +103,12 @@ loadTree <- function(return = "tree", dataset = c("fish", "AllGroups", "tetrapod
   
   
   if (subset == "custom") {
-    if (is.na(custom_tips) | length(custom_tips) != 2) {
+    if (length(custom_tips) != 2) {
       stop("Custom subsets require 2 tip taxa names (tip labels)")
     }
-    node_of_interest <- getMRCA(tr.calibrated, tip = custom_tips)
-    tr.calibrated <- extract.clade(phy = tr.calibrated, node = node_of_interest)
-    trait.data <- trait.data[trait.data$species %in% tr.calibrated$tip.label,]
+    node_of_interest <- getMRCA(trpy_n, tip = custom_tips)
+    trpy_n <- extract.clade(phy = trpy_n, node = node_of_interest)
+    trait.data_n <- trait.data_n[trait.data_n$species %in% trpy_n$tip.label,]
     name_variable <- "custom"
   }
   
@@ -259,7 +259,7 @@ calculateSimulatedTransitions <- function(simulated_data = simulation, phylo_tre
 
 
 ### Function to determine the number of transitions between states
-calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, ancestor = 0, rate.cat = FALSE) {
+calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, rate.cat = FALSE) {
   
   states <- ancestral_states$states
   rate_states <- ancestral_states$rate_states
@@ -273,7 +273,7 @@ calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo
     ancestral_states$recon_states <- as.numeric(rowSums(ancestral_states$lik.anc[,rate_states[grep(states[[1]], rate_states)]]))
   }
   
-  ## Add functionality to do this for rate categories?
+  ## Added functionality to do this for rate categories
   if (rate.cat) {
     print("returning rate categories instead of states")
     ancestral_states$recon_states <- as.numeric(rowSums(ancestral_states$lik.anc[,rate_states[grep("R1", rate_states)]]))
@@ -281,6 +281,8 @@ calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo
   
   # Determine ages of each node
   node_heights <- nodeHeights(phylo_tree)
+  
+  ancestor <- round(ancestral_states$recon_states[Ntip(phylo_tree)+1])
   
   ancestral_states$node.age <- node_heights[match(ancestral_states$node, phylo_tree$edge[,2]),2] # This extracts all but one that is missing from phylo_tree$edge[,2], and generates an NA
   ancestral_states$node.age[ancestral_states$node[is.na(ancestral_states$node.age)]] <- 0 # This is the root
@@ -293,7 +295,7 @@ calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo
   ancestral_states$parental.node <- unlist(lapply(ancestral_states$node, function(x) Ancestors(phylo_tree, x, type = "parent")))
   ancestral_states$parent.diel <- unlist(lapply(ancestral_states$parental.node, function(x) ancestral_states$recon_states[match(x, ancestral_states$node)]))
   # parent of the root is NA
-  ancestral_states$parent.diel[is.na(ancestral_states$parent.diel)] <- ancestor
+  ancestral_states$parent.diel[is.na(ancestral_states$parent.diel)] <- as.numeric(ancestor)
   
   ancestral_states$transition <- ifelse(ifelse(ancestral_states$parent.diel > 0.5, 1, 0) != ifelse(ancestral_states$recon_states > 0.5, 1, 0), 1, 0)
   # For those with transitions, I can just ask what they are, and that's the switch type!
@@ -309,8 +311,12 @@ calculateStateTransitions <- function(ancestral_states = ancestral_states, phylo
 ### Function to calculate transition history on tree for the state
 calculateLinTransHist <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n) {
   
-  ancestors <- lapply(c(1:length(phylo_tree$tip.label)), function(x) Ancestors(phylo_tree, x, type = "all"))
-  ancestors <- lapply(seq_along(ancestors), function(x) append(c(1:length(phylo_tree$tip.label))[[x]], ancestors[[x]]))
+  # ancestors <- lapply(c(1:length(phylo_tree$tip.label)), function(x) Ancestors(phylo_tree, x, type = "all"))
+  # ancestors <- lapply(seq_along(ancestors), function(x) append(c(1:length(phylo_tree$tip.label))[[x]], ancestors[[x]]))
+  ## The above only did it for tips, but below does it for all internal nodes as well
+  ## 
+  ancestors <- lapply(ancestral_states$node, function(x) Ancestors(phylo_tree, x, type = "all"))
+  ancestors <- lapply(seq_along(ancestors), function(x) append(ancestral_states$node[[x]], ancestors[[x]]))
   print("calculating ancestral states for all nodes")
   recon_states <- ifelse(ancestral_states$recon_states > 0.5, 1, 0)
   ancestors.diel <- lapply(ancestors, function(x) lapply(x, function(y) recon_states[match(y, ancestral_states$node)]))
@@ -341,28 +347,54 @@ returnCumSums <- function(ancestral_states = ancestral_states, phylo_tree = trpy
   ancestral_states$trans.DN_cumsum <- cumsum(ancestral_states$trans.DN[node_order])
   ancestral_states$trans.ND_cumsum <- cumsum(ancestral_states$trans.ND[node_order])
   
-  # This now no longer works, because it is the age of the branch points?
+  # ## This uses switch types of both internal nodes and tips
+  # df <- list()
+  # for (i in unique(ancestral_states$switch.type)) {
+  #   df[[i]] <- (ifelse(ancestral_states$switch.type == i, 1, 0))
+  # }
+  # df <- Reduce(cbind, df)
+  # colnames(df) <- unique(ancestral_states$switch.type)
+  # df <- as.data.frame(df)
+  # df$node.age <- ancestral_states$node.age
   
+  ## This uses only internal nodes
+  df <- list()
+  for (i in unique(ancestral_states$switch.type)) {
+    df[[i]] <- (ifelse(ancestral_states$switch.type == i, 1, 0))[(Ntip(phylo_tree)+1):length(ancestral_states$switch.type)]
+  }
+  df <- Reduce(cbind, df)
+  colnames(df) <- unique(ancestral_states$switch.type)
+  df <- as.data.frame(df)
+  df$node.age <- ancestral_states$node.age[(Ntip(phylo_tree)+1):length(ancestral_states$switch.type)]
+  
+  cumsums <- df
+  cumsums <- cumsums[order(cumsums$node.age, decreasing = T),]
+  
+  for (i in 1:(ncol(cumsums)-1)) {
+    cumsums[,i] <- cumsum(cumsums[,i])
+  }
+  
+
   ## OK, for this graph, I want to index the first half of node_heights!
   
   # First column from 'edge' is the higher node, second is lower
   # both columns from 'node_heights' should match by the index ('edge')
   # If I find the tip in edge[,2], but pull node_heights[,1], I get the age of the node connected to the tip (the branch point of the tip)
 
-  node_heights <- nodeHeights(phylo_tree)
-  node.age2 <- node_heights[match(c(1:length(phylo_tree$tip.label)), phylo_tree$edge[,2]),1] # This finds the position of each node # in the 2nd column of 'edge', and returns the first column of 'edge', which is the age of the split
-
-  node.age2[is.na(node.age2)] <- 0
-  node.age2 <- (node.age2 - max(node.age2))*-1
-  
-  cumsums <- data.frame(row.names = phylo_tree$tip.label[order(node.age2, decreasing = T)])
-  cumsums$node.age <- node.age2[order(node.age2, decreasing = T)]
-  # cumsums$node.age <- ancestral_states$node.age[node_order_2]
-  cumsums$Lineage_Cumsum <- cumsum(rep(1, length(phylo_tree$tip.label)))
-  
-  for (i in unique(ancestral_states$switch.type)) {
-    cumsums[,i] <- cumsum(ifelse(ancestral_states$switch.type[order(node.age2, decreasing = T)] == i, 1, 0))
-  }
+  # node_heights <- nodeHeights(phylo_tree)
+  # node.age2 <- node_heights[match(c(1:length(phylo_tree$tip.label)), phylo_tree$edge[,2]),1] # This finds the position of each node # in the 2nd column of 'edge', and returns the first column of 'edge', which is the age of the split
+  # 
+  # node.age2[is.na(node.age2)] <- 0
+  # node.age2 <- (node.age2 - max(node.age2))*-1
+  # 
+  # cumsums <- data.frame(row.names = phylo_tree$tip.label[order(node.age2, decreasing = T)])
+  # cumsums$node.age <- node.age2[order(node.age2, decreasing = T)]
+  # # cumsums$node.age <- ancestral_states$node.age[node_order_2]
+  # cumsums$Lineage_Cumsum <- cumsum(rep(1, length(phylo_tree$tip.label)))
+  # 
+  # for (i in unique(ancestral_states$switch.type)) {
+  #   cumsums[,i] <- cumsum(ifelse(ancestral_states$switch.type[order(node.age2, decreasing = T)] == i, 1, 0))
+  # }
   
   ancestral_states$cumsums <- cumsums
   return(ancestral_states)
@@ -371,7 +403,7 @@ returnCumSums <- function(ancestral_states = ancestral_states, phylo_tree = trpy
 
 ### Function to make the Switch history histogram
 
-switchHisto <- function(ancestral_states = ancestral_states, replace_variable_names = TRUE, backfill = TRUE) {
+switchHisto <- function(ancestral_states = ancestral_states, replace_variable_names = TRUE, backfill = FALSE, states = TRUE, rates = FALSE) {
   require(tidyr)
   require(ggplot2)
   require(patchwork)
@@ -379,7 +411,13 @@ switchHisto <- function(ancestral_states = ancestral_states, replace_variable_na
   require(RColorBrewer)
   
   ## Prepare the data by gathering
-  node.data <- gather(ancestral_states$cumsums, "variable", "Cummulative_ratio", -node.age, -Lineage_Cumsum)
+  # node.data <- gather(ancestral_states$cumsums, "variable", "Cummulative_ratio", -node.age, -Lineage_Cumsum)
+  node.data <- gather(ancestral_states$cumsums, "variable", "Cummulative_ratio", -node.age)
+  
+  ## Append tip ratios
+  
+  tip.ratios <- data.frame(node.age = rep(0, length(unique(ancestral_states$switch.type))), variable = unique(ancestral_states$switch.type), Cummulative_ratio = as.data.frame(unlist(table(ancestral_states$switch.type))[unique(ancestral_states$switch.type)])[,2])
+  node.data <- rbind(node.data, tip.ratios)
   node.data <- node.data %>% group_by(node.age, variable) %>% summarise(n = sum(Cummulative_ratio)) %>% mutate(percentage = n / sum(n))
   
   ## Set factor levels for switch history types
@@ -407,12 +445,23 @@ switchHisto <- function(ancestral_states = ancestral_states, replace_variable_na
     di_colours <- brewer.pal(di_levels, "Reds") 
   }
   colours <- c(noc_colours, di_colours)
-  colours <- colours[factor_order]
+  colours <- colours[rev(factor_order)]
   
-  if(replace_variable_names) {
-    variable_names <- levels
+  if(replace_variable_names & states) {
+    variable_names <- strReverse(levels)
     variable_names <- gsub("0", "Noc", variable_names)
-    variable_names <- gsub("1", "-Di-", variable_names)
+    variable_names <- gsub("Noc1", "Noc->1", variable_names)
+    variable_names <- gsub("1Noc", "Di->Noc", variable_names)
+    variable_names <- gsub("1", "Di", variable_names)
+    node.data$variable <- variable_names[match(node.data$variable, levels)]
+    node.data$variable <- factor(node.data$variable, levels = variable_names[factor_order])
+  }
+  if(replace_variable_names & rates) {
+    variable_names <- strReverse(levels)
+    variable_names <- gsub("0", "R1", variable_names)
+    variable_names <- gsub("R11", "R1->1", variable_names)
+    variable_names <- gsub("1R1", "R2->R1", variable_names)
+    variable_names <- gsub("R1->1", "R1->R2", variable_names)
     node.data$variable <- variable_names[match(node.data$variable, levels)]
     node.data$variable <- factor(node.data$variable, levels = variable_names[factor_order])
   }
@@ -455,15 +504,22 @@ switchRatio <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n
   
   if (smooth != "no") {
     require(dplyr)
-    df$node.age <- cut_width(df$node.age, smooth, label = FALSE)
-    df <- df %>% group_by(node.age) %>% summarise(ratio = mean(ratio))
-    df <- df[2:nrow(df),]
-    df$node.age <- df$node.age*smooth
+    if(use_types) {
+      df <- gather(df, key = "trans_type", value = "ratio", -node, -node.age, -transition_cumsum, -trans.ND.cumsum, -trans.DN.cumsum, -ltt_source, -ltt_cumsum, -ratio)
+      df$node.age <- cut_width(df$node.age, smooth, label = FALSE)
+      df <- df %>% group_by(node.age, trans_type) %>% summarise(ratio = mean(ratio))
+      df <- df[3:nrow(df),]
+      df$node.age <- df$node.age*smooth
+    } else {
+      df$node.age <- cut_width(df$node.age, smooth, label = FALSE)
+      df <- df %>% group_by(node.age) %>% summarise(ratio = mean(ratio))
+      df <- df[2:nrow(df),]
+      df$node.age <- df$node.age*smooth
+    }
   }
   
   if(use_types) {
-    df2 <- gather(df, key = "trans_type", value = "ratio", -node, -node.age, -transition_cumsum, -trans.ND.cumsum, -trans.DN.cumsum, -ltt_source, -ltt_cumsum, -ratio)
-    plot <- ggplot(df2[df2$node.age > node.age.cutoff,], aes(x = node.age, y = ratio, colour = trans_type)) + geom_line() + theme_classic() + scale_x_reverse() #+ scale_x_reverse(limits = c(413,0.1)) + ylim(c(0,0.15)) # ltt would be the number of times it was possible to switch? Or something like that?
+    plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = ratio, colour = trans_type)) + geom_line() + theme_classic() + scale_x_reverse() #+ scale_x_reverse(limits = c(413,0.1)) + ylim(c(0,0.15)) # ltt would be the number of times it was possible to switch? Or something like that?
     plot <- plot + xlab("Millions of years ago") + ylab("Fraction of lineages transitioning")
   } else {
     plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = ratio)) + geom_line() + theme_classic() + scale_x_reverse() #+ scale_x_reverse(limits = c(413,0.1)) + ylim(c(0,0.15)) # ltt would be the number of times it was possible to switch? Or something like that?
@@ -499,25 +555,28 @@ calculateSimualtedTransitionCumsums <- function(simulated_transitions = simulate
 
 switchTree <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n, layout = "circular", replace_variable_names = TRUE) {
   
-  possible.colors <- rev(c("grey75", "grey50", "black", "blue", "green", "red"))
+  # possible.colors <- rev(c("grey75", "grey50", "black", "blue", "green", "red"))
   
   switch.types <- unique(ancestral_states$switch.type)
-  switch.type <- c(as.character(ancestral_states$switch.type), rep("internal_node", Nnode(phylo_tree)))
-  switch.type <- factor(switch.type, levels = c(switch.types, "internal_node"))
+  # switch.type <- c(as.character(ancestral_states$switch.type), rep("internal_node", Nnode(phylo_tree)))
+  switch.type <- as.character(ancestral_states$switch.type)
+  switch.type <- factor(switch.type, levels = switch.types)
 
-  colours <- possible.colors[1:length(switch.types)]
-  colours <- c(rev(colours), possible.colors[6])
+  # colours <- possible.colors[1:length(switch.types)]
+  # colours <- c(rev(colours), possible.colors[6])
   
   if(replace_variable_names) {
-    variable_names <- switch.types
+    variable_names <- strReverse(switch.types)
     variable_names <- gsub("0", "Noc", variable_names)
-    variable_names <- gsub("1", "-Di-", variable_names)
-    variable_names <- c(variable_names, "internal_node")
-    switch.type <- variable_names[match(c(ancestral_states$switch.type, rep("internal_node", Nnode(phylo_tree))), switch.types)]
+    variable_names <- gsub("Noc1", "Noc->1", variable_names)
+    variable_names <- gsub("1Noc", "Di->Noc", variable_names)
+    variable_names <- gsub("1", "Di", variable_names)
+    # variable_names <- c(variable_names, "internal_node")
+    switch.type <- variable_names[match(ancestral_states$switch.type, switch.types)]
     switch.type <- factor(switch.type, levels = variable_names)
   }
   
-  tree <- ggtree(phylo_tree, layout = layout, size = 0.25) %<+% as.data.frame(switch.type) + aes(color = switch.type) + geom_tippoint(aes(color = switch.type), shape = 16) + scale_color_manual(values = colours)
+  tree <- ggtree(phylo_tree, layout = layout, size = 0.25) %<+% as.data.frame(switch.type) + aes(color = switch.type) + geom_tippoint(aes(color = switch.type), shape = 16) + scale_color_viridis_d()
   
   return(tree)
 }
@@ -720,15 +779,18 @@ plotRateIndex <- function(model = model, HMM = FALSE, levels = NA) {
 
 ## This function add order highlights to a ggtree plot
 
-addOrderLabels <- function(diel.plot.orders = diel.plot.orders, colours = my_colors, orders = orders, resolved_names = trait.data_n, tr.calibrated = trpy_n, highlight = TRUE, offset = 45, alpha = 0.25) {
+addOrderLabels <- function(diel.plot.orders = diel.plot.orders, custom = "no", label = FALSE, colours = my_colors, orders = orders, resolved_names = trait.data_n, tr.calibrated = trpy_n, highlight = TRUE, offset = 45, alpha = 0.25, text_size = 2) {
   
-  for (p in 1:length(orders)) {
-    tips <- resolved_names$species[resolved_names$order %in% orders[[p]]]
-    tips <- tips[!(is.na(tips))]
-    anchor.point <- round(median(1:length(tips)))
-    anchor.point <- tips[anchor.point]
-    
-    
+  if (any(custom  != "no")) {
+    if (length(custom) < 2) {
+      stop("custom must be at least 2 tip names")
+    }
+    if (all(custom %in% tr.calibrated$tip.label)) {
+      tips <- custom
+      
+      anchor.point <- round(median(1:length(tips)))
+      anchor.point <- tips[anchor.point]
+      
       if(length(tips) > 1) {
         node <- getMRCA(tr.calibrated, tips)
         if (highlight) {
@@ -742,7 +804,51 @@ addOrderLabels <- function(diel.plot.orders = diel.plot.orders, colours = my_col
           angle <- angle
           hjust <- 0
         }
-        diel.plot.orders <- diel.plot.orders + geom_cladelabel(node = node, label = orders[[p]], color = my_colors[[p]], offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5)
+        diel.plot.orders <- diel.plot.orders + geom_cladelabel(node = node, label = label, color = colours, offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5, fontsize = text_size)
+      } 
+    
+      if(length(tips) == 1) {
+        node <- diel.plot.orders$data$node[match(tips, diel.plot.orders$data$label)]
+        diel.plot.orders <- diel.plot.orders + geom_hilight(node =  node, fill = my_colors[[p]], alpha = alpha)
+        # angle = diel.plot.orders$data$angle[match(tips, diel.plot.orders$data$node)]
+        angle <- mean(diel.plot.orders$data$angle[diel.plot.orders$data$label %in% tips])
+        if(between(angle, 90, 270)) {
+          angle <- angle + 180
+          hjust <- 1
+        } else {
+          angle <- angle
+          hjust <- 0
+        }
+        diel.plot.orders <- diel.plot.orders + geom_cladelabel(node = node, label = label, color = colours, offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5, fontsize = text_size)
+      }
+      
+    } else {
+      stop("tips not found in trait data")
+    }
+  }
+  
+  if (custom == "no") {
+    for (p in 1:length(orders)) {
+      tips <- resolved_names$species[resolved_names$order %in% orders[[p]]]
+      tips <- tips[!(is.na(tips))]
+      anchor.point <- round(median(1:length(tips)))
+      anchor.point <- tips[anchor.point]
+      
+      
+      if(length(tips) > 1) {
+        node <- getMRCA(tr.calibrated, tips)
+        if (highlight) {
+          diel.plot.orders <- diel.plot.orders + geom_hilight(node = node, fill = my_colors[[p]], alpha = alpha)
+        }
+        angle <- mean(diel.plot.orders$data$angle[diel.plot.orders$data$label %in% tips])
+        if(between(angle, 90, 270)) {
+          angle <- angle + 180
+          hjust <- 1
+        } else {
+          angle <- angle
+          hjust <- 0
+        }
+        diel.plot.orders <- diel.plot.orders + geom_cladelabel(node = node, label = orders[[p]], color = my_colors[[p]], offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5, fontsize = text_size)
       } 
       
       if(length(tips) == 1) {
@@ -759,6 +865,7 @@ addOrderLabels <- function(diel.plot.orders = diel.plot.orders, colours = my_col
         }
         diel.plot.orders <- diel.plot.orders + geom_cladelab(node = node, label = orders[[p]], color = my_colors[[p]], offset = offset, align = F, angle = angle, hjust = hjust, barsize = 1.5)
       }
+    }
   }
   
   return(diel.plot.orders)
@@ -851,3 +958,7 @@ gggeo_scale <- function(gg, fill = NULL, color = "black", alpha = 1, height = .0
 
 
 colMax <- function(data) sapply(data, max, na.rm = TRUE)
+
+strReverse <- function(x) {
+  sapply(lapply(strsplit(x, NULL), rev), paste, collapse="")
+}

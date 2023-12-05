@@ -19,15 +19,15 @@ setwd(here())
 
 source(here("scripts/Fish_sleep_functions.R"))
 
-run_simulations <- FALSE
+run_simulations <- TRUE
 run_simulations_cumsums <- TRUE
-run_simmap <- FALSE
-run_simmap_cumsums <- FALSE
+run_simmap <- TRUE
+run_simmap_cumsums <- TRUE
 
 index_list <- list()
 index_list[[1]] <- c("all", "only_cartilaginous", "only_ingroup", "only_highqual")
 index_list[[2]] <- c("all")
-index_list[[3]] <- c("all", "not_mammals")
+index_list[[3]] <- c("all", "not_mammals", "amphibians", "sauropsids", "lepidosauria", "testudines", "aves")
 index_list[[4]] <- c("all")
 names(index_list) <- c("fish", "mammals", "tetrapods", "AllGroups")
 
@@ -43,7 +43,7 @@ for (y in 1:length(model_types)) {
   for (i in 1:length(index_list)) {
     dataset_variable <- names(index_list)[[i]]
     
-    for (j in 1:min(length(index_list[[i]]),3)) {
+    for (j in 1:length(index_list[[i]])) {
       name_variable <- index_list[[i]][[j]]
       
       setwd(here())

@@ -21,7 +21,7 @@ source(here("scripts/Fish_sleep_functions.R"))
 index_list <- list()
 index_list[[1]] <- c("all", "only_highqual", "only_cartilaginous", "only_ingroup")
 index_list[[2]] <- c("all")
-index_list[[3]] <- c("all", "not_mammals")
+index_list[[3]] <- c(c("all", "not_mammals", "amphibians", "sauropsids", "lepidosauria", "testudines", "aves"))
 index_list[[4]] <- c("all")
 names(index_list) <- c("fish", "mammals", "tetrapods", "AllGroups")
 
@@ -45,8 +45,6 @@ for (i in 1:length(index_list)) {
     pdf(file = here(paste("outs/Figures/plot_1_AllData", dataset_variable, name_variable, length(trpy_n$tip.label), "species.pdf", sep = "_")), width = 40, height = 40)
     print(diel.plot.labelled)
     dev.off()
-    
-    
     
     ## #2 Make a plot showing diel activity and highlighting orders
     orders <- unique(trait.data_n$order)[!(is.na(unique(trait.data_n$order)))]

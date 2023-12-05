@@ -6,8 +6,8 @@
 #SBATCH --tmp=16G
 #Total memory reserved: 16GB
 
-#SBATCH --time=167:00:00        #This is the time that your task will run
-#SBATCH --qos=1week           #You will run in this queue
+#SBATCH --time=24:00:00        #This is the time that your task will run
+#SBATCH --qos=1day           #You will run in this queue
 
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
 #SBATCH --output=/scicore/home/schiera/gizevo30/projects/fish_sleep/scripts/logs/standardmodels_stdout.txt
@@ -59,6 +59,12 @@ export CPATH=~/.local/include:~/.local/include/adolc:$CPATH
 
 # Rscript 2_General_Hidden_Markov_Models_script.R all tetrapods
 # Rscript 2_General_Hidden_Markov_Models_script.R not_mammals tetrapods
+Rscript 2_General_Hidden_Markov_Models_script.R amphibians tetrapods
+# Rscript 2_General_Hidden_Markov_Models_script.R sauropsids tetrapods
+# Rscript 2_General_Hidden_Markov_Models_script.R lepidosauria tetrapods
+# Rscript 2_General_Hidden_Markov_Models_script.R testudines tetrapods
+# Rscript 2_General_Hidden_Markov_Models_script.R crocodylia tetrapods
+# Rscript 2_General_Hidden_Markov_Models_script.R aves tetrapods
 
-Rscript 2_General_Hidden_Markov_Models_script.R all AllGroups
+# Rscript 2_General_Hidden_Markov_Models_script.R all AllGroups
 
