@@ -241,3 +241,5 @@ likelihoods <- rbind(likelihoods, c("ace_deadend_ard", ace_deadend_ard$loglik, "
 png("C:/Users/ameli/OneDrive/Documents/R_projects/likelihood_table.png", height = 30*nrow(likelihoods), width = 200*ncol(likelihoods), res = 90)
 grid.table(likelihoods)
 dev.off()
+
+#hello
