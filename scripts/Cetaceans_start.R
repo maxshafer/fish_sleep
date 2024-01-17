@@ -39,6 +39,7 @@ View(cetaceans_full)
 cetaceans_full$Species_name <- str_replace(cetaceans_full$Species_name, "Physeter catodon", "Physeter macrocephalus")
 cetaceans_full <- cetaceans_full[,1:9]
 View(cetaceans_full)
+#diel column is based on diel pattern 3 so that cathemeral species aren't dropped when we drop na values
 cetaceans_full$diel <- tolower(cetaceans_full$Diel_Pattern_3)
 
 
@@ -47,16 +48,16 @@ cetaceans_full$diel <- tolower(cetaceans_full$Diel_Pattern_3)
 
 
 ## Remove species without diel data
-cetaceans <- cetaceans_full[!(is.na(cetaceans_full$diel)),]
+cetaceans_full <- cetaceans_full[!(is.na(cetaceans_full$diel)),]
 
 
 ## Read in the mammalian phylogeny
-mammal_trees <- read.nexus("Cox_mammal_data/Complete_phylogeny.nex")
-mam.tree <- maxCladeCred(mammal_trees, tree = TRUE) #this function takes a long time to run??
+#mammal_trees <- read.nexus("Cox_mammal_data/Complete_phylogeny.nex")
+#mam.tree <- maxCladeCred(mammal_trees, tree = TRUE) #this function takes a long time to run
 getwd()
 
 # Save out maxcladecred, so we don't have to recalculate it every time
-saveRDS(mam.tree,"maxCladeCred_mammal_tree.rds")
+#saveRDS(mam.tree,"maxCladeCred_mammal_tree.rds")
 
 mam.tree <- readRDS("maxCladeCred_mammal_tree.rds")
 #check to see what cetaceans are in mammal tree by subsetting to just include cetaceans
@@ -225,8 +226,7 @@ generic_ratemat <- getStateMat4Dat(cor_model_ard3$data)
 test_ratemat <- generic_ratemat$rate.mat
 test_ratemat
 
-cath_deadend <- list(c(1), c(2), c(4), c(6), c(5, 3, 0))
-custom_rate_matrix <- equateStateMatPars(test_ratemat, cath_deadend)
+custom_rate_matrix <- dropStateMatPars(test_ratemat, c(1,6))
 custom_rate_matrix
 
 custom_ard <- corHMM(phy = cor_model_ard3$phy, data = cor_model_ard3$data, rate.cat = 1, rate.mat = custom_rate_matrix)
