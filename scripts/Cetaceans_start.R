@@ -99,7 +99,7 @@ ace_model_sym1 <- ace(trait.vector, trpy_n, model = "SYM", type = "discrete")
 ace_model_ard1 <- ace(trait.vector, trpy_n, model = "ARD", type = "discrete")
 
 #create a table comparing all models
-likelihoods <- data.frame(model = c("ace_model_er1", "ace_model_sym1", "ace_model_ard1"), likelihood = c(ace_model_er$loglik, ace_model_sym$loglik, ace_model_ard$loglik), description = c("diurnal, nocturnal", "diurnal, nocturnal", "diurnal, nocturnal"))
+likelihoods <- data.frame(model = c("ace_model_er1", "ace_model_sym1", "ace_model_ard1"), likelihood = c(ace_model_er1$loglik, ace_model_sym1$loglik, ace_model_ard1$loglik), description = c("diurnal, nocturnal", "diurnal, nocturnal", "diurnal, nocturnal"))
 View(likelihoods)
 
 ## e.g. running the same as the above, but with the corHMM package
@@ -117,45 +117,49 @@ likelihoods <- rbind(likelihoods, c("cor_model_ard1", cor_model_ard$loglik, "diu
 ## Extract the data to plot
 ## Depending on which package you use, the ancestral data is in different places (or not determined at all)
 ## It typically only includes the internal node states, and not also the tip states
-str(ace_model_er, max.level = 1)
-head(ace_model_er$lik.anc)
+str(ace_model_er1, max.level = 1)
+head(ace_model_er1$lik.anc)
 
-str(cor_model_er, max.level = 1)
-head(cor_model_er$states)
+str(cor_model_er1, max.level = 1)
+head(cor_model_er1$states)
 
 # In this case, I am putting together the internal nodes and tip states into one data frame
-lik.anc <- as.data.frame(rbind(cor_model_ard$tip.states, cor_model_ard$states))
-# dim of this should be equal to the tips and internal nodes
+lik.anc <- as.data.frame(rbind(cor_model_ard1$tip.states, cor_model_ard1$states))
+# dim of this should be equal to the tips and internal nodes 
 trpy_n
 dim(lik.anc)
 
 colnames(lik.anc) <- c("diurnal", "nocturnal")
 
 # Tips are also nodes, and all nodes have a number, and they are number sequentially beginning with tips, so the first internal node is the number of tips +1
-
+# attach each species (and ancestral sps/node) with its node number
 lik.anc$node <- c(1:length(trpy_n$tip.label), (length(trpy_n$tip.label) + 1):(trpy_n$Nnode + length(trpy_n$tip.label)))
 
-ancestral_plot <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+#colour the internal nodes and tips by the diurnal column (ie whether or not they are diurnal),
+ancestral_plot_dinoc <- ggtree(trpy_n_dinoc, layout = "circular") %<+% lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+ancestral_plot_dinoc
 
-
-
+#label the tips
 ancestral_plot + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
 
 
 #repeating the same for crepuscular, cathemeral, diurnal nocturnal
 View(cetaceans)
-#may not need this, may be able to just use cetaceans_full$diel
-trait.data2 <- cetaceans
-# formats the species names
+#create dataframe to use. Starts with 98 species
+trait.data2 <- cetaceans[, 1:10]
+#remove sps with no diel data. Should now have 80 species 
+trait.data2 <- cetaceans[!(is.na(trait.data2$Diel_Pattern_3)),]
+# formats the species names to be the same as in the tree
 trait.data2$tips <- str_replace(trait.data2$Species_name, " ", "_")
-# selects only data that is in the mammal tree
+# selects only data that is in the mammal tree (start with 80 sps, only 71 in tree)
 trait.data2 <- trait.data2[trait.data2$tips %in% mam.tree$tip.label,]
 row.names(trait.data2) <- trait.data2$tips
+
 # this selects a tree that is only the subset with data (mutual exclusive)
 trpy_n2 <- keep.tip(mam.tree, tip = trait.data2$tips)
 View(trait.data2)
 
-trait.vector2 <- trait.data2$diel
+trait.vector2 <- trait.data2$Diel_Pattern_3
 ace_model_er2 <- ace(trait.vector2, trpy_n2, model = "ER", type = "discrete")
 ace_model_sym2 <- ace(trait.vector2, trpy_n2, model = "SYM", type = "discrete")
 ace_model_ard2 <- ace(trait.vector2, trpy_n2, model = "ARD", type = "discrete")
@@ -165,15 +169,41 @@ likelihoods <- rbind(likelihoods, c("ace_model_er2", ace_model_er2$loglik, "diur
 likelihoods <- rbind(likelihoods, c("ace_model_sym2", ace_model_sym2$loglik, "diurnal, nocturnal, crepuscular, cathemeral"))
 likelihoods <- rbind(likelihoods, c("ace_model_ard2", ace_model_ard2$loglik, "diurnal, nocturnal, crepuscular, cathemeral"))
 
-cor_model_er2 <- corHMM(phy = trpy_n2, data = trait.data2[trpy_n2$tip.label, c("tips", "diel")], rate.cat = 1, model = "ER", node.states = "marginal")
-cor_model_sym2 <- corHMM(phy = trpy_n2, data = trait.data2[trpy_n2$tip.label, c("tips", "diel")], rate.cat = 1, model = "SYM", node.states = "marginal")
-cor_model_ard2 <- corHMM(phy = trpy_n2, data = trait.data2[trpy_n2$tip.label, c("tips", "diel")], rate.cat = 1, model = "ARD", node.states = "marginal")
+cor_model_er2 <- corHMM(phy = trpy_n2, data = trait.data2[trpy_n2$tip.label, c("tips", "Diel_Pattern_3")], rate.cat = 1, model = "ER", node.states = "marginal")
+cor_model_sym2 <- corHMM(phy = trpy_n2, data = trait.data2[trpy_n2$tip.label, c("tips", "Diel_Pattern_3")], rate.cat = 1, model = "SYM", node.states = "marginal")
+cor_model_ard2 <- corHMM(phy = trpy_n2, data = trait.data2[trpy_n2$tip.label, c("tips", "Diel_Pattern_3")], rate.cat = 1, model = "ARD", node.states = "marginal")
 
 #add how well these models did to the table
 likelihoods <- rbind(likelihoods, c("cor_model_er2", cor_model_er2$loglik, "diurnal, nocturnal, crepuscular, cathemeral"))
 likelihoods <- rbind(likelihoods, c("cor_model_sym2", cor_model_sym2$loglik, "diurnal, nocturnal, crepuscular, cathemeral"))  
 likelihoods <- rbind(likelihoods, c("cor_model_ard2", cor_model_ard2$loglik, "diurnal, nocturnal, crepuscular, cathemeral"))
 
+
+#create a dataframe of each species, its node and whether or not it is either of the diel patterns
+
+cet.lik.anc <- as.data.frame(rbind(cor_model_ard2$tip.states, cor_model_ard2$states))
+colnames(cet.lik.anc) <- c("cathemeral", "crepuscular", "diurnal", "nocturnal")
+#associate each row with specific nodes
+cet.lik.anc$node <- c(1:length(trpy_n2$tip.label), (length(trpy_n2$tip.label) + 1):(trpy_n2$Nnode + length(trpy_n2$tip.label)))
+
+cet_ancestral_plot_di <- ggtree(trpy_n2, layout = "circular") %<+% cet.lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu") + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
+cet_ancestral_plot_noc <- ggtree(trpy_n2, layout = "circular") %<+% cet.lik.anc + aes(color = nocturnal) + geom_tippoint(aes(color = nocturnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu") + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = nocturnal), shape = 16, size = 1.5)
+cet_ancestral_plot_crep <- ggtree(trpy_n2, layout = "circular") %<+% cet.lik.anc + aes(color = crepuscular) + geom_tippoint(aes(color = crepuscular), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu") + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = crepuscular), shape = 16, size = 1.5)
+cet_ancestral_plot_cath <- ggtree(trpy_n2, layout = "circular") %<+% cet.lik.anc + aes(color = cathemeral) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu") + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5)
+cet_ancestral_plot_cath
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/ancestral_recon_ard2_1.png", width=17,height=14,units="cm",res=1200)
+ggtree(trpy_n2, layout = "circular") %<+% cet.lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu") + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
+dev.off()
+png("C:/Users/ameli/OneDrive/Documents/R_projects/ancestral_recon_ard2_2.png", width=17,height=14,units="cm",res=1200)
+ggtree(trpy_n2, layout = "circular") %<+% cet.lik.anc + aes(color = nocturnal) + geom_tippoint(aes(color = nocturnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu") + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = nocturnal), shape = 16, size = 1.5)
+dev.off()
+png("C:/Users/ameli/OneDrive/Documents/R_projects/ancestral_recon_ard2_3.png", width=17,height=14,units="cm",res=1200)
+ggtree(trpy_n2, layout = "circular") %<+% cet.lik.anc + aes(color = crepuscular) + geom_tippoint(aes(color = crepuscular), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu") + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = crepuscular), shape = 16, size = 1.5)
+dev.off()
+png("C:/Users/ameli/OneDrive/Documents/R_projects/ancestral_recon_ard2_4.png", width=17,height=14,units="cm",res=1200)
+ggtree(trpy_n2, layout = "circular") %<+% cet.lik.anc + aes(color = cathemeral) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu") + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5)
+dev.off()
 
 #test with nocturnal, diurnal, cathemeral, with crepuscular species categorized as either di or noc
 trait.data3 <- cetaceans

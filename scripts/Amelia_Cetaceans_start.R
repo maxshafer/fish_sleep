@@ -251,4 +251,3 @@ ancestral_plot <- ggtree(trpy_n_mam, layout = "circular") %<+% lik.anc + aes(col
 ancestral_plot + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
 
 
-
