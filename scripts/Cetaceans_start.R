@@ -139,9 +139,10 @@ lik.anc$node <- c(1:length(trpy_n$tip.label), (length(trpy_n$tip.label) + 1):(tr
 ancestral_plot_dinoc <- ggtree(trpy_n_dinoc, layout = "circular") %<+% lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
 ancestral_plot_dinoc
 
-#label the tips
+#label the tips (and save as png)
+png("C:/Users/ameli/OneDrive/Documents/R_projects/ancestral_recon_dinoc_cet.png", width=17,height=16,units="cm",res=1200)
 ancestral_plot + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
-
+dev.off()
 
 #repeating the same for crepuscular, cathemeral, diurnal nocturnal
 View(cetaceans)

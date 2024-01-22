@@ -139,20 +139,21 @@ str(cor_artio_er1, max.level = 1)
 head(cor_artio_er1$states)
 
 # In this case, I am putting together the internal nodes and tip states into one data frame
-lik.anc <- as.data.frame(rbind(cor_artio_ard1$tip.states, cor_artio_ard1$states))
+lik.anc.cox <- as.data.frame(rbind(cor_artio_ard1$tip.states, cor_artio_ard1$states))
 # dim of this should be equal to the tips and internal nodes (190 tips and 189 nodes for 379 total)
 trpy_n_dinoc
-dim(lik.anc)
+dim(lik.anc.cox)
 
-colnames(lik.anc) <- c("diurnal", "nocturnal")
+colnames(lik.anc.cox) <- c("diurnal", "nocturnal")
 
 # Tips are also nodes, and all nodes have a number, and they are number sequentially beginning with tips, so the first internal node is the number of tips +1
 
-lik.anc$node <- c(1:length(trpy_n_dinoc$tip.label), (length(trpy_n_dinoc$tip.label) + 1):(trpy_n_dinoc$Nnode + length(trpy_n_dinoc$tip.label)))
+lik.anc.cox$node <- c(1:length(trpy_n_dinoc$tip.label), (length(trpy_n_dinoc$tip.label) + 1):(trpy_n_dinoc$Nnode + length(trpy_n_dinoc$tip.label)))
 
-ancestral_plot <- ggtree(trpy_n, layout = "circular") %<+% lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
-
+ancestral_plot <- ggtree(trpy_n_dinoc, layout = "circular") %<+% lik.anc.cox + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+png("C:/Users/ameli/OneDrive/Documents/R_projects/ancestral_recon_ard_cox1.png", width=17,height=16,units="cm",res=1200)
 ancestral_plot + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
+dev.off()
 
 #still very ambiguous as to the ancestor state
 #repeat the same analysis but from Maor et al dataset
@@ -314,6 +315,7 @@ maor_final$Species <- str_replace(maor_final$Species, " ", "_")
 cetaceans_shorter2 <- cetaceans_shorter[, -c(2,3,4)]
 colnames(cetaceans_shorter2) <- c("Species", "Activity_pattern_1", "Activity_pattern_2", "Activity_pattern_3")
 maor_final <- rbind(maor_final, cetaceans_shorter2)
+row.names(maor_final) <- c(1:nrow(maor_final))
 
 #load in the tree
 mam.tree <- readRDS("maxCladeCred_mammal_tree.rds")
@@ -366,21 +368,150 @@ str(cor_dinoc_ard1, max.level = 1)
 head(cor_dinoc_ard1$states)
 
 # In this case, I am putting together the internal nodes and tip states into one data frame
-lik.anc.maor <- as.data.frame(rbind(dinoc.trait.data[,"Activity_pattern_1"], ace_dinoc_ard1$lik.anc))
+#still not sure how to plot ancestral reconstructions with ace 
+#lik.anc.maor <- as.data.frame(rbind(dinoc.trait.data[,"Activity_pattern_1"], ace_dinoc_ard1$lik.anc))
 # dim of this should be equal to the tips and internal nodes (190 tips and 189 nodes for 379 total)
-trpy_n_maor1
-dim(lik.anc.maor)
+#trpy_n_maor1
+#dim(lik.anc.maor)
 
-colnames(lik.anc) <- c("diurnal", "nocturnal")
+#colnames(lik.anc) <- c("diurnal", "nocturnal")
 
 # Tips are also nodes, and all nodes have a number, and they are number sequentially beginning with tips, so the first internal node is the number of tips +1
 
-lik.anc$node <- c(1:length(trpy_n_dinoc$tip.label), (length(trpy_n_dinoc$tip.label) + 1):(trpy_n_dinoc$Nnode + length(trpy_n_dinoc$tip.label)))
+#lik.anc$node <- c(1:length(trpy_n_dinoc$tip.label), (length(trpy_n_dinoc$tip.label) + 1):(trpy_n_dinoc$Nnode + length(trpy_n_dinoc$tip.label)))
 
-ancestral_plot_maor <- ggtree(trpy_n_maor1, layout = "circular") %<+% lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+#ancestral_plot_maor_ace <- ggtree(trpy_n_maor1, layout = "circular") %<+% lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
 
+#ancestral_plot_maor_ace + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
+
+#cor model plots
+lik.anc.maor <- as.data.frame(rbind(cor_dinoc_ard1$tip.states, cor_dinoc_ard1$states))
+colnames(lik.anc.maor) <- c("diurnal", "nocturnal")
+lik.anc.maor$node <- c(1:length(trpy_n_maor1$tip.label), (length(trpy_n_maor1$tip.label) + 1):(trpy_n_maor1$Nnode + length(trpy_n_maor1$tip.label)))
+
+ancestral_plot_maor <- ggtree(trpy_n_maor1, layout = "circular") %<+% lik.anc.maor + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+png("C:/Users/ameli/OneDrive/Documents/R_projects/ancestral_recon_ard_maor1.png", width=17,height=16,units="cm",res=1200)
 ancestral_plot_maor + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
+dev.off()
 
+#do the same (ancestral state reconstruction) but including crepuscular and cathemeral states
+trait.data.4state <- maor_final[!(is.na(maor_final$Activity_pattern_3)),]
+# selects only data that is in the mammal tree
+trait.data.4state <- trait.data.4state[trait.data.4state$Species %in% mam.tree$tip.label,]
+row.names(trait.data.4state) <- trait.data.4state$Species
+# this selects a tree that is only the subset with data (mutual exclusive)
+trpy_n_maor2 <- keep.tip(mam.tree, tip = trait.data.4state$Species)
 
+#now that we have the trait data for these 155 species and the subtree we can model
+trait.vector.maor2 <- trait.data.4state$Activity_pattern_3
+ace_maor_er2 <- ace(trait.vector.maor2, trpy_n_maor2, model = "ER", type = "discrete")
+ace_maor_sym2 <- ace(trait.vector.maor2, trpy_n_maor2, model = "SYM", type = "discrete")
+ace_maor_ard2 <- ace(trait.vector.maor2, trpy_n_maor2, model = "ARD", type = "discrete")
 
-#do the same (ancestral state reconstruction) but including crepuscular and cathemeral
+#add results to dataframe
+artio_likelihoods <- rbind(artio_likelihoods, c("ace_maor_er2", ace_maor_er2$loglik, "diurnal, nocturnal, cathemeral, crepuscular, artiodactyla, maor dataset"))
+artio_likelihoods <- rbind(artio_likelihoods, c("ace_maor_sym2", ace_maor_sym2$loglik, "diurnal, nocturnal, cathemeral, crepuscular, artiodactyla, maor dataset"))
+artio_likelihoods <- rbind(artio_likelihoods, c("ace_maor_ard2", ace_maor_ard2$loglik, "diurnal, nocturnal, cathemeral, crepuscular, artiodactyla,maor dataset"))
+
+## e.g. running the same as the above, but with the corHMM package
+cor_maor_er2 <- corHMM(phy = trpy_n_maor2, data = trait.data.4state[trpy_n_maor2$tip.label, c("Species", "Activity_pattern_3")], rate.cat = 1, model = "ER", node.states = "marginal")
+cor_maor_sym2 <- corHMM(phy = trpy_n_maor2, data = trait.data.4state[trpy_n_maor2$tip.label, c("Species", "Activity_pattern_3")], rate.cat = 1, model = "SYM", node.states = "marginal")
+cor_maor_ard2 <- corHMM(phy = trpy_n_maor2, data = trait.data.4state[trpy_n_maor2$tip.label, c("Species", "Activity_pattern_3")], rate.cat = 1, model = "ARD", node.states = "marginal")
+
+#add results to the dataframe
+artio_likelihoods <- rbind(artio_likelihoods, c("cor_maor_er2", cor_maor_er2$loglik, "diurnal, nocturnal, cathemeral, crepuscular, artiodactyla, maor dataset"))
+artio_likelihoods <- rbind(artio_likelihoods, c("cor_maor_sym2", cor_maor_sym2$loglik, "diurnal, nocturnal, cathemeral, crepuscular, artoidactyla, maor dataset"))  
+artio_likelihoods <- rbind(artio_likelihoods, c("cor_maor_ard2", cor_maor_ard2$loglik, "diurnal, nocturnal, cathemeral, crepuscular, artiodactyla, maor dataset"))
+
+#cor model plots
+lik.anc.maor2 <- as.data.frame(rbind(cor_maor_ard2$tip.states, cor_maor_ard2$states))
+colnames(lik.anc.maor2) <- c("cathemeral", "crepuscular", "diurnal", "nocturnal")
+lik.anc.maor2$node <- c(1:length(trpy_n_maor2$tip.label), (length(trpy_n_maor2$tip.label) + 1):(trpy_n_maor2$Nnode + length(trpy_n_maor2$tip.label)))
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/anc_recon_4state_p1.png", width=17,height=16,units="cm",res=1200)
+ancestral_plot_maor2 <- ggtree(trpy_n_maor2, layout = "circular") %<+% lik.anc.maor2 + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+ancestral_plot_maor2 + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
+dev.off()
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/anc_recon_4state_p2.png", width=17,height=16,units="cm",res=1200)
+ancestral_plot_maor2 <- ggtree(trpy_n_maor2, layout = "circular") %<+% lik.anc.maor2 + aes(color = nocturnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+ancestral_plot_maor2 + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = nocturnal), shape = 16, size = 1.5)
+dev.off()
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/anc_recon_4state_p3.png", width=17,height=16,units="cm",res=1200)
+ancestral_plot_maor2 <- ggtree(trpy_n_maor2, layout = "circular") %<+% lik.anc.maor2 + aes(color = cathemeral) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+ancestral_plot_maor2 + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5)
+dev.off()
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/anc_recon_4state_p4.png", width=17,height=16,units="cm",res=1200)
+ancestral_plot_maor2 <- ggtree(trpy_n_maor2, layout = "circular") %<+% lik.anc.maor2 + aes(color = crepuscular) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+ancestral_plot_maor2 + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = crepuscular), shape = 16, size = 1.5)
+dev.off()
+
+#repeat but with artiodactyla excluding cetaceans
+#easiest way to do this is to drop the last chunk of rows in maor_final (to keep all the formatting)
+just_artio <- maor_final[1:151, ]
+
+just_artio <- just_artio[just_artio$Species %in% mam.tree$tip.label,]
+trpy_n_ja <- keep.tip(mam.tree, tip = just_artio$Species)
+#tree of all the artio species with data in the mammal tree (shown without trait data)
+ggtree(trpy_n_ja, layout = "fan", size = 0.5) + geom_tiplab(size = 1.5)
+
+#ancestral state reconstruction for 4 states, diurnal, nocturnal, crepuscular and cathemeral states
+trait.data.ja4 <- just_artio[!(is.na(just_artio$Activity_pattern_3)),]
+# selects only data that is in the mammal tree 
+trait.data.ja4 <- trait.data.ja4[trait.data.ja4$Species %in% mam.tree$tip.label,]
+row.names(trait.data.ja4) <- trait.data.ja4$Species
+# this selects a tree that is only the subset with data (mutual exclusive)
+trpy_n_ja <- keep.tip(mam.tree, tip = trait.data.ja4$Species)
+
+#now that we have the trait data for these 151 species and the subtree we can model
+trait.vector.ja4 <- trait.data.ja4$Activity_pattern_3
+ace_maorja_er2 <- ace(trait.vector.ja4, trpy_n_ja, model = "ER", type = "discrete")
+ace_maorja_sym2 <- ace(trait.vector.ja4, trpy_n_ja, model = "SYM", type = "discrete")
+ace_maorja_ard2 <- ace(trait.vector.ja4, trpy_n_ja, model = "ARD", type = "discrete")
+
+#add results to dataframe
+artio_likelihoods <- rbind(artio_likelihoods, c("ace_maorja_er2", ace_maorja_er2$loglik, "diurnal, nocturnal, cathemeral, crepuscular, artiodactyla without cetacea, maor dataset"))
+artio_likelihoods <- rbind(artio_likelihoods, c("ace_maorja_sym2", ace_maorja_sym2$loglik, "diurnal, nocturnal, cathemeral, crepuscular, artiodactyla without cetacea, maor dataset"))
+artio_likelihoods <- rbind(artio_likelihoods, c("ace_maorja_ard2", ace_maorja_ard2$loglik, "diurnal, nocturnal, cathemeral, crepuscular, artiodactyla without cetacea, maor dataset"))
+
+## e.g. running the same as the above, but with the corHMM package
+cor_maorja_er2 <- corHMM(phy = trpy_n_ja, data = trait.data.ja4[trpy_n_ja$tip.label, c("Species", "Activity_pattern_3")], rate.cat = 1, model = "ER", node.states = "marginal")
+cor_maorja_sym2 <- corHMM(phy = trpy_n_ja, data = trait.data.ja4[trpy_n_ja$tip.label, c("Species", "Activity_pattern_3")], rate.cat = 1, model = "SYM", node.states = "marginal")
+cor_maorja_ard2 <- corHMM(phy = trpy_n_ja, data = trait.data.ja4[trpy_n_ja$tip.label, c("Species", "Activity_pattern_3")], rate.cat = 1, model = "ARD", node.states = "marginal")
+
+#add results to the dataframe
+artio_likelihoods <- rbind(artio_likelihoods, c("cor_maorja_er2", cor_maorja_er2$loglik, "diurnal, nocturnal, cathemeral, crepuscular, artiodactyla without cetacea, maor dataset"))
+artio_likelihoods <- rbind(artio_likelihoods, c("cor_maorja_sym2", cor_maorja_sym2$loglik, "diurnal, nocturnal, cathemeral, crepuscular, artoidactyla without cetacea, maor dataset"))  
+artio_likelihoods <- rbind(artio_likelihoods, c("cor_maorja_ard2", cor_maorja_ard2$loglik, "diurnal, nocturnal, cathemeral, crepuscular, artiodactyla without cetacea, maor dataset"))
+
+#plot the best performing model
+lik.anc.ja2 <- as.data.frame(rbind(cor_maorja_ard2$tip.states, cor_maorja_ard2$states))
+colnames(lik.anc.ja2) <- c("cathemeral", "crepuscular", "diurnal", "nocturnal")
+lik.anc.ja2$node <- c(1:length(trpy_n_ja$tip.label), (length(trpy_n_ja$tip.label) + 1):(trpy_n_ja$Nnode + length(trpy_n_ja$tip.label)))
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/anc_recon_ja4state_p1.png", width=17,height=16,units="cm",res=1200)
+ancestral_plot_ja4 <- ggtree(trpy_n_ja, layout = "circular") %<+% lik.anc.ja2 + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+ancestral_plot_ja4 + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
+dev.off()
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/anc_recon_ja4state_p2.png", width=17,height=16,units="cm",res=1200)
+ancestral_plot_ja4 <- ggtree(trpy_n_ja, layout = "circular") %<+% lik.anc.ja2 + aes(color = nocturnal) + geom_tippoint(aes(color = nocturnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+ancestral_plot_ja4 + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = nocturnal), shape = 16, size = 1.5)
+dev.off()
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/anc_recon_ja4state_p3.png", width=17,height=16,units="cm",res=1200)
+ancestral_plot_ja4 <- ggtree(trpy_n_ja, layout = "circular") %<+% lik.anc.ja2 + aes(color = cathemeral) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+ancestral_plot_ja4 + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5)
+dev.off()
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/anc_recon_ja4state_p4.png", width=17,height=16,units="cm",res=1200)
+ancestral_plot_ja4 <- ggtree(trpy_n_ja, layout = "circular") %<+% lik.anc.ja2 + aes(color = crepuscular) + geom_tippoint(aes(color = crepuscular), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+ancestral_plot_ja4 + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = crepuscular), shape = 16, size = 1.5)
+dev.off()
+
+#export dataframe of likelihood as a png
+png("C:/Users/ameli/OneDrive/Documents/R_projects/artio_likelihood_table.png", height = 30*nrow(artio_likelihoods), width = 300*ncol(artio_likelihoods), res = 90)
+grid.table(artio_likelihoods)
+dev.off()
