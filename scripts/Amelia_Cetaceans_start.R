@@ -49,8 +49,6 @@ trait.data <- cetaceans[cetaceans$Diel_Pattern_3 %in% c("diurnal", "nocturnal", 
 trait.data$tips <- trait.data$Species_name
 trait.data$tips <- str_replace(trait.data$tips, pattern = " ", replacement = "_")
 
-View(trait.data)
-
 resolved_names <- tnrs_match_names(trait.data$Species_name, context_name = "Vertebrates", do_approximate_matching = FALSE)
 
 #Balaenoptera riceii, Inia humboldtiana and Neophocaena sunameri are not currently in the open tree of life
@@ -70,7 +68,6 @@ resolved_names <- resolved_names[!duplicated(resolved_names$tips),]
 # Add data on activity
 # match() finds the position of its first argument in its second
 resolved_names$diel <- trait.data$Diel_Pattern_3[match(resolved_names$search_string, tolower(trait.data$Species_name))]
-View(resolved_names)
 table(resolved_names$diel)
 
 
@@ -129,6 +126,22 @@ png("C:/Users/ameli/OneDrive/Documents/R_projects/cetacean_diel3.png", width=14,
 print(diel.plot3.labelled)
 dev.off()
 
+#diel with three states
+trait.data3state <- cetaceans[!(is.na(cetaceans$Diel_Pattern_2)),]
+trait.data3state$Diel_Pattern_2 <- str_replace_all(trait.data3state$Diel_Pattern_2, "nocturnal/crepuscular", "nocturnal")
+trait.data3state$Diel_Pattern_2 <- str_replace_all(trait.data3state$Diel_Pattern_2, "diurnal/crepuscular", "nocturnal")
+trait.data3state$tips <- trait.data3state$Species_name
+trait.data3state$tips <- str_replace(trait.data3state$tips, pattern = " ", replacement = "_")
+custom.colours4 <- c("#dd8ae7", "#FC8D62", "#66C2A5")
+
+diel.plot3_state <- ggtree(tr, layout = "circular") %<+% trait.data3state[,c("tips", "Diel_Pattern_2")]
+diel.plot3_state <- diel.plot3_state + geom_tile(data = diel.plot3_state$data[1:length(tr$tip.label),], aes(y=y, x=x, fill = Diel_Pattern_2), inherit.aes = FALSE, color = "transparent") + scale_fill_manual(values = custom.colours4)
+diel.plot3_state <- diel.plot3_state + geom_tiplab(color = "black", size = 1.2)
+diel.plot3_state
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/cetacean_diel4.png", width=15,height=12,units="cm",res=1200)
+print(diel.plot3_state)
+dev.off()
 
 #add clade labels to find the nodes for each family
 node_labels <- ggtree(tr, layout = "circular") + geom_text(aes(label=node), hjust=-.2, size = 1.8) + geom_tiplab(size = 1.8, hjust = -0.1)
@@ -153,10 +166,38 @@ diel_families <- diel_families + geom_strip(63, 72, barsize=1, color='slateblue3
 diel_families <- diel_families + geom_strip(3, 6, barsize=1, color='#1899f5', offset = 11)
 diel_families
                           
-png("C:/Users/ameli/OneDrive/Documents/R_projects/diel3_with_families.png", width=18,height=15,units="cm",res=1200)
+png("C:/Users/ameli/OneDrive/Documents/R_projects/diel3_with_families.png", width=30,height=20,units="cm",res=1200)
 print(diel_families)
 dev.off()
 
+#better family plot
+#create a dataframe with each cetacean family and its node
+family_names_right <- data.frame(names = c("Eschrichitiidae", "Neobalaenidae", "Balaenidae", "Balaenopteridae", "Delphinidae", "Platanistidae", "Kogiidae", "Physteridae"), nodes = c(72, 73, 151, 143, 88, 81, 139, 60))
+family_names_left <- data.frame(names = c("Ziphiidae", "Lipotidae", "Phocoenidae", "Iniidae", "Monodontidae"), nodes = c(128, 3, 123, 85, 127))
+#add the colour you want each family to be
+family_names_right$colour <- c("steelblue2", "steelblue3", "steelblue4", "steelblue1", "grey1", "grey50","grey60", "grey65" )
+family_names_left$colour <- c("grey45", "grey40", "grey15","grey30", "grey20")
+
+#odontocetes in grey, mysticetes in blue
+family_names_right$parvorder <- "grey40"
+family_names_right[c(1,2,3,4), "parvorder"] <- "steelblue2"
+family_names_left$parvorder <- "grey40"
+
+diel_families <- diel.plot3 +
+  geom_cladelab(family_names_right, node = family_names_right$nodes, label = family_names_right$names, offset=1, align=FALSE, angle=16, offset.text=1, barsize=1, fontsize=5, textcolor= family_names_right$colour, barcolor=family_names_right$parvorder, alpha = 0.75) +
+  geom_cladelab(family_names_left, node = family_names_left$nodes, label = family_names_left$names, offset=1, align=FALSE, angle=196, offset.text=1, barsize=1, fontsize=5, textcolor= family_names_left$colour, barcolor= family_names_left$parvorder, alpha = 0.75)
+#does this actually make the plot smaller?
+diel_families 
+#geom_cladelab doesn't give a bar to clades with single sps so add them manually
+diel_families <- diel_families + geom_strip(60, 61, barsize=1, color='grey50', offset = 1, align=FALSE)
+diel_families <- diel_families + geom_strip(73, 72, barsize=1, color='steelblue1', offset = 1)
+diel_families <- diel_families + geom_strip(63, 72, barsize=1, color='steelblue1', offset = 1)
+diel_families <- diel_families + geom_strip(3, 6, barsize=1, color='grey50', offset = 1)
+diel_families
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/diel3_with_families.png", width=30,height=20,units="cm",res=1200)
+print(diel_families)
+dev.off()
 #find images from phylopics collection, not necessary to rerun once you have the image info
 # img <- pick_phylopic(name = "Mysticeti", n = 19, view = 19)
 # img <- pick_phylopic(name = "Delphinida", n = 54, view = 54)
@@ -173,7 +214,6 @@ dev.off()
 family_names_pics <- data.frame(names = c("Eschrichitiidae", "Neobalaenidae", "Balaenidae", "Balaenopteridae", "Delphinidae", "Platanistidae", "Kogiidae", "Physteridae", "Ziphiidae", "Lipotidae", "Phocoenidae", "Iniidae", "Monodontidae"), 
                                 nodes = c(70, 71, 147, 138, 86, 79, 135, 58, 125, 3, 121, 83, 124),
                                 images = c("8b73f54f-15e8-41b8-8c9c-46c86a185104", "941169f7-bc86-4030-bb28-4419b78214de", "fdff3c1b-dd0a-44d5-9fd3-2ecda7939846", "012afb33-55c3-4fc6-9ae3-3a91fda32fd5", "3caf4fbd-ca3a-48b4-925a-50fbe9acd887", "a55581b9-72c9-4ede-8fba-b908b08d94c9", "5bfb840e-071f-4a1a-b101-0a747a5453e7", "dc76cbdb-dba5-4d8f-8cf3-809515c30dbd", "2fad47bd-9a34-4bc1-b6cc-b7c4415b109d", "103dbb51-1bce-4df6-b1ac-ff0d38d188a3", "970f7e8d-a823-45b9-85b9-767704d0c13f", "f36c9daa-a102-42dd-88ac-a126753943d2", "bfe45de4-d8a8-423c-abf3-087a7c7d0d6c"))
-View(family_names_pics)
 
 #map these onto the phylogeny
 diel3_fam_pics <- diel.plot3.labelled + geom_cladelab(data = family_names_pics, 
@@ -191,7 +231,6 @@ cort_cetaceans <- resolved_names[resolved_names$unique_name %in% c("Tursiops tru
 View(cort_cetaceans)
 
 cort_list<- c("Tursiops truncatus", "Tursiops aduncus", "Sousa chinesis", "Globicephala melas", "Lagenorhynchus obliquidens","Orcinus orca", "Neophocaena asiaeorientalis", "Phocoena phocoena", "Phocoena sinus", "Delphinapterus leucas", "Monodon monoceros", "Inia geoffrensis", "Pontoporia blainvillei", "Lipotes vexillifer", "Mesoplodon bidens", "Ziphius cavirostris", "Kogia breviceps", "Physeter catodon", "Balaenoptera bonaerensis", "Balaenoptera acutorostrata", "Balaenoptera musculus", "Balaenoptera edeni", "Balaenoptera physalus", "Megaptera novaeangliae", "Eschrichtius robustus", "Eubalaena japonica", "Eubalaena glacialis")
-which(cort_cetaceans$"Tursiops truncatus")
   
 cort_tr <- tol_induced_subtree(ott_ids = cort_cetaceans$ott_id[cort_cetaceans$flags %in% c("sibling_higher", "")], label_format = "id")
 cort_tr$tip.label <- cort_cetaceans$tips[match(cort_tr$tip.label, paste("ott", cort_cetaceans$ott_id, sep = ""))]
@@ -211,43 +250,43 @@ write.csv(cetaceans_full, file = here("sleepy_fish_database_local.csv"))
 #doing the same as above but with Cox's mammal tree instead of open tree of life
 #need to use the mamm tree for modelling and ancestral trait reconstruction
 
-## Read in the mammalian phylogeny
-mammal_trees <- read.nexus("Cox_mammal_data/Complete_phylogeny.nex")
-mam.tree <- maxCladeCred(mammal_trees, tree = TRUE)
-
-trait.data <- cetaceans[cetaceans$Diel_Pattern_1 %in% c("diurnal", "nocturnal"),]
-trait.data$tips <- trait.data$Species_name
-trait.data$tips <- str_replace(trait.data$tips, pattern = " ", replacement = "_")
-trait.data2 <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-
-"Lagenorhynchus_obscurus" %in% mam.tree$tip.label
-
-View(trait.data$tips)
-View(mam.tree$tip.label)
-mam.tree$tip.label[(grepl("Balaenoptera", mam.tree$tip.label))]
-
-#find which species in trait data are missing from mam.tree
-trait.data$tips[!(trait.data$tips %in% mam.tree$tip.label)]
-
-row.names(trait.data) <- trait.data$tips
-trpy_n_mam <- keep.tip(mam.tree, tip = trait.data$tips)
-
-#change this to work with the open tree of life
-trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-
-model<- corHMM(phy = trpy_n_mam, data = trait.data[trpy_n_mam$tip.label, c("tips", "diel")], rate.cat = 1, model = "ARD", node.states = "marginal")
-
-#models <- readRDS(file = paste("marginal_and_joint_tests", dataset_variable, name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
-#model <- models$HMM_2state_2rate_marg
-
-lik.anc <- as.data.frame(rbind(model$tip.states, model$states))
-colnames(lik.anc) <- c("diurnal", "nocturnal")
-
-lik.anc$node <- c(1:length(trpy_n_mam$tip.label), (length(trpy_n_mam$tip.label) + 1):(trpy_n_mam$Nnode + length(trpy_n_mam$tip.label)))
-
-ancestral_plot <- ggtree(trpy_n_mam, layout = "circular") %<+% lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
-
-
-ancestral_plot + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
+# ## Read in the mammalian phylogeny
+# mammal_trees <- read.nexus("Cox_mammal_data/Complete_phylogeny.nex")
+# mam.tree <- maxCladeCred(mammal_trees, tree = TRUE)
+# 
+# trait.data <- cetaceans[cetaceans$Diel_Pattern_1 %in% c("diurnal", "nocturnal"),]
+# trait.data$tips <- trait.data$Species_name
+# trait.data$tips <- str_replace(trait.data$tips, pattern = " ", replacement = "_")
+# trait.data2 <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+# 
+# "Lagenorhynchus_obscurus" %in% mam.tree$tip.label
+# 
+# View(trait.data$tips)
+# View(mam.tree$tip.label)
+# mam.tree$tip.label[(grepl("Balaenoptera", mam.tree$tip.label))]
+# 
+# #find which species in trait data are missing from mam.tree
+# trait.data$tips[!(trait.data$tips %in% mam.tree$tip.label)]
+# 
+# row.names(trait.data) <- trait.data$tips
+# trpy_n_mam <- keep.tip(mam.tree, tip = trait.data$tips)
+# 
+# #change this to work with the open tree of life
+# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+# 
+# model<- corHMM(phy = trpy_n_mam, data = trait.data[trpy_n_mam$tip.label, c("tips", "diel")], rate.cat = 1, model = "ARD", node.states = "marginal")
+# 
+# #models <- readRDS(file = paste("marginal_and_joint_tests", dataset_variable, name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
+# #model <- models$HMM_2state_2rate_marg
+# 
+# lik.anc <- as.data.frame(rbind(model$tip.states, model$states))
+# colnames(lik.anc) <- c("diurnal", "nocturnal")
+# 
+# lik.anc$node <- c(1:length(trpy_n_mam$tip.label), (length(trpy_n_mam$tip.label) + 1):(trpy_n_mam$Nnode + length(trpy_n_mam$tip.label)))
+# 
+# ancestral_plot <- ggtree(trpy_n_mam, layout = "circular") %<+% lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
+# 
+# 
+# ancestral_plot + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
 
 
