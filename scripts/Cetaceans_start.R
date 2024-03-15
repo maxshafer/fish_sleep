@@ -75,8 +75,19 @@ cetaceans_full$tips <- str_replace(cetaceans_full$Species_name, " ", "_")
 #we need to drop the missing species to create the tree
 all_cetaceans <- cetaceans_full[cetaceans_full$tips %in% mam.tree$tip.label,]
 trpy_n_test <- keep.tip(mam.tree, tip = all_cetaceans$tips)
-ggtree(trpy_n_test, layout = "circular", size = 0.5) + geom_tiplab(size = 1.5)
+#check if time calibrated
+test <- ggtree(trpy_n_test, layout = "circular", size = 0.5) + geom_tiplab(size = 1.5)
+#test$data #29.36 million years ago to the root. Seems correct!
 
+#look at the tree for whippomorpha (hippos + cetacea) and see if time calibrated
+whippomorpha <- cetaceans_full
+whippomorpha <- rbind(cetaceans_full, c("Hexaprotodon liberiensis", "", NA, NA, "Nocturnal", "Nocturnal", "Nocturnal", "", "3", "nocturnal", "Choeropsis_liberiensis"))
+whippomorpha <- rbind(whippomorpha, c("Hippopotamus amphibius", "", NA, NA, "Nocturnal", "Nocturnal/crepuscular", "Crepuscular", "", "4", "crepuscular", "Hippopotamus_amphibius"))
+whippomorpha <- whippomorpha[whippomorpha$tips %in% mam.tree$tip.label,]
+trpy_n_whippo <- keep.tip(mam.tree, tip = whippomorpha$tips)
+whippo <- ggtree(trpy_n_whippo, layout = "circular", size = 0.5) + geom_tiplab(size = 1.5)
+#whippo$data shows the branch lengths (53.7 my to root). Also seems correct!
+                     
 write.csv(cetaceans_full, file = here("sleepy_fish_database_local.csv"))
 
 # Section 1.1 Binary, cetacean model --------------------------------------
@@ -162,7 +173,7 @@ dev.off()
 # Section 1.2a Four-state, cetacean model --------------------------------
 
 #repeating the same for crepuscular, cathemeral, diurnal nocturnal
-View(cetaceans)
+View(cetaceans_full)
 #create dataframe to use. Starts with 98 species
 trait.data2 <- cetaceans_full[, 1:10]
 #remove sps with no diel data. Should now have 80 species 

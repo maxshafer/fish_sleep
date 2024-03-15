@@ -1,3 +1,4 @@
+# Section 0: Packages -----------------------------------------------------
 library(ape) 
 library(corHMM)
 library(phangorn)
@@ -25,6 +26,8 @@ setwd(here())
 source("scripts/fish_sleep_functions.R")
 
 
+# Section 1: Load in and clean up cetacean data ---------------------------
+
 ###### For cetaceans
 
 # Load in the data from google sheets
@@ -32,24 +35,38 @@ source("scripts/fish_sleep_functions.R")
 
 url <- 'https://docs.google.com/spreadsheets/d/1-5vhk_YOV4reklKyM98G4MRWEnNbcu6mnmDDJkO4DlM/edit#gid=0'
 cetaceans_full <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
-View(cetaceans_full)
+#View(cetaceans_full)
 
+#set all diel pattern entries to lower case, helps keep consistency
 cetaceans_full$Diel_Pattern_1 <- tolower(cetaceans_full$Diel_Pattern_1)
 cetaceans_full$Diel_Pattern_2 <- tolower(cetaceans_full$Diel_Pattern_2)
 cetaceans_full$Diel_Pattern_3 <- tolower(cetaceans_full$Diel_Pattern_3)
 
+#cycle through diel pattern 1, 2, 3 to check that all entries are correctly spelled and see spread of data
+#20 cath sps, 20 crep, 15 di, 25 noc
 table(cetaceans_full$Diel_Pattern_3)
 
-cetaceans = cetaceans_full
-table(cetaceans$Diel_Pattern_3)
+#add another row "tips" with the species name formatted as they appear in the tree (mam tree and otl)
+#saves you from remaking it for each of the trait.data dataframes
+cetaceans_full$tips <- cetaceans_full$Species_name
+cetaceans_full$tips <- str_replace(cetaceans_full$tips, pattern = " ", replacement = "_")
 
-#creating trait data this way causes all the cathemeral species to be dropped because they are NA in diel_pattern1_column
-#index from Diel Pattern 3 instead
-trait.data <- cetaceans[cetaceans$Diel_Pattern_3 %in% c("diurnal", "nocturnal", "cathemeral", "crepuscular"),]
-trait.data$tips <- trait.data$Species_name
-trait.data$tips <- str_replace(trait.data$tips, pattern = " ", replacement = "_")
 
-resolved_names <- tnrs_match_names(trait.data$Species_name, context_name = "Vertebrates", do_approximate_matching = FALSE)
+# Section 2: Create the basic tree ----------------------------------------
+
+
+#create trait.data dataframe to use to build tree and add trait data (in geom tile)
+#check that all the entries have a value for diel pattern (I use diel pattern 3 instead of 1 because di/noc has NA for all cath sps)
+#could also do !(is.na) for this
+#for trait data only needs the diel patterns, species names, tips (unless we want to add more data to the tree like confidence etc)
+trait.data <- cetaceans_full[cetaceans_full$Diel_Pattern_3 %in% c("diurnal", "nocturnal", "cathemeral", "crepuscular"),]
+#for trait data only needs the diel patterns, species names, tips (unless we want to add more data to the tree like confidence etc)
+trait.data <- trait.data[, c("Species_name", "Diel_Pattern_1", "Diel_Pattern_2", "Diel_Pattern_3", "tips")]
+#trait data has all the behavioural data for the 80 species with data 
+
+#find the species names that are in the open tree of life
+#looks for species in the same format as Species_names
+resolved_names <- tnrs_match_names(names = trait.data$Species_name, context_name = "Vertebrates", do_approximate_matching = FALSE)
 
 #Balaenoptera riceii, Inia humboldtiana and Neophocaena sunameri are not currently in the open tree of life
 #20 species have no information and are also left out of the tree
@@ -115,9 +132,9 @@ print(diel.plot2.labelled)
 dev.off()
 
 custom.colours3 <- c("#dd8ae7", "#d5cab2", "#FC8D62", "#66C2A5")
-
+trait.data$random <- as.character(sample(1:4,80, replace=T))
 diel.plot3 <- ggtree(tr, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_3")]
-diel.plot3 <- diel.plot3 + geom_tile(data = diel.plot3$data[1:length(tr$tip.label),], aes(y=y, x=x, fill = Diel_Pattern_3), inherit.aes = FALSE, color = "transparent") + scale_fill_manual(values = custom.colours3)
+diel.plot3 <- diel.plot3 + geom_tile(data = diel.plot3$data[1:length(tr$tip.label),], aes(y=y, x=x, fill = Diel_Pattern_3, inherit.aes = FALSE, color = "transparent")) #+ scale_fill_manual(values = custom.colours3))
 diel.plot3.labelled <- diel.plot3 + geom_tiplab(color = "black", size = 1)
 diel.plot3.labelled
 
@@ -223,23 +240,6 @@ diel3_fam_pics <- diel.plot3.labelled + geom_cladelab(data = family_names_pics,
 
 diel3_fam_pics
 
-#create a phylogeny of just the cetaceans in the cortistatin paper
-cort_cetaceans <- resolved_names[resolved_names$unique_name %in% c("Tursiops truncatus", "Tursiops aduncus", "Sousa chinesis", "Globicephala melas", "Lagenorhynchus obliquidens","Orcinus orca", 
-"Neophocaena asiaeorientalis", "Phocoena phocoena", "Phocoena sinus", "Delphinapterus leucas", "Monodon monoceros", "Inia geoffrensis", "Pontoporia blainvillei", "Lipotes vexillifer",
-"Mesoplodon bidens", "Ziphius cavirostris", "Kogia breviceps", "Physeter catodon", "Balaenoptera bonaerensis", "Balaenoptera acutorostrata", "Balaenoptera musculus",
-"Balaenoptera edeni", "Balaenoptera physalus", "Megaptera novaeangliae", "Eschrichtius robustus", "Eubalaena japonica", "Eubalaena glacialis"), ]
-View(cort_cetaceans)
-
-cort_list<- c("Tursiops truncatus", "Tursiops aduncus", "Sousa chinesis", "Globicephala melas", "Lagenorhynchus obliquidens","Orcinus orca", "Neophocaena asiaeorientalis", "Phocoena phocoena", "Phocoena sinus", "Delphinapterus leucas", "Monodon monoceros", "Inia geoffrensis", "Pontoporia blainvillei", "Lipotes vexillifer", "Mesoplodon bidens", "Ziphius cavirostris", "Kogia breviceps", "Physeter catodon", "Balaenoptera bonaerensis", "Balaenoptera acutorostrata", "Balaenoptera musculus", "Balaenoptera edeni", "Balaenoptera physalus", "Megaptera novaeangliae", "Eschrichtius robustus", "Eubalaena japonica", "Eubalaena glacialis")
-  
-cort_tr <- tol_induced_subtree(ott_ids = cort_cetaceans$ott_id[cort_cetaceans$flags %in% c("sibling_higher", "")], label_format = "id")
-cort_tr$tip.label <- cort_cetaceans$tips[match(cort_tr$tip.label, paste("ott", cort_cetaceans$ott_id, sep = ""))]
-cort_diel_tree <- ggtree(cort_tr, layout = "rectangular") + geom_tiplab(color = "black", size = 1.5) %<+% trait.data[,c("tips", "Diel_Pattern_2")]
-cort_diel_tree
-
-png("C:/Users/ameli/OneDrive/Documents/R_projects/cortistatin_cetaceans.png", width=18,height=15,units="cm",res=1200)
-print(cort_diel_tree)
-dev.off()
 
 cetaceans_full <- cetaceans_full[,1:9]
 View(cetaceans_full)

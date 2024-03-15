@@ -582,7 +582,7 @@ trait.data.ja2 <- just_artio[!(is.na(just_artio$Activity_pattern_3)),]
 trait.data.ja2 <- trait.data.ja2[trait.data.ja2$Species %in% mam.tree$tip.label,]
 row.names(trait.data.ja2) <- trait.data.ja2$Species
 # this selects a tree that is only the subset with data (mutual exclusive)
-trpy_n_ja <- keep.tip(mam.tree, tip = trait.data.ja2$Species)
+trpy_n_ja2 <- keep.tip(mam.tree, tip = trait.data.ja2$Species)
 
 #now that we have the trait data for these 151 species and the subtree we can model
 trait.vector.ja2 <- trait.data.ja2$Activity_pattern_3
