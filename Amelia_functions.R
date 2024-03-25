@@ -56,8 +56,8 @@ cetacean_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_
 
 
 
-#second custom function returnModels that takes the subsetted 1k trees, the input data (diel patterns +species names) and the model type you want to run (ER, SYM, ARD)
-#returns the model results for each of the 1000 trees (list of 1000 trees)
+#second custom function returnModels that takes the subsetted tree, the input data (diel patterns +species names) and the model type you want to run (ER, SYM, ARD)
+#returns the model results for each of the trees provided. 
 
 returnAceModels <- function(tree = cetacean_trees[[1]], trait.data = trait_data, column = "Diel_Pattern_1", model = "SYM") {
   trait.data <- trait.data[trait.data$tips %in% tree$tip.label,]
@@ -70,30 +70,51 @@ returnAceModels <- function(tree = cetacean_trees[[1]], trait.data = trait_data,
 
 model_test <- returnAceModels(tree = cetacean_trees[[2]], trait.data = cetaceans_full, column = "Diel_Pattern_1", model = "SYM" )
 
-cetacean_sim <- lapply(cetacean_trees, function(x) returnAceModels(tree = x, trait.data = cetaceans_full, column = "Diel_Pattern_1", model = "SYM"))
+#Need to use lapply to get the result for all 1k trees. Returns the results as a list
+cetacean_sim_ace <- lapply(cetacean_trees, function(x) returnAceModels(tree = x, trait.data = cetaceans_full, column = "Diel_Pattern_1", model = "SYM"))
 
-#third custom function returnModels that takes the subsetted 1k trees, the input data (diel patterns +species names) and the model type you want to run (ER, SYM, ARD)
+
+#third custom function returnModels that takes the subsetted tree, the input data (diel patterns +species names) and the model type you want to run (ER, SYM, ARD)
 #same as before but for the cor model
-#returns results for each of the 1000 trees as a list
 
-returnCorModels <- function(tree = cetacean_trees[[2]], trait.data = cetaceans_full, species_col = "species", diel_col = "Diel_Pattern_1", rate.cat = 1, model = "SYM", node.states = "marginal"){
-  trait.data <- trait.data[trait.data$tips.label %in% tree$tip.label,]
-  trait.data <- trait.data[!(is.na(trait.data[,diel_col])),]
-  trait.data <- trait.data[tree$tip.label, c(species_col, diel_col)]
-  tree <- keep.tip(tree, trait.data$species_col)
+returnCorModels <- function(tree = cetacean_trees[[2]], trait.data = cetaceans_full, diel_col = "Diel_Pattern_1", rate.cat = 1, model = "SYM", node.states = "marginal"){
+  trait.data <- trait.data[trait.data$tips %in% tree$tip.label,]
+  row.names(trait.data) <- trait.data$tips
+  trait.data <- trait.data[tree$tip.label, c("tips", diel_col)]
+  trait.data <- trait.data[!(is.na(trait.data[, diel_col])),]
+  tree <- keep.tip(tree, trait.data$tips)
   cor_model <- corHMM(phy = tree, data = trait.data, rate.cat = rate.cat, model = model, node.states = node.states)
   return(cor_model)
 }
 
-test_time <- returnCorModels(cetacean_trees[[2]], trait.data = cetaceans_full, species_col = "species", diel_col = "Diel_Pattern_1", rate.cat = 1, model = "ER", node.states = "marginal")
+testing <- returnCorModels(cetacean_trees[[2]], trait.data = cetaceans_full, diel_col = "Diel_Pattern_3", rate.cat = 1, model = "ER", node.states = "marginal")
+
+#returns results for each of the 1000 trees as a list
+cetacean_sim_cor <- lapply(cetacean_trees[1:50], function(x) returnCorModels(tree = x, trait.data = cetaceans_full, diel_col = "Diel_Pattern_3", rate.cat = 1, model = "ARD", node.states = "marginal"))
+
 
 #fourth custom function returnLikelihoods takes model results from returnModels and returns just the likelihoods of those models 
 
-returnLikelihoods <- function(model = cetacean_sim[[1]], return = "loglik"){
+returnLikelihoods <- function(model = cetacean_sim_ace[[1]], return = "loglik"){
   
   return(model[return])
 }
 
-cet_likelihoods <- unlist(lapply(cetacean_sim, function(x) returnLikelihoods(model = x)))
+cet_likelihoods <- unlist(lapply(cetacean_sim_ace, function(x) returnLikelihoods(model = x)))
 
+## Append them as a list, then save out one RDS
+
+list_of_lists <- c(cetaceans_sim_ace, cetacean_sim_cor)
+names(list_of_lists) <- c("ace_2state", "cor_2state") 
+
+saveRDS(list_of_lists, file = )
+
+
+## combine and plot
+
+
+df <- data.frame(model = "ace", likelihoods = cet_likelihoods)
+df2 <- data.frame(model = "corHMM", likelihoods = unlist(lapply(cetacean_sim_cor, function(x) returnLikelihoods(model = x))))
+
+ggplot(df3, aes(x = model, y = likelihoods)) + geom_point() + geom_boxplot()
 
