@@ -51,6 +51,9 @@ table(cetaceans_full$Diel_Pattern_3)
 cetaceans_full$tips <- cetaceans_full$Species_name
 cetaceans_full$tips <- str_replace(cetaceans_full$tips, pattern = " ", replacement = "_")
 
+#rename the row names to be the tip names so it's easier to subset by the tree tip labels later
+row.names(cetaceans_full) <- cetaceans_full$tips
+
 ## Probably should save out a local copy in case google goes bankrupt
 write.csv(cetaceans_full, file = here("sleepy_fish_database_local.csv"))
 
@@ -94,7 +97,7 @@ table(resolved_names$diel)
 #subset the open tree of life to only include the species in resolved_names (find them by their ott_id)
 tr <- tol_induced_subtree(ott_ids = resolved_names$ott_id[resolved_names$flags %in% c("sibling_higher", "")], label_format = "id") # I need to use the id option here, and then use that to map the tip labels from resolved_names (that way I don't run into the issue with the difference in formatting between the two tools)
 
-# Time calibrate it using geiger and timetree.org -NEED TO DO THIS
+# Time calibrate it using geiger and timetree.org 
 # First resolve polytomies ~randomly using multi2dr
 
 tr <- multi2di(tr)
@@ -278,7 +281,7 @@ print(diel3_fam_pics)
 dev.off()
 
 
-# Section 4: Create diel plots with Cox mammal tree -----------------------
+# Section 4: NOT DONE Create diel plots with Cox mammal tree -----------------------
 
 #doing the same as above but with Cox's mammal tree instead of open tree of life
 #need to use the mamm tree for modelling and ancestral trait reconstruction

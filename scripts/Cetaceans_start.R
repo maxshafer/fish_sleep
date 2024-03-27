@@ -55,7 +55,7 @@ cetaceans_full <- cetaceans_full[!(is.na(cetaceans_full$diel)),]
 
 ## Read in the mammalian phylogeny
 #mammal_trees <- read.nexus("Cox_mammal_data/Complete_phylogeny.nex")
-#mam.tree <- maxCladeCred(mammal_trees, tree = TRUE) #this function takes a long time to run
+#mam.tree <- maxCladeCred(mammal_trees, tree = TRUE) #this function takes a long time to run so save the result out
 getwd()
 
 # Save out maxcladecred, so we don't have to recalculate it every time
@@ -243,7 +243,7 @@ dev.off()
 # Section 1.3a Three-state cetacean models --------------------------------
 
 #test with nocturnal, diurnal, cathemeral, with crepuscular species categorized as either di or noc
-trait.data3 <- cetaceans
+trait.data3 <- cetaceans_full
 trait.data3 <- trait.data3[!(is.na(trait.data3$Diel_Pattern_2)),]
 trait.data3$Diel_Pattern_2 <- str_replace_all(trait.data3$Diel_Pattern_2, "nocturnal/crepuscular", "nocturnal")
 trait.data3$Diel_Pattern_2 <- str_replace_all(trait.data3$Diel_Pattern_2, "diurnal/crepuscular", "diurnal")

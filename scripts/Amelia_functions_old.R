@@ -104,17 +104,16 @@ cet_likelihoods <- unlist(lapply(cetacean_sim_ace, function(x) returnLikelihoods
 
 ## Append them as a list, then save out one RDS
 
-list_of_lists <- c(cetaceans_sim_ace, cetacean_sim_cor)
+list_of_lists <- c(cetacean_sim_ace, cetacean_sim_cor)
 names(list_of_lists) <- c("ace_2state", "cor_2state") 
 
-saveRDS(list_of_lists, file = )
+saveRDS(list_of_lists, file = "test_results_1ktrees")
 
 
 ## combine and plot
 
-
 df <- data.frame(model = "ace", likelihoods = cet_likelihoods)
 df2 <- data.frame(model = "corHMM", likelihoods = unlist(lapply(cetacean_sim_cor, function(x) returnLikelihoods(model = x))))
-
+df3 <- rbind(df, df2)
 ggplot(df3, aes(x = model, y = likelihoods)) + geom_point() + geom_boxplot()
 
