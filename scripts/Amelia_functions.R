@@ -24,7 +24,7 @@ returnAceModels <- function(tree = cetacean_trees[[1]], trait.data = trait_data,
   
 }
 
-#third custom function returnModels that takes the subsetted tree, the input data (diel patterns +species names) and the model type you want to run (ER, SYM, ARD)
+#third custom function returnAceModels that takes the subsetted tree, the input data (diel patterns +species names) and the model type you want to run (ER, SYM, ARD)
 #same as before but for the cor model
 
 returnCorModels <- function(tree = cetacean_trees[[2]], trait.data = cetaceans_full, diel_col = "Diel_Pattern_1", rate.cat = 1, model = "SYM", node.states = "marginal"){
@@ -37,7 +37,22 @@ returnCorModels <- function(tree = cetacean_trees[[2]], trait.data = cetaceans_f
   return(cor_model)
 }
 
-#fourth custom function returnLikelihoods takes model results from returnModels and returns just the likelihoods of those models 
+#forth custom function returnModels that takes the subsetted tree, the input data (diel patterns +species names) and the model type you want to run (ER, SYM, ARD)
+#same as before but allowing for custom rate matrices to be provided
+
+returnCustomCorModels <- function(tree = cetacean_trees[[2]], trait.data = cetaceans_full, diel_col = "Diel_Pattern_1", rate.cat = 1, rate.mat = matrix(c(0,1,2,0), nrow = 2, ncol = 2, dimnames = list(c("(1)", "(2)"), c("(1)", "(2)"))), model = "SYM", node.states = "marginal"){
+  trait.data <- trait.data[trait.data$tips %in% tree$tip.label,]
+  row.names(trait.data) <- trait.data$tips
+  trait.data <- trait.data[tree$tip.label, c("tips", diel_col)]
+  trait.data <- trait.data[!(is.na(trait.data[, diel_col])),]
+  tree <- keep.tip(tree, trait.data$tips)
+  cor_model <- corHMM(phy = tree, data = trait.data, rate.cat = rate.cat, rate.mat = rate.mat, model = model, node.states = node.states)
+  return(cor_model)
+}
+
+#returnCustomCorModels(cetacean_trees[[2]], cetaceans_full, "Diel_Pattern_1", rate.cat = 1, rate.mat = matrix(c(0,1,2,0), nrow = 2, ncol = 2, dimnames = list(c("(1)", "(2)"), c("(1)", "(2)"))), model = "SYM", node.states = "marginal")
+
+#fifth custom function returnLikelihoods takes model results from returnModels and returns just the likelihoods of those models 
 
 returnLikelihoods <- function(model = cetacean_sim_ace[[1]], return = "loglik"){
   

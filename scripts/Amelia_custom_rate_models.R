@@ -77,7 +77,17 @@ test_ratemat
 custom_rate_matrix <- dropStateMatPars(test_ratemat, c(3, 5))
 custom_rate_matrix
 
-cor_deadend <- corHMM(phy = cor_model_ard3$phy, data = cor_model_ard3$data, rate.cat = 1, rate.mat = custom_rate_matrix)
+
+custom_rate_matrix2 <- matrix(c(0,1,2,0,0,3,0,4,0), ncol = 3, nrow = 3)
+custom_rate_matrix2
+
+cor_deadend <- corHMM(phy = cor_model_ard3$phy, data = cor_model_ard3$data, rate.cat = 1, rate.mat = custom_rate_matrix, model = "ARD", node.states = "marginal")
+plotMKmodel(cor_deadend)
+
+cor_dead_test <- corHMM(phy=cetacean_trees[[5]], data = trait.data3, rate.cat = 1, model = "ARD")
+
+cor_deadend2 <- corHMM(phy = cor_model_ard3$phy, data = cor_model_ard3$data, rate.cat = 1, rate.mat = custom_rate_matrix2, model = "ARD")
+plotMKmodel(cor_deadend2)
 
 likelihoods <- rbind(likelihoods, c("cor_deadend", cor_deadend$loglik, "three states (di, noc, cath), ARD do not allow any transitions out of cath, cetacea"))
 
@@ -112,7 +122,7 @@ generic_ratemat <- getStateMat4Dat(cor_model_ard3$data)
 test_ratemat <- generic_ratemat$rate.mat
 #this is a generic all rates different matrix that we can now edit
 test_ratemat
-#need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> noctunral/3 (6)
+#need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> nocturnal/3 (6)
 custom_rate_matrix <- dropStateMatPars(test_ratemat, c(4, 6))
 custom_rate_matrix
 
@@ -125,7 +135,7 @@ generic_ratemat <- getStateMat4Dat(cor_model_ard3$data)
 test_ratemat <- generic_ratemat$rate.mat
 #this is a generic all rates different matrix that we can now edit
 test_ratemat
-#need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> noctunral/3 (6)
+#need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> nocturnal/3 (6)
 custom_rate_matrix <- dropStateMatPars(test_ratemat, c(4, 6))
 custom_rate_matrix
 
@@ -154,7 +164,7 @@ generic_ratemat <- getStateMat4Dat(cor_model_ard3$data)
 test_ratemat <- generic_ratemat$rate.mat
 #this is a generic all rates different matrix that we can now edit
 test_ratemat
-#need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> noctunral/3 (6)
+#need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> nocturnal/3 (6)
 custom_rate_matrix <- dropStateMatPars(test_ratemat, c(4, 6))
 custom_rate_matrix
 
