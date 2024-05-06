@@ -11,7 +11,6 @@ library(phytools)
 library(geiger)
 library(ggplot2)
 library(RColorBrewer)
-library(tidyr)
 
 setwd(here())
 
@@ -53,27 +52,6 @@ diel.plot.all
 png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_5_state.png", width=24,height=18,units="cm",res=1200)
 print(diel.plot.all)
 dev.off()
-
-#same plot with NA species included
-#creating a tree with all trait data categories (diurnal, nocturnal, di/crep, noc/crep, cathemeral)
-
-#remove species with no data
-trait.data.all <- trait.data[, c("tips", "Diel_Pattern_2")]
-trait.data.all$Diel_Pattern_2 <- trait.data.all$Diel_Pattern_2 %>% replace_na("data unavailable")
-
-trpy_n_all <- keep.tip(mam.tree, tip = trait.data.all$tips)
-
-#plot the tree
-custom.colours.all <- c("#dd8ae7", "lightgrey", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
-diel.plot.all <- ggtree(trpy_n_all, layout = "circular") %<+% trait.data.all[,c("tips", "Diel_Pattern_2")]
-diel.plot.all <- diel.plot.all + geom_tile(data = diel.plot.all$data[1:length(trpy_n_all$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.all)
-diel.plot.all <- diel.plot.all + geom_tiplab(size = 3)
-diel.plot.all 
-
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_5_state_missing_sps.png", width=40,height=30,units="cm",res=1200)
-print(diel.plot.all)
-dev.off()
-
 
 
 # Section 3: maxdinoc tree --------------------------------------
@@ -143,14 +121,14 @@ cetacean_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_
 # dev.off()
 
 #repeat the same process but with 50 trees
-density_tree50 <- ggdensitree(fifty_trees, alpha = 0.3, colour = "blue") +  geom_tiplab(color = "black")
+fifty_trees <- cetacean_trees[sample(1:length(cetacean_trees), 100)]
+
+density_tree50 <- ggdensitree(fifty_trees, alpha = 0.3, colour = "yellowgreen")
+density_tree50 <- density_tree50 +  geom_tiplab(size=3, color = "black") 
 density_tree50 
 
-sample_trees <- cetacean_trees[sample(1:length(cetacean_trees), 10)]
-densitree <- ggdensitree(sample_trees, alpha = 0.3, colour = "pink") +  geom_tiplab(color = "black")
-
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/density_tree100.png", width=40,height=30,units="cm",res=1200)
-densitree
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/density_tree10.png", width=24,height=18,units="cm",res=1200)
+print(density_tree50)
 dev.off()
 
 
@@ -197,49 +175,4 @@ dev.off()
 # 
 # 
 # ancestral_plot + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
-custom.colours.all <- c("#dd8ae7", "yellow", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
-
-trait.data <- read.csv("~/R_projects/fish_sleep/artiodactyla_full.csv")
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-trpy_a <- keep.tip(mam.tree, tip = trait.data$tips)
-artio_tree<- ggtree(trpy_a, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2")]
-artio_tree <- artio_tree +  geom_tile(data = artio_tree$data[1:length(trpy_a$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.all) +
-  geom_tiplab(size = 2) + geom_strip('Sus_celebensis', 'Catagonus_wagneri', barsize=2, color='tomato1', label="Suiformes", offset.text=2, offset = 20) + 
-  geom_strip('Camelus_dromedarius', 'Vicugna_vicugna', barsize=2, color='tomato2', label="Tylopoda", offset.text=2, offset = 20) +
-  geom_strip('Hippopotamus_amphibius', 'Stenella_coeruleoalba', barsize=2, color='tomato3', label="Whippomorpha", offset.text=2, offset = 21) +
-  geom_strip('Hyemoschus_aquaticus', 'Capra_caucasica', barsize=2, color='tomato4', label="Ruminantia", offset.text= 6, offset = 20) 
-
-artio_tree
-
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/artio_diel.png", width=40,height=30,units="cm",res=1200)
-artio_tree
-dev.off()
-
-
-
-
-# Diel data table ---------------------------------------------------------
-
-trait.data <- read.csv(here("cetaceans_full.csv"))
-#add breakdown of families
-test <- diel3_families$data
-test <- test[1:72,c("label")]
-test$family <- "blank"
-test[1:2, "family"] <- "Platanistidae"
-test[3, "family"] <- "Lipotidae"
-test[4:6, "family"] <- "Iniidae"
-test[7:41, "family"] <- "Delphinidae"
-test[42:46, "family"] <- "Phocoenidae"
-test[47:48, "family"] <- "Monodontidae"
-test[49:59, "family"] <- "Ziphiidae"
-test[60, "family"] <- "Physteridae"
-test[61:62, "family"] <- "Kogiidae"
-test[63:71, "family"] <- "Balaenopteridae"
-test[72, "family"] <- "Eschrichitiidae"
-test[73:77, "family"] <- "Balaenidae"
-test <- col.names()
-
-df_merge <- merge(test,cetaceans_full,by="")
-
-cet_sum <- table(trait.data$Diel_Pattern_2)
 
