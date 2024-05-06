@@ -190,7 +190,6 @@ dev.off()
 #create a dataframe with each cetacean family and its node
 family_names_right <- data.frame(names = c("Eschrichitiidae", "Neobalaenidae", "Balaenidae", "Balaenopteridae", "Delphinidae", "Platanistidae", "Kogiidae", "Physteridae"), nodes = c(72, 73, 151, 143, 88, 81, 139, 60))
 family_names_left <- data.frame(names = c("Ziphiidae", "Lipotidae", "Phocoenidae", "Iniidae", "Monodontidae"), nodes = c(128, 3, 123, 85, 127))
-family_names_total <- rbind(family_names_left, family_names_right)
 #add the colour you want each family to be
 family_names_right$colour <- c("steelblue2", "steelblue3", "steelblue4", "steelblue1", "grey1", "grey50","grey60", "grey65" )
 family_names_left$colour <- c("grey45", "grey40", "grey15","grey30", "grey20")

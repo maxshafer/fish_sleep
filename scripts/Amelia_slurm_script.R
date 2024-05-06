@@ -130,7 +130,7 @@ if("bridge_only" %in% args){
 result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x)))
 names(result_list) <- paste(args[-(1:2)], "_model", sep = "")
 
-saveRDS(result_list, paste(args[2], "tree", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
+saveRDS(result_list, paste(args[2], "test_tree", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
 
 
 #to do: use tictoc to time how long it takes to run these on the full 1k trees https://www.jumpingrivers.com/blog/timing-in-r/

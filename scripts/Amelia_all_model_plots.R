@@ -124,21 +124,25 @@ dev.off()
 #function to extract the transition rates from all models
 
 #####max_dinoc_bridge_only#####
-rates <- unlist(lapply(ARD_results$ARD_model, function(x) returnRates(model = x)))
+bridge_only_results <- readRDS(here("cetaceans_tree_max_dinoc_traits_bridge_only_models"))
+rates <- unlist(lapply(bridge_only_results$bridge_only_model, function(x) returnRates(model = x)))
 #we want to format this into a dataframe with three columns
 #model name, rates, solution number
 #this will allow us to plot the rates by which model they came from and by which 
 rates_df <- as.data.frame(rates)
-rates_df$model <- "max_crep_ARD"
+rates_df$model <- "max_dinoc_bridge_only"
 
 #drop rows with no transition rates (ie Di -> Di, Noc -> Noc)
 rates_df <- rates_df[!(is.na(rates_df$rates)),]
 
-rates_df$solution <- rep(c("Crep/Cath -> Di", "Crep/Cath -> Noc", "Di -> Crep/Cath", "Di -> Noc", "Noc -> Crep/Cath", "Noc -> Di"), 1000)
+rates_df$solution <- rep(c("Crep/Cath -> Di", "Crep/Cath -> Noc", "Di -> Crep/Cath", "Noc -> Crep/Cath"), 1000)
 
-ggplot(rates_df, aes(x= solution, y = rates, colour = solution)) + geom_boxplot() + geom_point() + theme(axis.text.x = element_text(angle = 90)) + scale_y_continuous(trans = "log10")
-ggplot(rates_df, aes(x = rates, fill = solution)) + geom_histogram(position = "dodge") + scale_x_continuous(trans = "log2")
+#ggplot(rates_df, aes(x= solution, y = rates, colour = solution)) + geom_boxplot() + geom_point() + theme(axis.text.x = element_text(angle = 90)) + scale_y_continuous(trans = "log10")
+#ggplot(rates_df, aes(x = rates, fill = solution)) + geom_histogram(position = "dodge") + scale_x_continuous(trans = "log2")
+ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution)
+
 #####max_dinoc_ARD#####
+
 ARD_results <- readRDS(here("cetaceans_tree_max_dinoc_traits_ARD_models"))
 rates <- unlist(lapply(ARD_results$ARD_model, function(x) returnRates(model = x)))
 #we want to format this into a dataframe with three columns
@@ -154,12 +158,11 @@ rates_df$solution <- rep(c("Cath -> Di", "Cath -> Noc", "Di -> Cath", "Di -> Noc
 rates_df$colours <- rep(c("deeppink4", "dodgerblue3", "deeppink2", "seagreen", "dodgerblue", "seagreen2"), 1000)
 rates_colours <- c("deeppink4", "dodgerblue4", "deeppink3", "seagreen4", "dodgerblue2", "seagreen3")
   
-ggplot(rates_df, aes(x= solution, y = rates, colour = solution)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +  scale_y_continuous(trans='log10')
+#ggplot(rates_df, aes(x= solution, y = rates, colour = solution)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +  scale_y_continuous(trans='log10')
 ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution)
 
 rates_plot <- ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 3, page = 2)
 
-#many values are close to zero, should we make a cutoff? ie anything less than 0.001? 
 
 for(i in 1:6){
   png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/rates_plots", i, "png"), width=20,height=10,units="cm",res=200)
@@ -182,10 +185,17 @@ rates_df <- rates_df[!(is.na(rates_df$rates)),]
 
 rates_df$solution <- rep(c("Cath -> Di", "Cath -> Noc", "Di -> Cath", "Noc -> Cath"), 1000)
 ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution)
+rates_colours <- c("deeppink4", "dodgerblue4", "deeppink3", "dodgerblue2")
 
-ggplot(rates_df, aes(x= solution, y = rates, colour = solution)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) #+ scale_y_continuous(trans='log10') #+  scale_y_sqrt()
+#ggplot(rates_df, aes(x= solution, y = rates, colour = solution)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) #+ scale_y_continuous(trans='log10') #+  scale_y_sqrt()
+rates_plot <- ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 3, page = 2)
 
-bridge_only_results <- readRDS(here("cetaceans_tree_max_crep_traits_bridge_only_models"))
+
+for(i in 1:4){
+  png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/rates_plots_MAXCREP_BRIDGE", i, "png"), width=20,height=10,units="cm",res=200)
+  print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 1, page = i))
+  dev.off()
+}
 
 ####max_crep_ard####
 ARD_results <- readRDS(here("cetaceans_tree_max_crep_traits_ARD_models"))
@@ -202,7 +212,12 @@ rates_df <- rates_df[!(is.na(rates_df$rates)),]
 rates_df$solution <- rep(c("Cath -> Di", "Cath -> Noc", "Di -> Cath", "Di -> Noc", "Noc -> Cath", "Noc -> Di"), 1000)
 ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution)
 
-ggplot(rates_df, aes(x= solution, y = rates, colour = solution)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) #+ scale_y_continuous(trans='log10') #+  scale_y_sqrt()
+#ggplot(rates_df, aes(x= solution, y = rates, colour = solution)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) #+ scale_y_continuous(trans='log10') #+  scale_y_sqrt()
+rates_plot <- ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 3, page = 2)
 
-bridge_only_results <- readRDS(here("cetaceans_tree_max_crep_traits_bridge_only_models"))
 
+for(i in 1:6){
+  png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/rates_plots_MAXCREP_ARD", i, "png"), width=20,height=10,units="cm",res=200)
+  print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 1, page = i))
+  dev.off()
+}
