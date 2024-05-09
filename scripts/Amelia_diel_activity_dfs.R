@@ -50,6 +50,23 @@ cetaceans_full$tips <- str_replace(cetaceans_full$tips, pattern = " ", replaceme
 #rename the row names to be the tip names so it's easier to subset by the tree tip labels later
 row.names(cetaceans_full) <- cetaceans_full$tips
 
+#drop na values
+cetaceans_full <- cetaceans_full[!is.na(cetaceans_full$Diel_Pattern_2),]
+
+#create new diel column for max_crep
+# diel pattern 4 maximizes for diuranlity and nocturnality (while keeping cathemerality as a trait state)
+cetaceans_full$Diel_Pattern_4 <- cetaceans_full$Diel_Pattern_2
+for(i in 1:nrow(cetaceans_full)){
+  if(cetaceans_full[i, "Diel_Pattern_2"] == "diurnal/crepuscular"){
+    cetaceans_full[i, "Diel_Pattern_4"] <- "diurnal"
+  } else if(cetaceans_full[i, "Diel_Pattern_2"] == "nocturnal/crepuscular"){
+    cetaceans_full[i, "Diel_Pattern_4"] <- "nocturnal"
+  } else if (cetaceans_full[i, "Diel_Pattern_2"] == "cathemeral/crepuscular"){
+    cetaceans_full[i, "Diel_Pattern_4"] <- "cathemeral"
+  }
+}
+
+cetaceans_full <- cetaceans_full %>% relocate(Diel_Pattern_4, .after = Diel_Pattern_3)
 ## Probably should save out a local copy in case google goes bankrupt
 write.csv(cetaceans_full, file = here("cetaceans_full.csv"))
 
@@ -91,8 +108,82 @@ row.names(artiodactyla_full) <- artiodactyla_full$Species_name
 write.csv(artiodactyla_full, here("artiodactyla_binary_df.csv"))
 
 
-# Section 3b: Formatting the artiodactyla diel dataframe Cox data  --------
+# Section 3b: Formatting the artiodactyla diel dataframe Cox data from https://www.nature.com/articles/s41467-021-22023-4#data-availability --------
 
+Cox_df <- read.csv(here("Cox_diel_activity_data.csv"))
+Cox_df <- Cox_df %>% filter(Order == "Cetartiodactyla")
+
+Cox_df <- Cox_df[,c("Binomial_iucn", "Activity_IM")]
+Cox_df$tips <- str_replace(Cox_df$Binomial_iucn, " ", "_")
+colnames(Cox_df) <- c("Species_name", "Diel_Pattern_2", "tips")
+row.names(Cox_df) <- Cox_df$Species_name
+
+#optional: add in diel activity data I collected from the literature
+missing_sps <- read.csv(here("Sleepy_artiodactyls.csv"))
+#Hexaprotodon liberiensis has a different name so change to reflect this
+missing_sps[21,"Species_name"] <- "Choeropsis liberiensis"
+missing_sps <- missing_sps[order(missing_sps$Species_name),]
+row.names(missing_sps) <- missing_sps$Species_name
+
+
+
+replacements <- match(missing_sps$Species_name, Cox_df$Species_name)
+
+for(i in replacements){
+  Cox_df[i, "Diel_Pattern_2"] <- missing_sps[Cox_df[i, "Species_name"], "Diel_Pattern_2"]
+}
+
+#create binary, max dinoc, max crep and 6-state columns
+
+#diel pattern 1 is binary (di-noc only) -keeping this to preserve functioning of earlier models, not very biologically relevant
+Cox_df$Diel_Pattern_1 <- Cox_df$Diel_Pattern_2
+for(i in 1:nrow(Cox_df)){
+  if(Cox_df[i, "Diel_Pattern_2"] == "Diurnal/Crepuscular"){
+    Cox_df[i, "Diel_Pattern_1"] <- "Diurnal"
+  } else if(Cox_df[i, "Diel_Pattern_2"] == "Nocturnal/Crepuscular"){
+    Cox_df[i, "Diel_Pattern_1"] <- "Nocturnal"
+  } else if(Cox_df[i, "Diel_Pattern_2"] %in% c("Crepuscular", "Cathemeral", "Cathemeral/Crepuscular")){
+    Cox_df[i, "Diel_Pattern_1"] <- NA
+  }
+}
+
+# diel pattern 3 maximizes for crepuscularity
+Cox_df$Diel_Pattern_3 <- Cox_df$Diel_Pattern_2
+for(i in 1:nrow(Cox_df)){
+  if(Cox_df[i, "Diel_Pattern_2"] == "Diurnal/Crepuscular"){
+    Cox_df[i, "Diel_Pattern_3"] <- "Crepuscular"
+  } else if(Cox_df[i, "Diel_Pattern_2"] == "Nocturnal/Crepuscular"){
+    Cox_df[i, "Diel_Pattern_3"] <- "Crepuscular"
+  } else if (Cox_df[i, "Diel_Pattern_2"] == "Cathemeral/Crepuscular"){
+    Cox_df[i, "Diel_Pattern_3"] <- "Crepuscular"
+  }
+}
+
+# diel pattern 4 maximizes for diuranlity and nocturnality (while keeping cathemerality as a trait state)
+Cox_df$Diel_Pattern_4 <- Cox_df$Diel_Pattern_2
+for(i in 1:nrow(Cox_df)){
+  if(Cox_df[i, "Diel_Pattern_2"] == "Diurnal/Crepuscular"){
+    Cox_df[i, "Diel_Pattern_4"] <- "Diurnal"
+  } else if(Cox_df[i, "Diel_Pattern_2"] == "Nocturnal/Crepuscular"){
+    Cox_df[i, "Diel_Pattern_4"] <- "Nocturnal"
+  } else if (Cox_df[i, "Diel_Pattern_2"] == "Cathemeral/Crepuscular"){
+    Cox_df[i, "Diel_Pattern_4"] <- "Cathemeral"
+  } else if (Cox_df[i, "Diel_Pattern_2"] == "Crepuscular"){
+    Cox_df[i, "Diel_Pattern_4"] <- "Cathemeral"
+  }
+}
+
+
+#save out as a csv
+write.csv(Cox_df, here("Cox_artiodactyla_without_cetaceans.csv"))
+
+#now add in cetaceans
+cetaceans <- read.csv("cetaceans_full.csv")
+cetaceans <- cetaceans[, c("Species_name", "Diel_Pattern_1", "Diel_Pattern_2", "Diel_Pattern_3", "Diel_Pattern_4", "tips")]
+Cox_full <- rbind(Cox_df, cetaceans)
+row.names(Cox_full) <- c(Cox_full$Species_name)
+
+write.csv(Cox_full, here("Cox_artiodactyla_full.csv"))
 
 
 # Section 3c: Formatting the artiodactyla diel dataframe Maor data  --------
@@ -132,6 +223,87 @@ maor_full <- relocate(maor_full, "Activity_pattern_1.x", .after = "Activity_patt
 #diel pattern 2 includes all variation, di, noc, di/crep, noc/crep, cath, crep as reported
 colnames(maor_full) <- c("Species", "alt_pattern_1", "alt_pattern_2", "Diel_Pattern_2")
 
+#now add in the alternative diel patterns 
+
+# Resolve conflicting diel patterns -------------------------
+
+#method A: if alt pattern doesn't match current diel pattern check the literature (currently 34 species, source = pantheria database)
+#method B: if alt pattern matches current pattern replace with NA (alt columns will be deleted after)
+#if alternative pattern is crepuscular, add it as a secondary diel pattern
+
+#Method A: 35 species with unresolved diel patterns
+#Maor et al gets activity pattern data from four sources, 57, 4, 33 and 29
+#Source 57: 57.Jones, K.E. et al., 2009. PanTHERIA: A species-level database of life history, ecology and geography of extant and recently extinct mammals. Ecology, 90, p.2648.
+#Source 4: Aulagnier, S. & Thevenot, M., 1986. Catalogue des Mammiferes Sauvages du Maroc, Rabat, Morocco: Institute Scientifique.
+#Source 33: Hufnagl, E., 1972. Lybian Mammals, Harrow, England: The Oleander Press.
+# Source 29: 29. Gray, G.G. & Simpson, C.D., 1980. Ammotragus lervia. Mammalian Species, 144, pp.1–7.
+# Sources 4, 29, 33 are all for  Ammotragus lervia and from the 1970s/1980s. 
+
+
+# Manually replace conflicting data  --------------------------------------
+
+#Method B: Matches or near matches 
+#Alcelaphus lichtensteinii
+maor_full[4,"Diel_Pattern_2"] <- "Diurnal/Crepuscular"
+
+#Ammotragus lervia
+maor_full[6,"alt_pattern_1"] <- NA
+
+#Axis porcinus
+maor_full[13,"alt_pattern_2"] <- NA
+
+#Blastocerus dichotomus
+maor_full[17,"Diel_Pattern_2"] <- "Diurnal/Crepuscular"
+
+#Bubalus bubalis
+maor_full[23,"alt_pattern_2"] <- NA
+
+#Bubalus mindorensis
+maor_full[25,"Diel_Pattern_2"] <- "Nocturnal/Crepuscular"
+
+#Cervus elaphus. Row 52 duplicated because there are four entries for it
+#no new information in row 52 so drop it and renumber
+maor_full <- maor_full[-c(52), ]
+row.names(maor_full) <- 1:nrow(maor_full)
+
+#Gazella subgutturosa
+maor_full[63,"Diel_Pattern_2"] <- "Nocturnal/Crepuscular"
+
+#Giraffa camelopardalis
+maor_full[64,"alt_pattern_2"] <- NA
+
+#Moschus moschiferus
+maor_full[92,"Diel_Pattern_2"] <- "Nocturnal/Crepuscular"
+
+#Philantomba maxwellii
+maor_full[123,"Diel_Pattern_2"] <- "Diurnal/Crepuscular"
+
+#Rangifer tarandus
+maor_full[131,"alt_pattern_2"] <- NA
+
+#Sus barbatus
+maor_full[145,"Diel_Pattern_2"] <- "Nocturnal/Crepuscular"
+
+#Tragelaphus angasii
+maor_full[156,"Diel_Pattern_2"] <- "Diurnal/Crepuscular"
+
+
+# Resolve conflicting diel patterns with new information ------------------
+
+#import dataframe of updated information on 34 conflicting species and match with their current row
+
+missing_sps <- read.csv(here("Sleepy_artiodactyls.csv"))
+row.names(missing_sps) <- missing_sps$Species_name
+
+replacements <- match(missing_sps$Species_name, maor_full$Species)
+
+for(i in replacements){
+  maor_full[i, "Diel_Pattern_2"] <- missing_sps[maor_full[i, "Species"], "Diel_Pattern_2"]
+}
+
+
+# Rename and rearrange columns --------------------------------------------
+
 #create column for activity pattern 1
 # diel pattern 1 maximizes for only diurnal and nocturnal
 maor_full$Diel_Pattern_1 <- maor_full$Diel_Pattern_2
@@ -140,7 +312,7 @@ for(i in 1:nrow(maor_full)){
     maor_full[i, "Diel_Pattern_1"] <- "Diurnal"
   } else if(maor_full[i, "Diel_Pattern_2"] == "Nocturnal/Crepuscular"){
     maor_full[i, "Diel_Pattern_1"] <- "Nocturnal"
-  } else if(maor_full[i, "Diel_Pattern_2"] %in% c("Crepuscular", "Cathemeral")){
+  } else if(maor_full[i, "Diel_Pattern_2"] %in% c("Crepuscular", "Cathemeral", "Cathemeral/Crepuscular")){
     maor_full[i, "Diel_Pattern_1"] <- NA
   }
 }
@@ -153,118 +325,40 @@ for(i in 1:nrow(maor_full)){
     maor_full[i, "Diel_Pattern_3"] <- "Crepuscular"
   } else if(maor_full[i, "Diel_Pattern_2"] == "Nocturnal/Crepuscular"){
     maor_full[i, "Diel_Pattern_3"] <- "Crepuscular"
-  } 
+  } else if (maor_full[i, "Diel_Pattern_2"] == "Cathemeral/Crepuscular"){
+    maor_full[i, "Diel_Pattern_3"] <- "Crepuscular"
+  }
 }
 
 maor_full <- relocate(maor_full, "Diel_Pattern_2", .after = "Diel_Pattern_1")
-#now add in the alternative diel patterns 
 
-#method A: if alt pattern doesn't match current diel pattern check the literature
-#method B: if alt pattern matches current pattern replace with NA (alt columns will be deleted after)
-#if alternative pattern is crepuscular, add it as a secondary diel pattern
+# diel pattern 4 maximizes for diuranlity and nocturnality (while keeping cathemerality as a trait state)
+maor_full$Diel_Pattern_4 <- maor_full$Diel_Pattern_2
+for(i in 1:nrow(maor_full)){
+  if(maor_full[i, "Diel_Pattern_2"] == "Diurnal/Crepuscular"){
+    maor_full[i, "Diel_Pattern_4"] <- "Diurnal"
+  } else if(maor_full[i, "Diel_Pattern_2"] == "Nocturnal/Crepuscular"){
+    maor_full[i, "Diel_Pattern_4"] <- "Nocturnal"
+  } else if (maor_full[i, "Diel_Pattern_2"] == "Cathemeral/Crepuscular"){
+    maor_full[i, "Diel_Pattern_4"] <- "Cathemeral"
+  }
+}
 
-#Method A: 35 species with unresolved diel patterns
-#now to decide on the 35 species with conflicting data
-#Maor et al gets actiivty pattern data from four sources, 57, 4, 33 and 29
-#Source 57: 57.Jones, K.E. et al., 2009. PanTHERIA: A species-level database of life history, ecology and geography of extant and recently extinct mammals. Ecology, 90, p.2648.
-#Source 4: Aulagnier, S. & Thevenot, M., 1986. Catalogue des Mammiferes Sauvages du Maroc, Rabat, Morocco: Institute Scientifique.
-#Source 33: Hufnagl, E., 1972. Lybian Mammals, Harrow, England: The Oleander Press.
-# Source 29: 29. Gray, G.G. & Simpson, C.D., 1980. Ammotragus lervia. Mammalian Species, 144, pp.1–7.
 
-# Sources 4, 29, 33 are all for  Ammotragus lervia and from the 1970s/1980s. 
-# https://doi.org/10.25225/jvb.20055 more recent study from 2020 utilizing 24h camera traps found that A lervia is crepuscular and diurnal
-#edit maor_full to reflect this
-maor_full[6,"Diel_Pattern_2"] <- "Diurnal/Crepuscular"
-maor_full[6,"Diel_Pattern_1"] <- "Diurnal"
-maor_full[6, "Diel_Pattern_3"] <- "Crepuscular"
-maor_full[6,"alt_pattern_2"] <- NA
-
-#All other 34 species have conflicting data from panTHERIA database (source 57)
-#will examine these separatelyon a one by one basis and update the maor_full dataset
-#import dataframe of updated information on each of these species and match with their current row
-#uncomment lines below
-
-# missing_sps <- read.csv("filepath/missing_sps.csv")
-# row.names(missing_sps) <- missing_sps$Species
-# 
-# replacements <- match(missing_sps$Species, maor_full$Species)
-# for(i in replacements){
-#   maor_full[i, "Diel_Pattern_2"] <- missing_sps[maor_full[i, "Species"], "Diel_Pattern_2"]
-# }
-
-#Method B: Matches or near matches 
-#Alcelaphus lichtensteinii
-maor_full[4,"Diel_Pattern_2"] <- "Diurnal/Crepuscular"
-maor_full[4,"Diel_Pattern_3"] <- "Crepuscular"
-maor_full[4,"alt_pattern_2"] <- NA
-
-#Ammotragus lervia
-maor_full[6,"alt_pattern_1"] <- NA
-
-#Axis porcinus
-maor_full[13,"alt_pattern_2"] <- NA
-
-#Blastocerus dichotomus
-maor_full[17,"Diel_Pattern_2"] <- "Diurnal/Crepuscular"
-maor_full[17,"Diel_Pattern_3"] <- "Crepuscular"
-maor_full[17, "alt_pattern_2"] <- NA
-
-#Bubalus bubalis
-maor_full[23,"alt_pattern_2"] <- NA
-
-#Bubalus mindorensis
-maor_full[25,"Diel_Pattern_2"] <- "Nocturnal/Crepuscular"
-maor_full[25,"Diel_Pattern_1"] <- "Nocturnal"
-maor_full[25,"alt_pattern_2"] <- NA
-
-#Cervus elaphus. Row 52 duplicated because there are four entries for it
-#no new information in row 52 so drop it and renumber
-maor_full <- maor_full[-c(52), ]
-row.names(maor_full) <- 1:nrow(maor_full)
-
-#Gazella subgutturosa
-maor_full[63,"Diel_Pattern_2"] <- "Nocturnal/Crepuscular"
-maor_full[63,"Diel_Pattern_1"] <- "Nocturnal"
-maor_full[63,"alt_pattern_2"] <- NA
-
-#Giraffa camelopardalis
-maor_full[64,"alt_pattern_2"] <- NA
-
-#Moschus moschiferus
-maor_full[92,"Diel_Pattern_2"] <- "Nocturnal/Crepuscular"
-maor_full[92,"Diel_Pattern_1"] <- "Nocturnal"
-maor_full[92,"alt_pattern_2"] <- NA
-
-#Philantomba maxwellii
-maor_full[123,"Diel_Pattern_2"] <- "Diurnal/Crepuscular"
-maor_full[123,"Diel_Pattern_1"] <- "Diurnal"
-maor_full[123,"alt_pattern_2"] <- NA
-
-#Rangifer tarandus
-maor_full[131,"alt_pattern_2"] <- NA
-
-#Sus barbatus
-maor_full[145,"Diel_Pattern_2"] <- "Nocturnal/Crepuscular"
-maor_full[145,"Diel_Pattern_3"] <- "Crepuscular"
-maor_full[145,"alt_pattern_2"] <- NA
-
-#Tragelaphus angasii
-maor_full[156,"Diel_Pattern_2"] <- "Diurnal/Crepuscular"
-maor_full[156,"Diel_Pattern_3"] <- "Crepuscular"
-maor_full[156,"alt_pattern_2"] <- NA
-
+# Final formatting and saving out -----------------------------------------
 
 #now we can format the artiodactyla data so it matches with the cetacean data and merge them
-maor_full <- maor_full[, c("Species", "Diel_Pattern_1", "Diel_Pattern_2", "Diel_Pattern_3")]
+maor_full <- maor_full[, c("Species", "Diel_Pattern_1", "Diel_Pattern_2", "Diel_Pattern_3", "Diel_Pattern_4")]
 maor_full$Diel_Pattern_1 <- tolower(maor_full$Diel_Pattern_1)
 maor_full$Diel_Pattern_2 <- tolower(maor_full$Diel_Pattern_2)
 maor_full$Diel_Pattern_3 <- tolower(maor_full$Diel_Pattern_3)
+maor_full$Diel_Pattern_4 <- tolower(maor_full$Diel_Pattern_4)
 
 maor_full$tips <- str_replace(maor_full$Species, " ", "_")
-colnames(maor_full) <- c("Species_name", "Diel_Pattern_1", "Diel_Pattern_2", "Diel_Pattern_3", "tips")
+colnames(maor_full) <- c("Species_name", "Diel_Pattern_1", "Diel_Pattern_2", "Diel_Pattern_3", "Diel_Pattern_4", "tips")
 
-cetacaceans <- read.csv("cetaceans_full.csv")
-cetaceans <- cetaceans_full[, c("Species_name", "Diel_Pattern_1", "Diel_Pattern_2", "Diel_Pattern_3", "tips")]
+cetaceans <- read.csv("cetaceans_full.csv")
+cetaceans <- cetaceans[, c("Species_name", "Diel_Pattern_1", "Diel_Pattern_2", "Diel_Pattern_3", "Diel_Pattern_4", "tips")]
 maor_full <- rbind(maor_full, cetaceans)
 row.names(maor_full) <- c(maor_full$Species_name)
 
@@ -278,6 +372,23 @@ just_artio <- maor_full[1:151, ]
 colnames(just_artio) <- c("tips", "Diel_Pattern_1", "Diel_Pattern_2", "Diel_Pattern_3")
 write.csv(just_artio, here("artiodactyla_without_cetaceans.csv"))
 
+
+# See how Cox and Maor data compare ---------------------------------------
+
+diel_merge <- merge(Cox_df,maor_full,by="Species_name")
+diel_merge <- diel_merge[, c("Species_name", "Diel_Pattern_2.x", "Diel_Pattern_2.y")]
+colnames(diel_merge) <- c("Species_name", "Cox_diel", "Maor_diel")
+diel_merge$Cox_diel <- tolower(diel_merge$Cox_diel)
+diel_merge$match <- "No"
+
+for(i in 1:length(diel_merge$Species_name)){
+  if(diel_merge[i, "Cox_diel"] == diel_merge[i, "Maor_diel"]){
+    diel_merge[i, "match"] <- "Yes"
+  } 
+}
+
+table(diel_merge$match)
+diel_merge <- diel_merge[order(diel_merge$match),]
 
 # Section 5: Load in and examine the mam tree -----------------------------------------
 
