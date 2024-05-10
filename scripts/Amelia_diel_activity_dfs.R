@@ -133,6 +133,14 @@ for(i in replacements){
   Cox_df[i, "Diel_Pattern_2"] <- missing_sps[Cox_df[i, "Species_name"], "Diel_Pattern_2"]
 }
 
+#change any crepuscular entries to be cathemeral/crepuscular (lacks day-night preference but peaks activity at twilight)
+#25 crepuscular only entries
+for(i in 1:length(Cox_df$Diel_Pattern_2)){
+  if(Cox_df[i, "Diel_Pattern_2"] %in% c("Crepuscular")){
+    Cox_df[i, "Diel_Pattern_2"] <- "Cathemeral/Crepuscular"
+  }
+}
+
 #create binary, max dinoc, max crep and 6-state columns
 
 #diel pattern 1 is binary (di-noc only) -keeping this to preserve functioning of earlier models, not very biologically relevant
@@ -142,7 +150,7 @@ for(i in 1:nrow(Cox_df)){
     Cox_df[i, "Diel_Pattern_1"] <- "Diurnal"
   } else if(Cox_df[i, "Diel_Pattern_2"] == "Nocturnal/Crepuscular"){
     Cox_df[i, "Diel_Pattern_1"] <- "Nocturnal"
-  } else if(Cox_df[i, "Diel_Pattern_2"] %in% c("Crepuscular", "Cathemeral", "Cathemeral/Crepuscular")){
+  } else if(Cox_df[i, "Diel_Pattern_2"] %in% c("Cathemeral", "Cathemeral/Crepuscular")){
     Cox_df[i, "Diel_Pattern_1"] <- NA
   }
 }
@@ -159,7 +167,7 @@ for(i in 1:nrow(Cox_df)){
   }
 }
 
-# diel pattern 4 maximizes for diuranlity and nocturnality (while keeping cathemerality as a trait state)
+# diel pattern 4 maximizes for diurnality and nocturnality (while keeping cathemerality as a trait state)
 Cox_df$Diel_Pattern_4 <- Cox_df$Diel_Pattern_2
 for(i in 1:nrow(Cox_df)){
   if(Cox_df[i, "Diel_Pattern_2"] == "Diurnal/Crepuscular"){
@@ -168,9 +176,7 @@ for(i in 1:nrow(Cox_df)){
     Cox_df[i, "Diel_Pattern_4"] <- "Nocturnal"
   } else if (Cox_df[i, "Diel_Pattern_2"] == "Cathemeral/Crepuscular"){
     Cox_df[i, "Diel_Pattern_4"] <- "Cathemeral"
-  } else if (Cox_df[i, "Diel_Pattern_2"] == "Crepuscular"){
-    Cox_df[i, "Diel_Pattern_4"] <- "Cathemeral"
-  }
+  } 
 }
 
 

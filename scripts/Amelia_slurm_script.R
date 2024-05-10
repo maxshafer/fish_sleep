@@ -53,11 +53,11 @@ if(args[2] == "cetaceans"){
 }
 
 if(args[2] == "artiodactyla"){
-  trait.data <- read.csv(here("artiodactyla_full.csv"))
+  trait.data <- read.csv(here("Cox_artiodactyla_full.csv"))
 }
 
 if(args[2] == "artiodactyla_minus_cetaceans"){
-  trait.data <- read.csv(here("artiodactlya_without_cetaceans.csv"))
+  trait.data <- read.csv(here("Cox_artiodactyla_without_cetaceans.csv"))
 }
 
 
@@ -68,9 +68,8 @@ if(args[1] == "max_crep"){
   trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)),]
   trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "nocturnal/crepuscular", "crep_cath")
   trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "diurnal/crepuscular", "crep_cath")
-  trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "cathemeral", "crep_cath")
-  trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "crepuscular", "crep_cath")
   trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "cathemeral/crepuscular", "crep_cath")
+  trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "cathemeral", "crep_cath")
   trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "crep_cath", "crepuscular_cathemeral")
   
 }
@@ -133,7 +132,3 @@ result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x)))
 names(result_list) <- paste(args[-(1:2)], "_model", sep = "")
 
 saveRDS(result_list, paste(args[2], "subsetree", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models_new_artio", sep = "_"))
-
-
-#to do: use tictoc to time how long it takes to run these on the full 1k trees https://www.jumpingrivers.com/blog/timing-in-r/
-#plot the distribution of the transition rates from these models similar to https://www.sciencedirect.com/science/article/pii/S0960982219301563#mmc1
