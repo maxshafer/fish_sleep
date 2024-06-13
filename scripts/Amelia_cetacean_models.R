@@ -73,9 +73,9 @@ likelihoods <- data.frame(model = c("ace_model_er1", "ace_model_sym1", "ace_mode
 View(likelihoods)
 
 #add how well these models did to the table
-likelihoods <- rbind(likelihoods, c("cor_model_er1", cor_model_er$loglik, "diurnal, nocturnal, cetacea"))
-likelihoods <- rbind(likelihoods, c("cor_model_sym1", cor_model_sym$loglik, "diurnal, nocturnal, cetacea"))  
-likelihoods <- rbind(likelihoods, c("cor_model_ard1", cor_model_ard$loglik, "diurnal, nocturnal, cetacea"))
+likelihoods <- rbind(likelihoods, c("cor_model_er1", cor_model_er1$loglik, "diurnal, nocturnal, cetacea"))
+likelihoods <- rbind(likelihoods, c("cor_model_sym1", cor_model_sym1$loglik, "diurnal, nocturnal, cetacea"))  
+likelihoods <- rbind(likelihoods, c("cor_model_ard1", cor_model_ard1$loglik, "diurnal, nocturnal, cetacea"))
 
 saveRDS(likelihoods, here("likelihoods.rds"))
 
@@ -119,9 +119,12 @@ dev.off()
 
 #repeating the same for crepuscular, cathemeral, diurnal nocturnal
 #create dataframe to use. Starts with 98 species
-trait.data2 <- cetaceans_full
+trait.data2 <- read.csv(here("cetaceans_full.csv"))
 #remove sps with no diel data. Should now have 80 species 
-trait.data2 <- cetaceans_full[!(is.na(trait.data2$Diel_Pattern_3)),]
+trait.data2 <- trait.data2[!(is.na(trait.data2$Diel_Pattern_2)),]
+#change diurnal/crepuscular species to purely crepuscular
+trait.data2$Diel_Pattern_2 <- str_replace_all(trait.data2$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+trait.data2$Diel_Pattern_2 <- str_replace_all(trait.data2$Diel_Pattern_2, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
 # selects only data that is in the mammal tree (start with 80 sps, only 71 in tree)
 trait.data2 <- trait.data2[trait.data2$tips %in% mam.tree$tip.label,]
 row.names(trait.data2) <- trait.data2$tips
@@ -129,14 +132,14 @@ row.names(trait.data2) <- trait.data2$tips
 # this selects a tree that is only the subset with data (mutual exclusive)
 trpy_n2 <- keep.tip(mam.tree, tip = trait.data2$tips)
 
-trait.vector2 <- trait.data2$Diel_Pattern_3
+trait.vector2 <- trait.data2$Diel_Pattern_2
 ace_model_er2 <- ace(trait.vector2, trpy_n2, model = "ER", type = "discrete")
 ace_model_sym2 <- ace(trait.vector2, trpy_n2, model = "SYM", type = "discrete")
 ace_model_ard2 <- ace(trait.vector2, trpy_n2, model = "ARD", type = "discrete")
 
-cor_model_er2 <- corHMM(phy = trpy_n2, data = trait.data2[trpy_n2$tip.label, c("tips", "Diel_Pattern_3")], rate.cat = 1, model = "ER", node.states = "marginal")
-cor_model_sym2 <- corHMM(phy = trpy_n2, data = trait.data2[trpy_n2$tip.label, c("tips", "Diel_Pattern_3")], rate.cat = 1, model = "SYM", node.states = "marginal")
-cor_model_ard2 <- corHMM(phy = trpy_n2, data = trait.data2[trpy_n2$tip.label, c("tips", "Diel_Pattern_3")], rate.cat = 1, model = "ARD", node.states = "marginal")
+cor_model_er2 <- corHMM(phy = trpy_n2, data = trait.data2[trpy_n2$tip.label, c("tips", "Diel_Pattern_2")], rate.cat = 1, model = "ER", node.states = "marginal")
+cor_model_sym2 <- corHMM(phy = trpy_n2, data = trait.data2[trpy_n2$tip.label, c("tips", "Diel_Pattern_2")], rate.cat = 1, model = "SYM", node.states = "marginal")
+cor_model_ard2 <- corHMM(phy = trpy_n2, data = trait.data2[trpy_n2$tip.label, c("tips", "Diel_Pattern_2")], rate.cat = 1, model = "ARD", node.states = "marginal")
 
 
 # Section 2b Add to table ------------------
@@ -190,7 +193,7 @@ dev.off()
 # Section 3a Three-state cetacean models: max-dinoc --------------------------------
 
 #test with nocturnal, diurnal, cathemeral, with crepuscular species categorized as either di or noc
-trait.data3 <- cetaceans_full
+trait.data3 <- read.csv(here("cetaceans_full.csv"))
 trait.data3 <- trait.data3[!(is.na(trait.data3$Diel_Pattern_2)),]
 trait.data3$Diel_Pattern_2 <- str_replace_all(trait.data3$Diel_Pattern_2, "nocturnal/crepuscular", "nocturnal")
 trait.data3$Diel_Pattern_2 <- str_replace_all(trait.data3$Diel_Pattern_2, "diurnal/crepuscular", "diurnal")
@@ -257,7 +260,7 @@ dev.off()
 # Section 4a Three-state cetacean models: max-crep --------------------------------
 
 #test with nocturnal, diurnal, cathemeral, with partially crepuscular species categorized as fully crepuscular
-trait.data4 <- cetaceans_full
+trait.data4 <- read.csv(here("cetaceans_full.csv"))
 trait.data4 <- trait.data4[!(is.na(trait.data4$Diel_Pattern_2)),]
 trait.data4$Diel_Pattern_2 <- str_replace_all(trait.data4$Diel_Pattern_2, "nocturnal/crepuscular", "crep/cath")
 trait.data4$Diel_Pattern_2 <- str_replace_all(trait.data4$Diel_Pattern_2, "diurnal/crepuscular", "crep/cath")
@@ -369,7 +372,7 @@ saveRDS(likelihoods, here("likelihoods.rds"))
 #there are no purely crepuscular cetacean species, so we will have five categories
 
 # We only need the tips (species names) and diel pattern 2. We start with 80 species with data
-trait.data.crep <- cetaceans_full
+trait.data.crep <- read.csv(here("cetaceans_full.csv"))
 trait.data.crep <- trait.data.crep[!(is.na(trait.data.crep$Diel_Pattern_2)),]
 # selects only data that is in the mammal tree. 72 species are in the tree
 trait.data.crep <- trait.data.crep[trait.data.crep$tips %in% mam.tree$tip.label,]
@@ -409,6 +412,10 @@ likelihoods <- rbind(likelihoods, c("cor_model_er_crep", cor_model_er_crep$logli
 likelihoods <- rbind(likelihoods, c("cor_model_sym_crep", cor_model_sym_crep$loglik, "di/crep, noc/crep, diurnal, nocturnal, cathemeral, cetacea"))  
 likelihoods <- rbind(likelihoods, c("cor_model_ard_crep", cor_model_ard_crep$loglik, "di/crep, noc/crep, diurnal, nocturnal, cathemeral, cetacea"))
 
+likelihoods <- rbind(likelihoods, c("cor_model_er_crep_2r", cor_model_er_crep_2r$loglik, "di/crep, noc/crep, diurnal, nocturnal, cathemeral, hidden rates, cetacea"))
+likelihoods <- rbind(likelihoods, c("cor_model_sym_crep_2r", cor_model_sym_crep_2r$loglik, "di/crep, noc/crep, diurnal, nocturnal, cathemeral, hidden rates, cetacea"))  
+likelihoods <- rbind(likelihoods, c("cor_model_ard_crep_2r", cor_model_ard_crep_2r$loglik, "di/crep, noc/crep, diurnal, nocturnal, cathemeral, hidden rates, cetacea"))
+
 #save out updated table
 saveRDS(likelihoods, here("likelihoods.rds"))
 
@@ -430,9 +437,13 @@ dev.off()
 
 #first add better model names
 likelihoods <- readRDS("likelihoods.rds")
-likelihoods$cetacean_model <- c("binary ER", "binary SYM", "binary ARD", "binary ER", "binary SYM", "binary ARD", "4-state ER", "4-state SYM", "4-state ARD", "4-state ER", "4-state SYM", "4-state ARD", "3-state max_dinoc ER", "3-state max_dinoc SYM", "3-state max_dinoc ARD", "3-state max_dinoc ER", "3-state max_dinoc SYM", "3-state max_dinoc ARD", "3-state max_crep ER", "3-state max_crep SYM", "3-state max_crep ARD", "3-state max_crep ER", "3-state max_crep SYM", "3-state max_crep ARD", "bridge-only maxdinoc", "bridge-only maxcrep", "5-state ER", "5-state SYM", "5-state ARD", "5-state ER", "5-state SYM", "5-state ARD")
+likelihoods$cetacean_model <- c(rep(c("ER", "SYM", "ARD"), times = 8), "bridge-only", "bridge-only", rep(c("ER", "SYM", "ARD"), times = 2), "ER 2 rates", "SYM 2 rates", "ARD 2 rates")
+likelihoods$dataset <- c(rep("two_state", times = 6), rep("four_state", times = 6), rep("three_state_max_dinoc", times = 6), rep("three_state_max_crep", times = 6), "three_state_max_dinoc", "three_state_max_crep", rep("five_state", times = 9))
 acecor <- c(rep("ace", times = 3), rep("cor", times = 3))
-likelihoods$package <- c(rep(acecor, times = 4), "cor", "cor", acecor)
+likelihoods$package <- c(rep(acecor, times = 4), "cor", "cor", acecor, "cor", "cor", "cor")
+
+#save out the formatted table
+saveRDS(likelihoods, here("likelihoods.rds"))
 
 #export dataframe of likelihood as a png
 png("C:/Users/ameli/OneDrive/Documents/R_projects/likelihood_table.png", height = 30*nrow(likelihoods), width = 200*ncol(likelihoods), res = 90)
@@ -441,7 +452,18 @@ dev.off()
 
 #make a plot of the model likelihoods
 
-likelihood_plot <- ggplot(likelihoods, aes(x = cetacean_model, y = as.numeric(likelihood), colour = package)) + geom_point() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+likelihood_plot_full <- ggplot(likelihoods, aes(x = fct_inorder(cetacean_model), y = as.numeric(likelihood), colour = package)) + geom_point() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + facet_wrap(~dataset)
+likelihood_plot_full
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/likelihood_plot_full.png")
+likelihood_plot_full
+dev.off()
+
+#likelihood plot without binary (di noc) models
+likelihoods <- likelihoods[8: length(likelihoods$model),]
+
+likelihood_plot <- ggplot(likelihoods, aes(x = fct_inorder(cetacean_model), y = as.numeric(likelihood), colour = package)) + geom_point() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + facet_wrap(~dataset)
+likelihood_plot
 
 png("C:/Users/ameli/OneDrive/Documents/R_projects/likelihood_plot.png")
 likelihood_plot

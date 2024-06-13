@@ -95,7 +95,7 @@ phylo_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_nam
 trait.data <- trait.data[trait.data$tips %in% phylo_trees[[3]]$tip.label,]
 
 #subset cetacean trees for now to see if it runs
-phylo_trees <- phylo_trees[1:5]
+#phylo_trees <- phylo_trees[1:2]
 
 # Section 4: Use returnCorModels to run corHMM models (ER, SYM, ARD, and/or bridge_only) on 1k possible trees --------
 
@@ -131,4 +131,4 @@ if("bridge_only" %in% args){
 result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x)))
 names(result_list) <- paste(args[-(1:2)], "_model", sep = "")
 
-saveRDS(result_list, paste(args[2], "subsetree", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models_new_artio", sep = "_"))
+saveRDS(result_list, paste(args[2], "Cox", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
