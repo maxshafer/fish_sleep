@@ -171,6 +171,7 @@ head(cor_maor_ard1$states)
 
 # In this case, I am putting together the internal nodes and tip states into one data frame
 #still not sure how to plot ancestral reconstructions with ace 
+
 #lik.anc.maor <- as.data.frame(rbind(dinoc.trait.data[,"Diel_Pattern_1"], ace_dinoc_ard1$lik.anc))
 # dim of this should be equal to the tips and internal nodes (190 tips and 189 nodes for 379 total)
 #trpy_n_maor1

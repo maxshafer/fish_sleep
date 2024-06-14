@@ -24,7 +24,7 @@ setwd(here())
 
 source("scripts/fish_sleep_functions.R")
 source("scripts/Amelia_functions.R")
-args <- c("max_crep", "cetaceans", "bridge_only")
+
 # Section 1: Arguments ----------------------------------------------------
 args <- commandArgs(trailingOnly = TRUE)
 if(!(args[1] %in% c("max_crep", "max_dinoc"))) {  
@@ -44,8 +44,8 @@ if(length(args) < 3) {
 #we want to run select models on the 1k possible trees 
 #allow us to better compare likelihoods for significant differences
 
-#want to compare five models of the trinary cetacean data (cathemeral, diurnal, nocturnal)
-#ER, SYM, ARD, cathemeral dead-end, cathemeral bridge
+#want to compare four models of the trinary cetacean data (cathemeral, diurnal, nocturnal)
+#ER, SYM, ARD, cathemeral/crepuscular bridge
 
 #first we'll import the trait data dataframe and subset the tree to include cetacean species only
 if(args[2] == "cetaceans"){
@@ -53,13 +53,12 @@ if(args[2] == "cetaceans"){
 }
 
 if(args[2] == "artiodactyla"){
-  trait.data <- read.csv(here("Cox_artiodactyla_full.csv"))
+  trait.data <- read.csv(here("Sleepy_artiodactyla_full.csv"))
 }
 
 if(args[2] == "artiodactyla_minus_cetaceans"){
-  trait.data <- read.csv(here("Cox_artiodactyla_without_cetaceans.csv"))
+  trait.data <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv"))
 }
-
 
 
 if(args[1] == "max_crep"){
@@ -88,14 +87,15 @@ if(args[1] == "max_dinoc"){
 #we need to subset by species names in trait data (only species with behavioural data)
 #this takes 15-25 seconds 
 mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
-#mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 10)]
-phylo_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_names = trait.data$tips))
 
+#subset cetacean trees for now to see if it runs
+mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 3)]
+
+phylo_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_names = trait.data$tips))
+   
 #subset trait data to only include species that are in the tree
 trait.data <- trait.data[trait.data$tips %in% phylo_trees[[3]]$tip.label,]
 
-#subset cetacean trees for now to see if it runs
-#phylo_trees <- phylo_trees[1:2]
 
 # Section 4: Use returnCorModels to run corHMM models (ER, SYM, ARD, and/or bridge_only) on 1k possible trees --------
 
@@ -131,4 +131,4 @@ if("bridge_only" %in% args){
 result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x)))
 names(result_list) <- paste(args[-(1:2)], "_model", sep = "")
 
-saveRDS(result_list, paste(args[2], "Cox", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
+saveRDS(result_list, paste(args[2], "test", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))

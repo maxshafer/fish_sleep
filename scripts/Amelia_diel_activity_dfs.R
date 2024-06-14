@@ -129,21 +129,6 @@ Cox_df$tips <- str_replace(Cox_df$Binomial_iucn, " ", "_")
 colnames(Cox_df) <- c("Species_name", "Diel_Pattern_2", "tips")
 row.names(Cox_df) <- Cox_df$Species_name
 
-#optional: add in diel activity data I collected from the literature
-missing_sps <- read.csv(here("Sleepy_artiodactyls.csv"))
-#Hexaprotodon liberiensis has a different name so change to reflect this
-missing_sps[21,"Species_name"] <- "Choeropsis liberiensis"
-missing_sps <- missing_sps[order(missing_sps$Species_name),]
-row.names(missing_sps) <- missing_sps$Species_name
-
-
-
-replacements <- match(missing_sps$Species_name, Cox_df$Species_name)
-
-for(i in replacements){
-  Cox_df[i, "Diel_Pattern_2"] <- missing_sps[Cox_df[i, "Species_name"], "Diel_Pattern_2"]
-}
-
 #change any crepuscular entries to be cathemeral/crepuscular (lacks day-night preference but peaks activity at twilight)
 #25 crepuscular only entries
 for(i in 1:length(Cox_df$Diel_Pattern_2)){
@@ -314,8 +299,10 @@ maor_full[156,"Diel_Pattern_2"] <- "Diurnal/Crepuscular"
 
 #import dataframe of updated information on 34 conflicting species and match with their current row
 
-missing_sps <- read.csv(here("Sleepy_artiodactyls.csv"))
+missing_sps <- read.csv(here("Sleepy_artiodactyls_34_sps.csv"))
+#Hexaprotodon liberiensis is not called Choeropsis liberiensis so no need to change (unlike in Cox et al)
 row.names(missing_sps) <- missing_sps$Species_name
+
 
 replacements <- match(missing_sps$Species_name, maor_full$Species)
 
@@ -438,8 +425,8 @@ write.csv(diel_merge, here("diel_merge.csv"))
 #see how well Cox and Maor datasets agree with the data I collected from the primary literature
 
 #import missing species dataset
-#use this for the old 42 species dataset
-#missing_sps <- read.csv(here("Sleepy_artiodactyls_42_species.csv"))
+#use this for the preliminary 34 species dataset
+#missing_sps <- read.csv(here("Sleepy_artiodactyls_34_sps.csv"))
 
 #use this for the full 239 species dataset
 sheet <- 'https://docs.google.com/spreadsheets/d/1JGC7NZE_S36-IgUWpXBYyl2sgnBHb40DGnwPg2_F40M/edit?usp=sharing'
@@ -447,7 +434,7 @@ missing_sps <- read.csv(text=gsheet2text(sheet, format='csv'), stringsAsFactors=
 
 #missing_sps <- read.csv(here("Sleepy_artiodactyls.csv"))
 
-#missing_sps[21,"Species_name"] <- "Choeropsis liberiensis"
+#missing_sps[14,"Species_name"] <- "Choeropsis liberiensis"
 missing_sps[93,"Species_name"] <- "Choeropsis liberiensis"
 missing_sps <- missing_sps[, c("Species_name", "Diel_Pattern_2", "Confidence")]
 colnames(missing_sps) <- c("Species_name", "Amelia_diel", "Confidence")
@@ -496,8 +483,8 @@ for(i in 1:length(diel_merge$Species_name)){
 }
 
 table(diel_merge$match)
-#results for 42 species: 6 yes matches (14%), 14 no matches (33%), 22 approximate matches (52%)
-#results for all species: Approximate matches: 90, No: 77, Yes: 62
+#results for 33 species: 3 yes matches, 11 no matches, 19 approximate matches
+#results for all species: Approximate matches: 90, No: 76, Yes: 62
 diel_merge <- diel_merge[order(diel_merge$match, diel_merge$Confidence),]
 table(diel_merge$match, diel_merge$Confidence)
 table(diel_merge$match, diel_merge$Amelia_diel)
@@ -523,8 +510,8 @@ for(i in 1:length(diel_merge$Species_name)){
 }
 
 table(diel_merge$match)
-#results for 42 species: 6 yes matches (7%), 34 no matches (41%), 40 approximate matches (48%)
-#results for all species: Approximate matches: 52, No: 36, Yes: 22
+#results for 50 species (repeat rows from Maor et al): 3 yes matches, 20 no matches, 27 approximate matches
+#results for all species: Approximate matches: 52, No: 39, Yes: 22
 diel_merge <- diel_merge[order(diel_merge$match, diel_merge$Confidence),]
 table(diel_merge$match, diel_merge$Confidence)
 table(diel_merge$match, diel_merge$Amelia_diel)
@@ -649,6 +636,9 @@ sleepy_artio <- sleepy_artio %>% relocate(Diel_Pattern_1, .before = Diel_Pattern
 sleepy_artio <- sleepy_artio %>% relocate(Diel_Pattern_3, .after = Diel_Pattern_2)
 sleepy_artio <- sleepy_artio %>% relocate(Diel_Pattern_4, .after = Diel_Pattern_3)
 
+#drop na values
+sleepy_artio <- sleepy_artio[!is.na(sleepy_artio$Diel_Pattern_2),]
+
 write.csv(sleepy_artio, here("sleepy_artiodactyla_minus_cetaceans.csv"))
 
 cetaceans_full <- read.csv("cetaceans_full.csv")
@@ -675,4 +665,7 @@ for(i in 1:length(sleepy_artiodactyla_full$Species_name)){
 
 sleepy_artiodactyla_full <- sleepy_artiodactyla_full %>% relocate(Order, .after= Family)
 
-write.csv(sleepy_artiodactyla_full, here("sleepy_artiodactyla.csv"))
+#drop na values
+sleepy_artiodactyla_full <- sleepy_artiodactyla_full[!is.na(sleepy_artiodactyla_full$Diel_Pattern_2),]
+
+write.csv(sleepy_artiodactyla_full, here("sleepy_artiodactyla_full.csv"))
