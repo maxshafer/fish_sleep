@@ -25,9 +25,10 @@ setwd(here())
 source("scripts/fish_sleep_functions.R")
 source("scripts/Amelia_functions.R")
 
+args <- c("six_state", "artiodactyla", "ARD", "hidden_rate", "bridge_only")
 # Section 1: Arguments ----------------------------------------------------
 args <- commandArgs(trailingOnly = TRUE)
-if(!(args[1] %in% c("max_crep", "max_dinoc"))) {  
+if(!(args[1] %in% c("max_crep", "max_dinoc", "six_state"))) {  
   stop("first argument must be states in the model")
 }
 
@@ -71,10 +72,14 @@ if(args[1] == "max_dinoc"){
   trait.data <- trait.data[,c("tips", "Diel_Pattern_4")]
 }
 
+if(args[1] == "six_state"){
+  trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
+}
+
 
 # Section 3: Subset the trees ---------------------------------------------
 
-#for these models wer will only use the max clade credibility tree from Cox et al
+#for these models we will only use the max clade credibility tree from Cox et al
 phylo_trees <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 #subset trait data to only include species that are in the tree
@@ -114,11 +119,38 @@ if("ARD" %in% args){
 
 }
 
-if("bridge_only" %in% args){
+
+if("bridge_only" %in% args & args %in% c("max_dinoc", "max_crep")){
   bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = matrix(c(0,2,3,4,0,0,7,0,0), ncol = 3, nrow = 3, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)"), c("(1, R1)", "(2, R1)", "(3,R1)"))), node.states = "marginal")
-  
 }
 
+#don't allow transitions form noc -> di, di -> noc
+generic_ratemat <- getStateMat4Dat(ARD$data)$rate.mat
+generic_ratemat <- ARD$index.mat
+hidden_rate_matrix <- dropStateMatPars(generic_ratemat, c(4, 6, 10, 12))
+
+if("bridge_only" %in% args & c("max_dinoc", "max_crep", "hidden_rate") %in% args){
+  bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = hidden_rate_matrix, node.states = "marginal")
+}
+
+#don't allow transitions from noc -> di, noc -> di/crep, noc/crep -> di, noc/crep -> di/crep, di -> noc, di -> noc/crep, di/crep -> noc, di/crep -> noc/crep 
+generic_ratemat <- getStateMat4Dat(ARD$data)$rate.mat
+#need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> nocturnal/3 (6)
+custom_rate_matrix <- dropStateMatPars(generic_ratemat, c(14, 15, 19, 20, 23, 24, 28, 29))
+       
+if("bridge_only" %in% args & "six_state" %in% args){
+  bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = custom_rate_matrix, node.states = "marginal")
+}
+
+
+#don't allow transitions from noc -> di, noc -> di/crep, noc/crep -> di, noc/crep -> di/crep, di -> noc, di -> noc/crep, di/crep -> noc, di/crep -> noc/crep 
+generic_ratemat <- getStateMat4Dat(ARD$index.mat)$rate.mat
+#need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> nocturnal/3 (6)
+custom_rate_matrix <- dropStateMatPars(test_ratemat, c(14, 15, 19, 20, 23, 24, 28, 29, 44, 45, 49, 50, 53, 54, 58, 59))
+
+if("bridge_only" %in% args & c("six_state", "hidden_rate") %in% args){
+  bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = custom_rate_matrix, node.states = "marginal")
+}
 
 # Section 5: Save the results out and extract likelihoods  --------
 #use paste() to create a filename with all of the arguments
@@ -126,3 +158,9 @@ result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x)))
 names(result_list) <- paste(args[-(1:2)], "_model", sep = "")
 
 saveRDS(result_list, paste(args[2], "max_clade_cred", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
+
+
+#ignore, save out
+png(here("max_clade_crep_plotMKmodel_6state_ARD.png"), units = 'cm', res = 875, height = 35, width = 25)
+plotMKmodel(ARD)
+dev.off()

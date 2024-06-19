@@ -56,11 +56,11 @@ file_name <- "artiodactyla_max_clade_cred_max_crep_traits"
 #model_results <- all_model_results$SYM_model
 #model_name <- "SYM"
 
-model_results <- all_model_results$ARD_model
-model_name <- "ARD"
+#model_results <- all_model_results$ARD_model
+#model_name <- "ARD"
 
-#model_results <- all_model_results$bridge_only
-#model_name <- "bridge_only"
+model_results <- all_model_results$bridge_only
+model_name <- "bridge_only"
 
 # Section 1: Plotting ancestral reconstruction from corHMM model  --------
 

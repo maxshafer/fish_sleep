@@ -89,7 +89,7 @@ if(args[1] == "max_dinoc"){
 mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
 
 #subset cetacean trees for now to see if it runs
-mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 3)]
+#mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 3)]
 
 phylo_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_names = trait.data$tips))
    
@@ -131,4 +131,4 @@ if("bridge_only" %in% args){
 result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x)))
 names(result_list) <- paste(args[-(1:2)], "_model", sep = "")
 
-saveRDS(result_list, paste(args[2], "test", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
+saveRDS(result_list, paste(args[2], "new", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
