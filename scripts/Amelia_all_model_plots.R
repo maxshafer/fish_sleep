@@ -450,7 +450,7 @@ for(i in 1:6){
 
 ##To colour each of the rates by their model likelihood
 #there are six rates for each model (except bridge_only which has 4), so duplicate the likelihood of each model 6 times
-likelihood<- unlist(lapply(ARD_results$ARD_model, function(x) returnLikelihoods(model = x)))
+likelihood <- unlist(lapply(model_results$ARD_model, function(x) returnLikelihoods(model = x)))
 likelihood <- as.data.frame(likelihood)
 index <- rep(1:nrow(likelihood), times = c(rep(x = 6, times = 1000)))
 likelihood <- likelihood[index,]
@@ -460,8 +460,9 @@ rates_df <- cbind(rates_df, likelihood)
 rates_df$likelihood <- as.integer(rates_df$likelihood)
 rates_df$likelihood <- as.factor(rates_df$likelihood)
 
-ggplot(rates_df, aes(x= rates, fill = likelihood)) + geom_histogram() + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution)
-
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/new_artiodactyla_max_crep_ARD/likelihood_rates_plot.png", width=20,height=10,units="cm",res=200)
+ggplot(rates_df, aes(x= rates, fill = likelihood)) + geom_histogram() + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank()) + facet_wrap(~solution)
+dev.off()
 
 # ###Artio_max_crep_bridge_only_rates### ----------------------------------------------------------------
 
@@ -496,7 +497,7 @@ for(i in 1:4){
 
 ##To colour each of the rates by their model likelihood
 #there are four rates for each bridge_only model, so duplicate the likelihood of each model 4 times
-likelihood<- unlist(lapply(bridge_only_results$bridge_only_model, function(x) returnLikelihoods(model = x)))
+likelihood<- unlist(lapply(model_results$bridge_only_model, function(x) returnLikelihoods(model = x)))
 likelihood <- as.data.frame(likelihood)
 index <- rep(1:nrow(likelihood), times = c(rep(x = 4, times = 1000)))
 likelihood <- likelihood[index,]
@@ -506,8 +507,9 @@ rates_df <- cbind(rates_df, likelihood)
 rates_df$likelihood <- as.integer(rates_df$likelihood)
 rates_df$likelihood <- as.factor(rates_df$likelihood)
 
-ggplot(rates_df, aes(x= rates, fill = likelihood)) + geom_histogram() + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + facet_wrap(~solution) #+ theme_bw() + theme(plot.title = element_blank(), legend.position = "none")
-
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/new_artiodactyla_max_crep_bridge_only/likelihood_rates_plot.png", width=20,height=10,units="cm",res=200)
+ggplot(rates_df, aes(x= rates, fill = likelihood)) + geom_histogram() + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank()) + facet_wrap(~solution)
+dev.off()
 
 
 # Section 4: Artiodactyla, max_dinoc--------------------------------------
@@ -640,7 +642,7 @@ for(i in 1:6){
 
 ##To colour each of the rates by their model likelihood
 #there are six rates for each model (except bridge_only which has 4), so duplicate the likelihood of each model 6 times
-likelihood<- unlist(lapply(ARD_results$ARD_model, function(x) returnLikelihoods(model = x)))
+likelihood<- unlist(lapply(model_results$ARD_model, function(x) returnLikelihoods(model = x)))
 likelihood <- as.data.frame(likelihood)
 index <- rep(1:nrow(likelihood), times = c(rep(x = 6, times = 1000)))
 likelihood <- likelihood[index,]
@@ -650,8 +652,9 @@ rates_df <- cbind(rates_df, likelihood)
 rates_df$likelihood <- as.integer(rates_df$likelihood)
 rates_df$likelihood <- as.factor(rates_df$likelihood)
 
-ggplot(rates_df, aes(x= rates, fill = likelihood)) + geom_histogram() + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution)
-
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/new_artiodactyla_max_dinoc_ARD/likelihood_rates_plot.png", width=20,height=12,units="cm",res=200)
+ggplot(rates_df, aes(x= rates, fill = likelihood)) + geom_histogram() + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank()) + facet_wrap(~solution)
+dev.off()
 
 # ###Artio_max_dinoc_bridge_only_rates### ----------------------------------------------------------------
 
@@ -685,7 +688,7 @@ for(i in 1:4){
 
 ##To colour each of the rates by their model likelihood
 #there are four rates for each bridge_only model, so duplicate the likelihood of each model 4 times
-likelihood<- unlist(lapply(bridge_only_results$bridge_only_model, function(x) returnLikelihoods(model = x)))
+likelihood<- unlist(lapply(model_results$bridge_only_model, function(x) returnLikelihoods(model = x)))
 likelihood <- as.data.frame(likelihood)
 index <- rep(1:nrow(likelihood), times = c(rep(x = 4, times = 1000)))
 likelihood <- likelihood[index,]
@@ -695,7 +698,198 @@ rates_df <- cbind(rates_df, likelihood)
 rates_df$likelihood <- as.integer(rates_df$likelihood)
 rates_df$likelihood <- as.factor(rates_df$likelihood)
 
-ggplot(rates_df, aes(x= rates, fill = likelihood)) + geom_histogram() + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution)
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/new_artiodactyla_max_dinoc_bridge_only/likelihood_rates_plot.png", width=20,height=14,units="cm",res=200)
+ggplot(rates_df, aes(x= rates, fill = likelihood)) + geom_histogram() + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank()) + facet_wrap(~solution)
+dev.off()
+
+
+# Section 4: Artiodactyla, six_state--------------------------------------
+#use below for Cox et al, data
+# ER_results <- readRDS(here("artiodactyla_Cox_max_dinoc_traits_ER_SYM_models.rds"))
+# SYM_results <- readRDS(here("artiodactyla_Cox_max_dinoc_traits_ER_SYM_models.rds"))
+# ARD_results <- readRDS(here("artiodactyla_Cox_max_dinoc_traits_ARD_models.rds"))
+# bridge_only_results <- readRDS(here("artiodactyla_Cox_max_dinoc_traits_bridge_only_models.rds"))
+
+#use below for new primary source data
+model_results <- readRDS(here("artiodactyla_200_test_six_state_traits_ER_SYM_ARD_bridge_only_models.rds"))
+
+ER_likelihoods <- unlist(lapply(model_results$ER_model, function(x) returnLikelihoods(model = x)))
+SYM_likelihoods  <- unlist(lapply(model_results$SYM_model, function(x) returnLikelihoods(model = x)))
+ARD_likelihoods  <- unlist(lapply(model_results$ARD_model, function(x) returnLikelihoods(model = x)))
+bridge_only_likelihoods  <- unlist(lapply(model_results$bridge_only_model, function(x) returnLikelihoods(model = x)))
+
+## combine and plot
+
+df1 <- data.frame(model = "ER max_dinoc", likelihoods = ER_likelihoods)
+df2 <- data.frame(model = "SYM max_dinoc", likelihoods = SYM_likelihoods)
+df3 <- data.frame(model = "ARD max_dinoc", likelihoods = ARD_likelihoods)
+df4 <- data.frame(model = "bridge_only max_dinoc", likelihoods = bridge_only_likelihoods)
+df_dinoc <- rbind(df1, df2, df3, df4)
+
+all_six_states_artio_plot <- ggplot(df_dinoc, aes(x = fct_inorder(model), y = likelihoods)) + geom_jitter(alpha = 0.6, color = "purple") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
+  labs(x = "Model", y = "Log likelihood") #+ scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only"))
+
+#save plot as a PNG, remember to change file name
+png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/new_artio_six_state_all_models_plot.png",  units = "cm", height = 15, width = 15, res = 225)
+all_six_states_artio_plot
+dev.off()
+
+
+
+# ###Artio_six_state_ER_rates_NOT DONE### ----------------------------------------------------------------
+
+#use below for Cox data
+#model_results <- readRDS(here("artiodactyla_Cox_max_dinoc_traits_ER_SYM_models.rds"))
+#use below for Amelia primary source data
+model_results <- readRDS(here("artiodactyla_new_max_crep_traits_ER_SYM_bridge_only_models.rds"))
+
+rates <- unlist(lapply(model_results$ER_model, function(x) returnRates(model = x)))
+#we want to format this into a dataframe with three columns
+#model name, rates, solution number
+#this will allow us to plot the rates by which model they came from and by which 
+rates_df <- as.data.frame(rates)
+rates_df$model <- "max_dinoc_ER"
+
+#drop rows with no transition rates (ie Di -> Di, Noc -> Noc)
+rates_df <- rates_df[!(is.na(rates_df$rates)),]
+
+rates_df$solution <- rep(c("Di -> Cath", "Noc -> Cath", "Cath -> Di", "Noc -> Di", "Cath -> Noc", "Di -> Noc"), 1000)
+rates_colours <- c("deeppink4", "dodgerblue4", "deeppink3", "seagreen4", "dodgerblue2", "seagreen3")
+
+#ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution)
+
+rates_plot <- ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 3, page = 2)
+
+for(i in 1:6){
+  png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/new_artiodactyla_max_dinoc_ER/rates_plots", i, ".png"), width=20,height=10,units="cm",res=200)
+  print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 1, page = i)) 
+  dev.off()
+}
+
+# ###Artio_six_state_SYM_rates_NOT DONE### ----------------------------------------------------------------
+
+#use below for Cox data
+#model_results <- readRDS(here("artiodactyla_Cox_max_dinoc_traits_ER_SYM_models.rds"))
+#use below for Amelia primary source data
+model_results <- readRDS(here("artiodactyla_new_max_crep_traits_ER_SYM_bridge_only_models.rds"))
+
+rates <- unlist(lapply(model_results$SYM_model, function(x) returnRates(model = x)))
+#we want to format this into a dataframe with three columns
+#model name, rates, solution number
+#this will allow us to plot the rates by which model they came from and by which 
+rates_df <- as.data.frame(rates)
+rates_df$model <- "max_dinoc_SYM"
+
+#drop rows with no transition rates (ie Di -> Di, Noc -> Noc)
+rates_df <- rates_df[!(is.na(rates_df$rates)),]
+
+rates_df$solution <- rep(c("Di -> Cath", "Noc -> Cath", "Cath -> Di", "Noc -> Di", "Cath -> Noc", "Di -> Noc"), 1000)
+rates_colours <- c("deeppink4", "dodgerblue4", "deeppink3", "seagreen4", "dodgerblue2", "seagreen3")
+
+#ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution)
+
+rates_plot <- ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 3, page = 2)
+
+for(i in 1:6){
+  png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/new_artiodactyla_max_dinoc_SYM/rates_plots", i, ".png"), width=20,height=10,units="cm",res=200)
+  print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 1, page = i))
+  dev.off()
+}
+
+# ###Artio_six_state_ARD_rates### ----------------------------------------------------------------
+
+#use below for Amelia primary source data
+model_results <- readRDS(here("artiodactyla_200_test_six_state_traits_ER_SYM_ARD_bridge_only_models.rds"))
+
+rates <- unlist(lapply(model_results$ARD_model, function(x) returnRates(model = x)))
+#we want to format this into a dataframe with three columns
+#model name, rates, solution number
+#this will allow us to plot the rates by which model they came from and by which 
+rates_df <- as.data.frame(rates)
+rates_df$model <- "six_state_ARD"
+
+#drop rows with no transition rates (ie Di -> Di, Noc -> Noc)
+rates_df <- rates_df[!(is.na(rates_df$rates)),]
+row.names(rates_df) <- 1:length(rates_df$rates)
+
+rates_df$solution <- rep(c("Cath/crep -> Cath", "Di-> Cath", "Di/crep -> Cath", "Noc -> Cath", "Noc/crep -> Cath", "Cath -> Cath/crep", "Di -> Cath/crep", "Di/crep -> Cath/crep", "Noc -> Cath/crep", "Noc/crep -> Cath/crep", "Cath -> Di", "Cath/crep -> Di", "Di/crep -> Di", "Noc -> Di", "Noc/crep -> Di", "Cath -> Di/crep", "Cath/crep -> Di/crep", "Di -> Di/crep", "Noc -> Di/crep", "Noc/crep -> Di/crep", "Cath -> Noc", "Cath/crep -> Noc", "Di -> Noc", "Di/crep -> Noc", "Noc/crep -> Noc", "Cath -> Noc/crep", "Cath/crep -> Noc/crep", "Di -> Noc/crep", "Di/crep -> Noc/crep", "Noc -> Noc/crep"), 20)
+
+rates_colours <- rep(c("darkorchid1", "deeppink3", "maroon1", "dodgerblue2", "mediumpurple1", "darkorchid4","orchid1", "firebrick4", "slateblue1", "thistle3", "deeppink4", "orchid3", "darkorange","seagreen3","springgreen1","maroon3","firebrick1","darkorange3","olivedrab1","brown","dodgerblue4","slateblue4","seagreen4","olivedrab3","gold","mediumpurple4","thistle4","springgreen4","brown1","gold3"), 20)
+
+#ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution)
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/new_artiodactyla_six_state_ARD/all_rates.png", width = 30, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution)
+dev.off()
+
+#save out as png, remember to change file name
+for(i in 1:30){
+  png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/new_artiodactyla_six_state_ARD/rates_plots", i, ".png"), width=15,height=10,units="cm",res=200)
+  print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 1, page = i))
+  dev.off()
+}
+
+# ##To colour each of the rates by their model likelihood
+# #there are six rates for each model (except bridge_only which has 4), so duplicate the likelihood of each model 6 times
+# likelihood<- unlist(lapply(model_results$ARD_model, function(x) returnLikelihoods(model = x)))
+# likelihood <- as.data.frame(likelihood)
+# index <- rep(1:nrow(likelihood), times = c(rep(x = 6, times = 1000)))
+# likelihood <- likelihood[index,]
+# 
+# #add this column to the rates dataframe
+# rates_df <- cbind(rates_df, likelihood)
+# rates_df$likelihood <- as.integer(rates_df$likelihood)
+# rates_df$likelihood <- as.factor(rates_df$likelihood)
+# 
+# png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/new_artiodactyla_max_dinoc_ARD/likelihood_rates_plot.png", width=20,height=12,units="cm",res=200)
+# ggplot(rates_df, aes(x= rates, fill = likelihood)) + geom_histogram() + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank()) + facet_wrap(~solution)
+# dev.off()
+
+# ###Artio_six_state_bridge_only_rates### ----------------------------------------------------------------
+
+#use below for Amelia primary source data
+model_results <- readRDS(here("artiodactyla_200_test_six_state_traits_ER_SYM_ARD_bridge_only_models.rds"))
+
+rates <- unlist(lapply(model_results$bridge_only_model, function(x) returnRates(model = x)))
+#we want to format this into a dataframe with three columns
+#model name, rates, solution number
+#this will allow us to plot the rates by which model they came from and by which 
+rates_df <- as.data.frame(rates)
+rates_df$model <- "max_dinoc_bridge_only"
+
+#drop rows with no transition rates (ie Di -> Di, Noc -> Noc)
+rates_df <- rates_df[!(is.na(rates_df$rates)),]
+rownames(rates_df) <- 1:length(rates_df$rates)
+
+#exclude transitions from Di <-> Noc, Di <-> Noc/crep, Noc <-> Di/crep, Di/crep <-> Noc/crep
+rates_df$solution <- rep(c("Cath/crep -> Cath", "Di -> Cath", "Di/crep -> Cath", "Noc -> Cath", "Noc/crep -> Cath", "Cath -> Cath/crep", "Di -> Cath/crep", "Di/crep -> Cath/crep", "Noc -> Cath/crep", "Noc/crep -> Cath/crep", "Cath -> Di", "Cath/crep -> Di", "Di/crep -> Di", "Cath -> Di/crep", "Cath/crep -> Di/crep", "Di -> Di/crep", "Cath -> Noc", "Cath/crep -> Noc", "Noc/crep -> Noc", "Cath -> Noc/crep", "Cath/crep -> Noc/crep", "Noc -> Noc/crep"), 20)
+rates_colours <- rep(c("darkorchid1", "deeppink3", "maroon1", "dodgerblue2", "mediumpurple1", "darkorchid4","orchid1", "slateblue1", "thistle3", "deeppink4", "orchid3", "darkorange","maroon3","darkorange3","brown","dodgerblue4","slateblue4","gold","mediumpurple4","thistle4","brown1","gold3"), 20)
+
+#ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution)
+
+ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution)
+
+for(i in 1:22){
+  png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/new_artiodactyla_six_state_bridge_only/rates_plots", i, ".png"), width=20,height=10,units="cm",res=200)
+  print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 1, page = i))
+  dev.off()
+}
+
+# ##To colour each of the rates by their model likelihood
+# #there are four rates for each bridge_only model, so duplicate the likelihood of each model 4 times
+# likelihood<- unlist(lapply(model_results$bridge_only_model, function(x) returnLikelihoods(model = x)))
+# likelihood <- as.data.frame(likelihood)
+# index <- rep(1:nrow(likelihood), times = c(rep(x = 4, times = 1000)))
+# likelihood <- likelihood[index,]
+# 
+# #add this column to the rates dataframe
+# rates_df <- cbind(rates_df, likelihood)
+# rates_df$likelihood <- as.integer(rates_df$likelihood)
+# rates_df$likelihood <- as.factor(rates_df$likelihood)
+# 
+# png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/new_artiodactyla_max_dinoc_bridge_only/likelihood_rates_plot.png", width=20,height=14,units="cm",res=200)
+# ggplot(rates_df, aes(x= rates, fill = likelihood)) + geom_histogram() + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank()) + facet_wrap(~solution)
+# dev.off()
 
 
 # Section 5: Artiodactyla without cetaceans, max_crep--------------------------------------

@@ -27,7 +27,7 @@ source("scripts/Amelia_functions.R")
 
 # Section 1: Arguments ----------------------------------------------------
 args <- commandArgs(trailingOnly = TRUE)
-if(!(args[1] %in% c("max_crep", "max_dinoc"))) {  
+if(!(args[1] %in% c("max_crep", "max_dinoc", "six_state"))) {  
   stop("first argument must be states in the model")
 }
 
@@ -82,6 +82,10 @@ if(args[1] == "max_dinoc"){
   trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("diurnal", "nocturnal", "cathemeral"),]
 }
 
+if(args[1] == "six_state"){
+  trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
+  trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)),]
+}
 
 # Section 3: Subset the trees ---------------------------------------------
 #we need to subset by species names in trait data (only species with behavioural data)
@@ -89,12 +93,12 @@ if(args[1] == "max_dinoc"){
 mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
 
 #subset cetacean trees for now to see if it runs
-#mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 3)]
+mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 20)]
 
 phylo_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_names = trait.data$tips))
    
 #subset trait data to only include species that are in the tree
-trait.data <- trait.data[trait.data$tips %in% phylo_trees[[3]]$tip.label,]
+trait.data <- trait.data[trait.data$tips %in% phylo_trees[[2]]$tip.label,]
 
 
 # Section 4: Use returnCorModels to run corHMM models (ER, SYM, ARD, and/or bridge_only) on 1k possible trees --------
@@ -119,11 +123,24 @@ if("ARD" %in% args){
   
 }
 
-if("bridge_only" %in% args){
-  bridge_only <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1, custom.rate.mat = matrix(c(0,2,3,4,0,0,7,0,0), ncol = 3, nrow = 3, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)"), c("(1, R1)", "(2, R1)", "(3,R1)"))), model = "ARD", node.states = "marginal"))
-  
-}
+# if("bridge_only" %in% args & !("six_state" %in% args)){
+#   bridge_only <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1, custom.rate.mat = matrix(c(0,2,3,4,0,0,7,0,0), ncol = 3, nrow = 3, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)"), c("(1, R1)", "(2, R1)", "(3,R1)"))), model = "ARD", node.states = "marginal"))
+#   
+# }
 
+# #don't allow transitions from noc -> di, noc -> di/crep, noc/crep -> di, noc/crep -> di/crep, di -> noc, di -> noc/crep, di/crep -> noc, di/crep -> noc/crep 
+# generic_ratemat <- getStateMat4Dat(ARD$data)$rate.mat
+# #need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> nocturnal/3 (6)
+# custom_rate_matrix <- dropStateMatPars(generic_ratemat, c(14, 15, 19, 20, 23, 24, 28, 29))
+
+grug <- matrix(1:36, nrow = 6, ncol = 6)
+grug <- dropStateMatPars(grug, c(1,8,15,22,29,36))
+grug <- dropStateMatPars(grug, c(14, 15, 19, 20, 23, 24, 28, 29))   
+
+
+if("bridge_only" %in% args){
+  bridge_only <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1,  custom.rate.mat = grug, model = "ARD", node.states = "marginal"))
+}
 
 
 # Section 5: Save the results out and extract likelihoods  --------
@@ -131,4 +148,4 @@ if("bridge_only" %in% args){
 result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x)))
 names(result_list) <- paste(args[-(1:2)], "_model", sep = "")
 
-saveRDS(result_list, paste(args[2], "new", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
+saveRDS(result_list, paste(args[2], "200_test", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
