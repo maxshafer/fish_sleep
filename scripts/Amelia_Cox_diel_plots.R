@@ -31,8 +31,10 @@ trait.data <- read.csv(here("cetaceans_full.csv"))
 trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
 trpy_n_mam <- keep.tip(mam.tree, tip = trait.data$tips)
 
-#currently includes species with no activity pattern data
+#does not include species with no activity pattern data (they are filtered out when processing the sleepy cetacean dataframe)
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/all_cetacean_tree.png", width=40,height=40, units="cm",res=100)
 ggtree(trpy_n_mam, layout = "circular") + geom_tiplab(size = 3)
+dev.off()
 
 
 # Section 2: 5-state trait data tree --------------------------------------

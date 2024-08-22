@@ -28,7 +28,7 @@ source("scripts/Amelia_functions.R")
 # Load in the data from google sheets
 # and do some clean up on the data
 
-url <- 'https://docs.google.com/spreadsheets/d/1-5vhk_YOV4reklKyM98G4MRWEnNbcu6mnmDDJkO4DlM/edit#gid=0'
+url <- 'https://docs.google.com/spreadsheets/d/1-5vhk_YOV4reklKyM98G4MRWEnNbcu6mnmDDJkO4DlM/edit?usp=sharing'
 cetaceans_full <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
 #save out full version with sources
 write.csv(cetaceans_full, here("cetaceans_full_with_sources.csv"))

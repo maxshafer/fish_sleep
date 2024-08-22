@@ -1,3 +1,14 @@
+#Packages
+library(stringr)
+library(here)
+library(ggtree)
+library(gsheet)
+library(dplyr)
+library(readxl)
+library(tidyr)
+install.packages("networkD3")
+library(networkD3)
+
 #how well does data from different sources (categories) agree with each other
 
 #import fish database
@@ -24,3 +35,27 @@ a <- "crepuscular"
 b <- "diurnal"
 
 a %in% fish & b %in% fish
+
+#How to visualize agreement across confidence levels
+
+#load in sleepy fishies
+url <- "https://docs.google.com/spreadsheets/d/18aNqHT73hX06cGRlf6oj7Y4TVKf6jd_Q5ojNIxm2rys/edit?gid=0#gid=0"
+fish_full <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
+
+View(fish_full)
+#subset to only include species with multiple sources
+fish_full <- fish_full %>% filter(Source.2 != "")
+
+#if applicable, filter to confidence level 
+
+#only keep species name and confidence data
+fish_full <- fish_full[, c(1, 10:21)]
+
+#for now also filter to the section I have done
+fish_full <- fish_full[1182:1194,]
+
+#rename columns 
+colnames(fish_full) <- c("Species_name", "5", "5.1", "4", "4.1", "4.2", "3", "3.1", "3.2", "2", "2.1", "2.2", "2.3")
+
+
+
