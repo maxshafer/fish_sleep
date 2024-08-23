@@ -15,90 +15,90 @@ library(here)
 
 setwd(here())
 
-### LOAD IN OTHER DATA ### 
-
-# Fetch the taxonomic levels from fishbase for all of the species and make it into a dataframe
-# available_releases()
-# [1] "23.01" "23.05" "21.06" "19.04"
-
-fishbase_df <- load_taxa(collect = T, version = "21.06")
-fishbase_df <- as.data.frame(fishbase_df)
-
-### LOAD IN GOOGLE SHEET DATA ### 
-
-# Load in the data from google sheets
-# and do some clean up on the data
-
-url <- 'https://docs.google.com/spreadsheets/d/18aNqHT73hX06cGRlf6oj7Y4TVKf6jd_Q5ojNIxm2rys/edit#gid=0'
-sleepy_fish <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
-sleepy_fish$Diel_Pattern <- tolower(sleepy_fish$Diel_Pattern)
-
-write.csv(sleepy_fish, file = here(paste("sleepy_fish_database_local_", Sys.Date(), ".csv", sep = "")))
-
+# ### LOAD IN OTHER DATA ### 
+# 
+# # Fetch the taxonomic levels from fishbase for all of the species and make it into a dataframe
+# # available_releases()
+# # [1] "23.01" "23.05" "21.06" "19.04"
+# 
+# fishbase_df <- load_taxa(collect = T, version = "21.06")
+# fishbase_df <- as.data.frame(fishbase_df)
+# 
+# ### LOAD IN GOOGLE SHEET DATA ### 
+# 
+# # Load in the data from google sheets
+# # and do some clean up on the data
+# 
+# url <- 'https://docs.google.com/spreadsheets/d/18aNqHT73hX06cGRlf6oj7Y4TVKf6jd_Q5ojNIxm2rys/edit#gid=0'
+# sleepy_fish <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
+# sleepy_fish$Diel_Pattern <- tolower(sleepy_fish$Diel_Pattern)
+# 
+# write.csv(sleepy_fish, file = here(paste("sleepy_fish_database_local_", Sys.Date(), ".csv", sep = "")))
+# 
+# # ################################################################################################################################################
+# # ### OUTPUT DATA FOR ZUZANNA ### 
+# # ################################################################################################################################################
+# # 
+# # species_for_nocturnal_database <- read.xlsx("~/Downloads/Species_for_nocturnal_database.xlsx", 1, header = F)
+# # 
+# # sleepy_fish_sub <- sleepy_fish[sleepy_fish$Species_name %in% species_for_nocturnal_database$X1 | sleepy_fish$Common_name %in% species_for_nocturnal_database$X1, c(1,6,8)] # 16:24 for references
+# # sleepy_fish_sub$Diel_Pattern[grep("unclear", sleepy_fish_sub$Diel_Pattern)] <- "arrhythmic"
+# # 
+# # write.csv(sleepy_fish_sub, file = "species_for_nocturnal_database_filled.csv", row.names = F)
+# 
+# ###############################################################################################################################################
+# ### FETCH DATA FROM TREE OF LIFE ### 
 # ################################################################################################################################################
-# ### OUTPUT DATA FOR ZUZANNA ### 
-# ################################################################################################################################################
 # 
-# species_for_nocturnal_database <- read.xlsx("~/Downloads/Species_for_nocturnal_database.xlsx", 1, header = F)
+# ## Remove fish without diel data, or real species names (necessary?)
+# sleepy_fish <- sleepy_fish[sleepy_fish$Diel_Pattern != "",]
+# sleepy_fish <- sleepy_fish[!(grepl("sp\\.|spp\\.|unidentified", sleepy_fish$Species)),]
+# # sleepy_fish <- sleepy_fish[sleepy_fish$NEW == "NEW_SPECIES",]
 # 
-# sleepy_fish_sub <- sleepy_fish[sleepy_fish$Species_name %in% species_for_nocturnal_database$X1 | sleepy_fish$Common_name %in% species_for_nocturnal_database$X1, c(1,6,8)] # 16:24 for references
-# sleepy_fish_sub$Diel_Pattern[grep("unclear", sleepy_fish_sub$Diel_Pattern)] <- "arrhythmic"
+# ## Fetch species from tree of life using rotl package
+# resolved_names <- tnrs_match_names(sleepy_fish$Species_name, context_name = "Vertebrates", do_approximate_matching = FALSE)
 # 
-# write.csv(sleepy_fish_sub, file = "species_for_nocturnal_database_filled.csv", row.names = F)
-
-###############################################################################################################################################
-### FETCH DATA FROM TREE OF LIFE ### 
-################################################################################################################################################
-
-## Remove fish without diel data, or real species names (necessary?)
-sleepy_fish <- sleepy_fish[sleepy_fish$Diel_Pattern != "",]
-sleepy_fish <- sleepy_fish[!(grepl("sp\\.|spp\\.|unidentified", sleepy_fish$Species)),]
-# sleepy_fish <- sleepy_fish[sleepy_fish$NEW == "NEW_SPECIES",]
-
-## Fetch species from tree of life using rotl package
-resolved_names <- tnrs_match_names(sleepy_fish$Species_name, context_name = "Vertebrates", do_approximate_matching = FALSE)
-
-# ## Can use this to check those that don't have an exact match (in case there are new fish added)
-# resolved_names_2 <- tnrs_match_names(resolved_names$search_string[is.na(resolved_names$unique_name)], context_name = "Vertebrates", do_approximate_matching = TRUE)
-
-## Remove any that don't have exact matches
-resolved_names <- resolved_names[!(is.na(resolved_names$unique_name)),]
-
-## Remove ambiguous matches (approximate matches, things with multiple matches)
-resolved_names <- resolved_names[resolved_names$approximate_match == FALSE,]
-
-## Print the number of matches
-print(paste("rotl found matches for", nrow(resolved_names), "out of", nrow(sleepy_fish), "from the Sleepy fish database", sep = " "))
-
-# Remove excess information, clean up, and add tip label ids that will match the tree
-# resolved_names <- resolved_names[,c("search_string", "unique_name", "ott_id", "flags")]
-resolved_names$tips <- str_replace(resolved_names$unique_name, " ", "_")
-resolved_names <- resolved_names[!duplicated(resolved_names$tips),]
-
-resolved_names$genus <- fishbase_df$Genus[match(resolved_names$unique_name, fishbase_df$Species)]
-resolved_names$family <- fishbase_df$Family[match(resolved_names$unique_name, fishbase_df$Species)]
-resolved_names$order <- fishbase_df$Order[match(resolved_names$unique_name, fishbase_df$Species)]
-
-## Add data on traits (from sleepy_fish, and/or from fishbase)
-
-resolved_names$diel <- sleepy_fish$Diel_Pattern[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
-resolved_names$diel <- factor(resolved_names$diel, levels = c("diurnal", "nocturnal", "unclear", "crepuscular", "crepuscular/diurnal", "crepuscular/nocturnal", "crepuscular/unclear", "unclear/diurnal", "unclear/nocturnal"))
-resolved_names$diel2 <- ifelse(resolved_names$diel == "diurnal", "diurnal", ifelse(resolved_names$diel == "nocturnal", "nocturnal", ifelse(resolved_names$diel == "crepuscular", "crepuscular", ifelse(resolved_names$diel == "crepuscular/diurnal", "crepuscular", ifelse(resolved_names$diel == "crepuscular/nocturnal", "crepuscular", ifelse(resolved_names$diel == "crepuscular/unclear", "crepuscular", ifelse(resolved_names$diel == "unclear/diurnal", "unclear", ifelse(resolved_names$diel == "unclear/nocturnal", "nocturnal", "unknown"))))))))
-resolved_names$diel_confidence <- sleepy_fish$Confidence[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
-resolved_names$genome <- sleepy_fish$Genome[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
-resolved_names$NEW <- sleepy_fish$NEW[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
-
-# These break tol_induced_subtree
-# c("incertae_sedis_inherited", "unplaced_inherited","incertae_sedis", "not_otu, incertae_sedis")
-# These do not break tol_induced_subtree, but do break congruify.phylo
-# c("infraspecific", "sibling_higher")
-# resolved_names <- resolved_names[resolved_names$flags %out% c("incertae_sedis_inherited", "unplaced_inherited", "incertae_sedis", "not_otu, incertae_sedis", "extinct_inherited, incertae_sedis"),]
-
-setwd(here())
-
-write.csv(resolved_names, file = here(paste("resolved_names_local_", Sys.Date(), ".csv", sep = ""))) 
-
-print(paste("Sleepy fish database covers ", round((length(unique(resolved_names$tips))/length(unique(fishbase_df$Species)))*100, 2), "% of Species, ", round((length(unique(resolved_names$genus))/length(unique(fishbase_df$Genus)))*100,2), "% of Genuses, ", round((length(unique(resolved_names$family))/length(unique(fishbase_df$Family)))*100,2), "% of Families, and ", round((length(unique(resolved_names$order))/length(unique(fishbase_df$Order)))*100,2), "% of Orders", sep = ""))
+# # ## Can use this to check those that don't have an exact match (in case there are new fish added)
+# # resolved_names_2 <- tnrs_match_names(resolved_names$search_string[is.na(resolved_names$unique_name)], context_name = "Vertebrates", do_approximate_matching = TRUE)
+# 
+# ## Remove any that don't have exact matches
+# resolved_names <- resolved_names[!(is.na(resolved_names$unique_name)),]
+# 
+# ## Remove ambiguous matches (approximate matches, things with multiple matches)
+# resolved_names <- resolved_names[resolved_names$approximate_match == FALSE,]
+# 
+# ## Print the number of matches
+# print(paste("rotl found matches for", nrow(resolved_names), "out of", nrow(sleepy_fish), "from the Sleepy fish database", sep = " "))
+# 
+# # Remove excess information, clean up, and add tip label ids that will match the tree
+# # resolved_names <- resolved_names[,c("search_string", "unique_name", "ott_id", "flags")]
+# resolved_names$tips <- str_replace(resolved_names$unique_name, " ", "_")
+# resolved_names <- resolved_names[!duplicated(resolved_names$tips),]
+# 
+# resolved_names$genus <- fishbase_df$Genus[match(resolved_names$unique_name, fishbase_df$Species)]
+# resolved_names$family <- fishbase_df$Family[match(resolved_names$unique_name, fishbase_df$Species)]
+# resolved_names$order <- fishbase_df$Order[match(resolved_names$unique_name, fishbase_df$Species)]
+# 
+# ## Add data on traits (from sleepy_fish, and/or from fishbase)
+# 
+# resolved_names$diel <- sleepy_fish$Diel_Pattern[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
+# resolved_names$diel <- factor(resolved_names$diel, levels = c("diurnal", "nocturnal", "unclear", "crepuscular", "crepuscular/diurnal", "crepuscular/nocturnal", "crepuscular/unclear", "unclear/diurnal", "unclear/nocturnal"))
+# resolved_names$diel2 <- ifelse(resolved_names$diel == "diurnal", "diurnal", ifelse(resolved_names$diel == "nocturnal", "nocturnal", ifelse(resolved_names$diel == "crepuscular", "crepuscular", ifelse(resolved_names$diel == "crepuscular/diurnal", "crepuscular", ifelse(resolved_names$diel == "crepuscular/nocturnal", "crepuscular", ifelse(resolved_names$diel == "crepuscular/unclear", "crepuscular", ifelse(resolved_names$diel == "unclear/diurnal", "unclear", ifelse(resolved_names$diel == "unclear/nocturnal", "nocturnal", "unknown"))))))))
+# resolved_names$diel_confidence <- sleepy_fish$Confidence[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
+# resolved_names$genome <- sleepy_fish$Genome[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
+# resolved_names$NEW <- sleepy_fish$NEW[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
+# 
+# # These break tol_induced_subtree
+# # c("incertae_sedis_inherited", "unplaced_inherited","incertae_sedis", "not_otu, incertae_sedis")
+# # These do not break tol_induced_subtree, but do break congruify.phylo
+# # c("infraspecific", "sibling_higher")
+# # resolved_names <- resolved_names[resolved_names$flags %out% c("incertae_sedis_inherited", "unplaced_inherited", "incertae_sedis", "not_otu, incertae_sedis", "extinct_inherited, incertae_sedis"),]
+# 
+# setwd(here())
+# 
+# write.csv(resolved_names, file = here(paste("resolved_names_local_", Sys.Date(), ".csv", sep = ""))) 
+# 
+# print(paste("Sleepy fish database covers ", round((length(unique(resolved_names$tips))/length(unique(fishbase_df$Species)))*100, 2), "% of Species, ", round((length(unique(resolved_names$genus))/length(unique(fishbase_df$Genus)))*100,2), "% of Genuses, ", round((length(unique(resolved_names$family))/length(unique(fishbase_df$Family)))*100,2), "% of Families, and ", round((length(unique(resolved_names$order))/length(unique(fishbase_df$Order)))*100,2), "% of Orders", sep = ""))
 
 ###############################################################################################################################################
 ### Determine missing clades ### 
