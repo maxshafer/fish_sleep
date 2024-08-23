@@ -42,6 +42,8 @@ export CPATH=~/.local/include:~/.local/include/adolc:$CPATH
 #add your command lines below
 #############################
 
+Rscript 1_Fish_phylogeny.R
+
 # Rscript 1_Eutelostomi_tree.R
 
 # For the HMM script, requires two arguments
@@ -59,7 +61,7 @@ export CPATH=~/.local/include:~/.local/include/adolc:$CPATH
 
 # Rscript 2_General_Hidden_Markov_Models_script.R all tetrapods
 # Rscript 2_General_Hidden_Markov_Models_script.R not_mammals tetrapods
-Rscript 2_General_Hidden_Markov_Models_script.R amphibians tetrapods
+# Rscript 2_General_Hidden_Markov_Models_script.R amphibians tetrapods
 # Rscript 2_General_Hidden_Markov_Models_script.R sauropsids tetrapods
 # Rscript 2_General_Hidden_Markov_Models_script.R lepidosauria tetrapods
 # Rscript 2_General_Hidden_Markov_Models_script.R testudines tetrapods
