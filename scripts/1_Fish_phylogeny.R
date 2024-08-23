@@ -134,44 +134,48 @@ setwd(here())
 ### FETCH AND TIME-CALIBRATE THE TREE ### 
 ################################################################################################################################################
 
-resolved_names <- read.csv(file = here( here("resolved_names_local_2024-08-23.csv")), row.names = "X") 
-
-# Fetch the combined tree from tree of life for the species ids found in resolved_names
-# "sibling_higher" is the only flag that can be included where I can both fetch the tree and time calibrate it
-'%out%' <- Negate('%in%')
-
-# tr <- tol_induced_subtree(ott_ids = resolved_names$ott_id[resolved_names$flags %out% c("incertae_sedis_inherited", "unplaced_inherited", "incertae_sedis", "not_otu", "not_otu, incertae_sedis", "extinct_inherited, incertae_sedis", "infraspecific")], label_format = "name")
-
-tr <- tol_induced_subtree(ott_ids = resolved_names$ott_id[resolved_names$flags %in% c("sibling_higher", "")], label_format = "id") # I need to use the id option here, and then use that to map the tip labels from resolved_names (that way I don't run into the issue with the difference in formatting between the two tools)
-
-# Time calibrate it using geiger and timetree.org
-# First resolve polytomies ~randomly using multi2dr
-
-tr <- multi2di(tr)
-
-# Make the reference file
-# Ensure that the rownames and tip.labels in the target match the species names in the reference
-
-resolved_names$ott_id <- paste("ott", resolved_names$ott_id, sep = "")
-
-reference.df <- resolved_names[resolved_names$ott_id %in% tr$tip.label,c("order", "family", "genus", "unique_name", "tips", "ott_id")] 
-colnames(reference.df) <- c("order", "family", "genus", "unique_name", "tips_species", "tips")
-rownames(reference.df) <- reference.df$tips
-
-# # two tips can't be found in the resolved_names df, but I cannot figure out why
-# > tr$tip.label[!(tr$tip.label %in% resolved_names$ott_id)]
-# [1] "mrcaott320143ott351725" "mrcaott106188ott185786"
-
-# some are duplicated, or have missing data, remove them
-reference.df <- reference.df[!duplicated(reference.df$unique_name),]
-reference.df <- reference.df[!is.na(reference.df$unique_name),]
-
-saveRDS(reference.df, file = here("reference_df_2024-08-23.rds"))
+# resolved_names <- read.csv(file = here( here("resolved_names_local_2024-08-23.csv")), row.names = "X") 
+# 
+# # Fetch the combined tree from tree of life for the species ids found in resolved_names
+# # "sibling_higher" is the only flag that can be included where I can both fetch the tree and time calibrate it
+# '%out%' <- Negate('%in%')
+# 
+# # tr <- tol_induced_subtree(ott_ids = resolved_names$ott_id[resolved_names$flags %out% c("incertae_sedis_inherited", "unplaced_inherited", "incertae_sedis", "not_otu", "not_otu, incertae_sedis", "extinct_inherited, incertae_sedis", "infraspecific")], label_format = "name")
+# 
+# tr <- tol_induced_subtree(ott_ids = resolved_names$ott_id[resolved_names$flags %in% c("sibling_higher", "")], label_format = "id") # I need to use the id option here, and then use that to map the tip labels from resolved_names (that way I don't run into the issue with the difference in formatting between the two tools)
+# 
+# # Time calibrate it using geiger and timetree.org
+# # First resolve polytomies ~randomly using multi2dr
+# 
+# tr <- multi2di(tr)
+# 
+# # Make the reference file
+# # Ensure that the rownames and tip.labels in the target match the species names in the reference
+# 
+# resolved_names$ott_id <- paste("ott", resolved_names$ott_id, sep = "")
+# 
+# reference.df <- resolved_names[resolved_names$ott_id %in% tr$tip.label,c("order", "family", "genus", "unique_name", "tips", "ott_id")] 
+# colnames(reference.df) <- c("order", "family", "genus", "unique_name", "tips_species", "tips")
+# rownames(reference.df) <- reference.df$tips
+# 
+# # # two tips can't be found in the resolved_names df, but I cannot figure out why
+# # > tr$tip.label[!(tr$tip.label %in% resolved_names$ott_id)]
+# # [1] "mrcaott320143ott351725" "mrcaott106188ott185786"
+# 
+# # some are duplicated, or have missing data, remove them
+# reference.df <- reference.df[!duplicated(reference.df$unique_name),]
+# reference.df <- reference.df[!is.na(reference.df$unique_name),]
+# 
+# saveRDS(reference.df, file = here("reference_df_2024-08-23.rds"))
+# saveRDS(tr, file = here("tol_induced_tree_2024-08-23.rds"))
 
 # Load the timetree tree (genus level data works, but not species)
 # Have download timetree data for species, genus, family, and order
 # Genus level data has the most calibration points
 setwd(here())
+
+reference.df <- readRDS(here("reference_df_2024-08-23.rds"))
+tr <- readRDS(here("tol_induced_tree_2024-08-23.rds"))
 
 timetree_order <- ape::read.tree(here("timetree_data/actinopterygii_order.nwk"))
 timetree_family <- ape::read.tree(here("timetree_data/actinopterygii_family.nwk"))
