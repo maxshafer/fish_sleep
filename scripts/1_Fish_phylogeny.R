@@ -33,7 +33,7 @@ url <- 'https://docs.google.com/spreadsheets/d/18aNqHT73hX06cGRlf6oj7Y4TVKf6jd_Q
 sleepy_fish <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
 sleepy_fish$Diel_Pattern <- tolower(sleepy_fish$Diel_Pattern)
 
-write.csv(sleepy_fish, file = here("sleepy_fish_database_local.csv"))
+write.csv(sleepy_fish, file = here(paste("sleepy_fish_database_local_", Sys.Date(), ".csv", sep = "")))
 
 # ################################################################################################################################################
 # ### OUTPUT DATA FOR ZUZANNA ### 
@@ -52,7 +52,8 @@ write.csv(sleepy_fish, file = here("sleepy_fish_database_local.csv"))
 
 ## Remove fish without diel data, or real species names (necessary?)
 sleepy_fish <- sleepy_fish[sleepy_fish$Diel_Pattern != "",]
-sleepy_fish <- sleepy_fish[!(grepl("sp.|spp.|unidentified", sleepy_fish$Species)),]
+sleepy_fish <- sleepy_fish[!(grepl("sp\\.|spp\\.|unidentified", sleepy_fish$Species)),]
+# sleepy_fish <- sleepy_fish[sleepy_fish$NEW == "NEW_SPECIES",]
 
 ## Fetch species from tree of life using rotl package
 resolved_names <- tnrs_match_names(sleepy_fish$Species_name, context_name = "Vertebrates", do_approximate_matching = FALSE)
@@ -85,6 +86,7 @@ resolved_names$diel <- factor(resolved_names$diel, levels = c("diurnal", "noctur
 resolved_names$diel2 <- ifelse(resolved_names$diel == "diurnal", "diurnal", ifelse(resolved_names$diel == "nocturnal", "nocturnal", ifelse(resolved_names$diel == "crepuscular", "crepuscular", ifelse(resolved_names$diel == "crepuscular/diurnal", "crepuscular", ifelse(resolved_names$diel == "crepuscular/nocturnal", "crepuscular", ifelse(resolved_names$diel == "crepuscular/unclear", "crepuscular", ifelse(resolved_names$diel == "unclear/diurnal", "unclear", ifelse(resolved_names$diel == "unclear/nocturnal", "nocturnal", "unknown"))))))))
 resolved_names$diel_confidence <- sleepy_fish$Confidence[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
 resolved_names$genome <- sleepy_fish$Genome[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
+resolved_names$NEW <- sleepy_fish$NEW[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
 
 # These break tol_induced_subtree
 # c("incertae_sedis_inherited", "unplaced_inherited","incertae_sedis", "not_otu, incertae_sedis")
@@ -94,9 +96,9 @@ resolved_names$genome <- sleepy_fish$Genome[match(resolved_names$search_string, 
 
 setwd(here())
 
-write.csv(resolved_names, file = here("resolved_names_local.csv"))
+write.csv(resolved_names, file = here(paste("resolved_names_local_", Sys.Date(), ".csv", sep = ""))) 
 
-print(paste("Sleepy fish database covers ", round((length(unique(resolved_names$tips))/length(unique(fishbase_df$Species)))*100), "% of Species, ", round((length(unique(resolved_names$genus))/length(unique(fishbase_df$Genus)))*100), "% of Genuses, ", round((length(unique(resolved_names$family))/length(unique(fishbase_df$Family)))*100), "% of Families, and ", round((length(unique(resolved_names$order))/length(unique(fishbase_df$Order)))*100), "% of Orders", sep = ""))
+print(paste("Sleepy fish database covers ", round((length(unique(resolved_names$tips))/length(unique(fishbase_df$Species)))*100, 2), "% of Species, ", round((length(unique(resolved_names$genus))/length(unique(fishbase_df$Genus)))*100,2), "% of Genuses, ", round((length(unique(resolved_names$family))/length(unique(fishbase_df$Family)))*100,2), "% of Families, and ", round((length(unique(resolved_names$order))/length(unique(fishbase_df$Order)))*100,2), "% of Orders", sep = ""))
 
 ###############################################################################################################################################
 ### Determine missing clades ### 
@@ -132,7 +134,7 @@ print(paste("Sleepy fish database covers ", round((length(unique(resolved_names$
 ### FETCH AND TIME-CALIBRATE THE TREE ### 
 ################################################################################################################################################
 
-resolved_names <- read.csv(file = here("resolved_names_local.csv"), row.names = "X")
+resolved_names <- read.csv(file = here(paste("resolved_names_local_", Sys.Date(), ".csv", sep = "")), row.names = "X") 
 
 # Fetch the combined tree from tree of life for the species ids found in resolved_names
 # "sibling_higher" is the only flag that can be included where I can both fetch the tree and time calibrate it
@@ -234,6 +236,7 @@ rownames(trait.data) <- trait.data$species
 trait.data$tips <- resolved_names$tips[match(trait.data$species, resolved_names$tips)]
 trait.data$order <- resolved_names$order[match(trait.data$species, resolved_names$tips)]
 trait.data$confidence <- resolved_names$diel_confidence[match(trait.data$species, resolved_names$tips)]
+trait.data$NEW <- resolved_names$NEW[match(trait.data$species, resolved_names$tips)]
 
 trait.data$crepuscular <- ifelse(trait.data$diel2 == "crepuscular", "crepuscular", ifelse(trait.data$confidence > 4, "non_crepuscular", NA))
 trait.data$diel_continuous <- ifelse(trait.data$diel1 == "diurnal", trait.data$confidence, ifelse(trait.data$diel1 == "nocturnal", trait.data$confidence*-1, NA))
