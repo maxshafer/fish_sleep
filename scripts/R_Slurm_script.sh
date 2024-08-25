@@ -6,8 +6,8 @@
 #SBATCH --tmp=16G
 #Total memory reserved: 16GB
 
-#SBATCH --time=24:00:00        #This is the time that your task will run
-#SBATCH --qos=1day           #You will run in this queue
+#SBATCH --time=72:00:00        #This is the time that your task will run
+#SBATCH --qos=1week           #You will run in this queue
 
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
 #SBATCH --output=/scicore/home/schiera/gizevo30/projects/fish_sleep/scripts/logs/standardmodels_stdout.txt
@@ -42,9 +42,9 @@ export CPATH=~/.local/include:~/.local/include/adolc:$CPATH
 #add your command lines below
 #############################
 
-Rscript 1_Fish_phylogeny.R
+# Rscript 1_Fish_phylogeny.R
 
-# Rscript 1_Eutelostomi_tree.R
+Rscript 1_Eutelostomi_tree.R
 
 # For the HMM script, requires two arguments
 # name_variable can be all, only_highqual, only_cartilaginous, or only_ingroup, or not_mammals

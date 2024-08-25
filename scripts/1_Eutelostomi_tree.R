@@ -2,7 +2,7 @@ library(rotl)
 library(stringr)
 library(ape)
 library(geiger)
-library(xlsx)
+# library(xlsx)
 
 ## OK, first part has to be run locally (because it needs internet access)
 
