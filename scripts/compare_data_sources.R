@@ -28,7 +28,6 @@ url <- 'https://docs.google.com/spreadsheets/d/18aNqHT73hX06cGRlf6oj7Y4TVKf6jd_Q
 sleepy_fish <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
 sleepy_fish$Diel_Pattern <- tolower(sleepy_fish$Diel_Pattern)
 
-
 ### I want to make new columns for every possible pairwise comparison of columns 9-22 (or possible columns that might exist)
 ### I also need to figure out how to allow "Crepuscular" and "Nocturnal" to match with "Crepuscular/Nocturnal", etc, and from both directions
 
@@ -97,24 +96,10 @@ df2 <- unique(df[,c(1,2,6,9)])
 ggplot(df2, aes(x = names_1, y = names_2, fill = average, label = average)) + geom_tile() + scale_fill_continuous(limits=c(0, 1)) + geom_text()
 
 
+## Count the number of sources (and histogram of species per source)
 
+sources <- c(sleepy_fish[,grep("Source", colnames(sleepy_fish))])
+sources <- unlist(sources)
+sources <- sources[sources != ""]
 
-#### Load in data from Arndt & Evans
-
-
-url <- 'https://docs.google.com/spreadsheets/d/18aNqHT73hX06cGRlf6oj7Y4TVKf6jd_Q5ojNIxm2rys/edit?gid=687008968#gid=687008968'
-evans <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE, header = F)
-
-evans$species <- paste(sapply(strsplit(evans$V2," "), '[',1), sapply(strsplit(evans$V2," "), '[',2), sep = " ")
-
-## Should add this to sleepy_fish, as a new column 1 (for those that exist), and as confidence 1 for those that don't
-
-# There are not many new ones that aren't UK (unknown) or DVM (diel vertical migration) only
-# at the moment it's 114
-table(evans$V3, evans$species %in% sleepy_fish$Species_name)
-
-table(evans$species %in% sleepy_fish$Species_name)
-
- 
-test <- t(vapply(strsplit(evans$V2," "), `[`, 1:2, FUN.VALUE=character(2)))
-evans$species <- paste(test[,1], test[,2], sep = " ")
+hist(log(table(sources)))

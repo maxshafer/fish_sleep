@@ -141,52 +141,52 @@ saveRDS(tr.calibrated, file = "tr_tree_calibrated_AllGroups.rds")
 ###################### THIRD PART ######################
 ######################################################## 
 
-# ## load back in to do by species manually locally
-# library(here)
-# setwd(here())
-# 
-# 
-# # Below works if you modify the heights.phylo function
-# trace(geiger:::heights.phylo, edit = TRUE)
-# depth = max(xx[!(is.na(xx))])
-# # Also have to do it manually - which is ugh!
-# timetree_species <- ape::read.tree("timetree_data/actinopterygii_species.nwk")
-# timetree_species <- multi2di(timetree_species)
-# 
-# 
-# resolved_names <- readRDS(file = "resolved_names_AllGroups.rds")
-# resolved_names$ott_id <- paste("ott", resolved_names$ott_id, sep = "")
-# reference.df <- resolved_names[,c("order", "family", "genus", "unique_name", "tips", "ott_id")]
-# colnames(reference.df) <- c("order", "family", "genus", "unique_name", "tips_species", "tips")
-# rownames(reference.df) <- reference.df$tips
-# 
-# 
-# tr.calibrated <- readRDS("tr_tree_calibrated_AllGroups.rds")
-# tr.calibrated$tip.label <- reference.df$tips[match(tr.calibrated$tip.label, reference.df$tips_species)]
-# 
-# 
-# geiger.species <- congruify.phylo(reference = timetree_species, target = tr.calibrated, taxonomy = reference.df, tol = 0, scale = "treePL")
-# tr.calibrated <- geiger.species$phy
-# 
-# tr.calibrated$tip.label <- resolved_names$tips[match(tr.calibrated$tip.label, resolved_names$ott_id)]
-# 
-# saveRDS(tr.calibrated, file = "tr_tree_calibrated_AllGroups.rds")
-# 
-# 
-# ## Make trait.data file
-# 
-# trait.data <- data.frame(species = tr.calibrated$tip.label, ott_id = resolved_names$ott_id[match(tr.calibrated$tip.label, resolved_names$tips)], diel = resolved_names$diel[match(tr.calibrated$tip.label, resolved_names$tips)]) # OK, some species tip labels are more complicated and cause issues here
-# 
-# # Create vectors including crepuscular/unclear, or not
-# trait.data$diel1 <- ifelse(trait.data$diel %in% c("diurnal", "crepuscular/diurnal"), "diurnal", ifelse(trait.data$diel %in% c("nocturnal", "crepuscular/nocturnal"), "nocturnal", "unclear/crepuscular"))
-# levels(trait.data$diel1) <- c("diurnal", "nocturnal", "unclear/crepuscular")
-# trait.data$diel2 <- ifelse(trait.data$diel %in% c("diurnal"), "diurnal", ifelse(trait.data$diel %in% c("nocturnal"), "nocturnal", ifelse(trait.data$diel %in% c("crepuscular", "crepuscular/diurnal", "crepuscular/nocturnal"), "crepuscular", "unclear")))
-# levels(trait.data$diel2) <- c("diurnal", "nocturnal", "crepuscular", "unclear")
-# 
-# trait.data <- trait.data[!(is.na(trait.data$diel)),]
-# rownames(trait.data) <- trait.data$species
-# 
-# trait.data$tips <- resolved_names$tips[match(trait.data$species, resolved_names$tips)]
-# trait.data$order <- resolved_names$order[match(trait.data$species, resolved_names$tips)]
-# 
-# saveRDS(trait.data, file = "trait_data_AllGroups.rds")
+## load back in to do by species manually locally
+library(here)
+setwd(here())
+
+
+# Below works if you modify the heights.phylo function
+trace(geiger:::heights.phylo, edit = TRUE)
+depth = max(xx[!(is.na(xx))])
+# Also have to do it manually - which is ugh!
+timetree_species <- ape::read.tree("timetree_data/actinopterygii_species.nwk")
+timetree_species <- multi2di(timetree_species)
+
+
+resolved_names <- readRDS(file = "resolved_names_AllGroups.rds")
+resolved_names$ott_id <- paste("ott", resolved_names$ott_id, sep = "")
+reference.df <- resolved_names[,c("order", "family", "genus", "unique_name", "tips", "ott_id")]
+colnames(reference.df) <- c("order", "family", "genus", "unique_name", "tips_species", "tips")
+rownames(reference.df) <- reference.df$tips
+
+
+tr.calibrated <- readRDS("tr_tree_calibrated_AllGroups.rds")
+tr.calibrated$tip.label <- reference.df$tips[match(tr.calibrated$tip.label, reference.df$tips_species)]
+
+
+geiger.species <- congruify.phylo(reference = timetree_species, target = tr.calibrated, taxonomy = reference.df, tol = 0, scale = "treePL")
+tr.calibrated <- geiger.species$phy
+
+tr.calibrated$tip.label <- resolved_names$tips[match(tr.calibrated$tip.label, resolved_names$ott_id)]
+
+saveRDS(tr.calibrated, file = "tr_tree_calibrated_AllGroups.rds")
+
+
+## Make trait.data file
+
+trait.data <- data.frame(species = tr.calibrated$tip.label, ott_id = resolved_names$ott_id[match(tr.calibrated$tip.label, resolved_names$tips)], diel = resolved_names$diel[match(tr.calibrated$tip.label, resolved_names$tips)]) # OK, some species tip labels are more complicated and cause issues here
+
+# Create vectors including crepuscular/unclear, or not
+trait.data$diel1 <- ifelse(trait.data$diel %in% c("diurnal", "crepuscular/diurnal"), "diurnal", ifelse(trait.data$diel %in% c("nocturnal", "crepuscular/nocturnal"), "nocturnal", "unclear/crepuscular"))
+levels(trait.data$diel1) <- c("diurnal", "nocturnal", "unclear/crepuscular")
+trait.data$diel2 <- ifelse(trait.data$diel %in% c("diurnal"), "diurnal", ifelse(trait.data$diel %in% c("nocturnal"), "nocturnal", ifelse(trait.data$diel %in% c("crepuscular", "crepuscular/diurnal", "crepuscular/nocturnal"), "crepuscular", "unclear")))
+levels(trait.data$diel2) <- c("diurnal", "nocturnal", "crepuscular", "unclear")
+
+trait.data <- trait.data[!(is.na(trait.data$diel)),]
+rownames(trait.data) <- trait.data$species
+
+trait.data$tips <- resolved_names$tips[match(trait.data$species, resolved_names$tips)]
+trait.data$order <- resolved_names$order[match(trait.data$species, resolved_names$tips)]
+
+saveRDS(trait.data, file = "trait_data_AllGroups.rds")

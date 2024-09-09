@@ -33,7 +33,7 @@ url <- 'https://docs.google.com/spreadsheets/d/18aNqHT73hX06cGRlf6oj7Y4TVKf6jd_Q
 sleepy_fish <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
 sleepy_fish$Diel_Pattern <- tolower(sleepy_fish$Diel_Pattern)
 
-write.csv(sleepy_fish, file = here("sleepy_fish_database_local_2024-08-23.csv"))
+write.csv(sleepy_fish, file = here("sleepy_fish_database_local_2024-09-07.csv"))
 
 # ################################################################################################################################################
 # ### OUTPUT DATA FOR ZUZANNA ###
@@ -96,7 +96,7 @@ resolved_names$NEW <- sleepy_fish$NEW[match(resolved_names$search_string, tolowe
 
 setwd(here())
 
-write.csv(resolved_names, file = here("resolved_names_local_2024-08-23.csv"))
+write.csv(resolved_names, file = here("resolved_names_local_2024-09-07.csv"))
 
 print(paste("Sleepy fish database covers ", round((length(unique(resolved_names$tips))/length(unique(fishbase_df$Species)))*100, 2), "% of Species, ", round((length(unique(resolved_names$genus))/length(unique(fishbase_df$Genus)))*100,2), "% of Genuses, ", round((length(unique(resolved_names$family))/length(unique(fishbase_df$Family)))*100,2), "% of Families, and ", round((length(unique(resolved_names$order))/length(unique(fishbase_df$Order)))*100,2), "% of Orders", sep = ""))
 
@@ -134,7 +134,7 @@ print(paste("Sleepy fish database covers ", round((length(unique(resolved_names$
 ### FETCH AND TIME-CALIBRATE THE TREE ### 
 ################################################################################################################################################
 
-resolved_names <- read.csv(file = here( here("resolved_names_local_2024-08-23.csv")), row.names = "X")
+resolved_names <- read.csv(file = here( here("resolved_names_local_2024-09-07.csv")), row.names = "X")
 
 # Fetch the combined tree from tree of life for the species ids found in resolved_names
 # "sibling_higher" is the only flag that can be included where I can both fetch the tree and time calibrate it
@@ -166,16 +166,16 @@ rownames(reference.df) <- reference.df$tips
 reference.df <- reference.df[!duplicated(reference.df$unique_name),]
 reference.df <- reference.df[!is.na(reference.df$unique_name),]
 
-saveRDS(reference.df, file = here("reference_df_2024-08-23.rds"))
-saveRDS(tr, file = here("tol_induced_tree_2024-08-23.rds"))
+saveRDS(reference.df, file = here("reference_df_2024-09-07.rds"))
+saveRDS(tr, file = here("tol_induced_tree_2024-09-07.rds"))
 
 # Load the timetree tree (genus level data works, but not species)
 # Have download timetree data for species, genus, family, and order
 # Genus level data has the most calibration points
 setwd(here())
 
-reference.df <- readRDS(here("reference_df_2024-08-23.rds"))
-tr <- readRDS(here("tol_induced_tree_2024-08-23.rds"))
+reference.df <- readRDS(here("reference_df_2024-09-07.rds"))
+tr <- readRDS(here("tol_induced_tree_2024-09-07.rds"))
 
 timetree_order <- ape::read.tree(here("timetree_data/actinopterygii_order.nwk"))
 timetree_family <- ape::read.tree(here("timetree_data/actinopterygii_family.nwk"))
@@ -194,7 +194,7 @@ tr.calibrated <- geiger.genus$phy
 
 ## Save out files
 
-saveRDS(tr.calibrated, file = "calibrated_phylo_2024-08-23.rds")
+saveRDS(tr.calibrated, file = "calibrated_phylo_2024-09-07.rds")
 
 # Add in a stop here
 

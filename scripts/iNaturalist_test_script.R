@@ -4,6 +4,7 @@ library(data.table)
 library(rfishbase)
 library(tidyr)
 library(ggbiplot)
+library(dplyr)
 
 species1 <- read.csv("~/Downloads/GBIF_iNat_Amblyglyphidodon_curacao.csv", sep = "\t")
 species2 <- read.csv("~/Downloads/GBIF_iNat_Porichthys_notatus.csv", sep = "\t")
@@ -55,6 +56,9 @@ fish_db <- full_db[full_db$species %in% good_species,]
 fish_db$datetime <- str_replace(fish_db$eventDate, "T", " ")
 
 fish_db <- fish_db[fish_db$datetime != "",]
+## pad out with seconds, if missing
+index <- nchar(fish_db$datetime) != 19
+fish_db$datetime[index] <- paste(fish_db$datetime[index], ":00", sep = "")
 
 fish_db$datetime <- as.POSIXct(fish_db$datetime, format = "%Y-%m-%d %H:%M:%S")
 
@@ -63,11 +67,11 @@ month(fish_db$datetime) <- 01
 year(fish_db$datetime) <- 2024
 
 
-ggplot(fish_db[fish_db$species == "Mola mola",], aes(x = datetime, fill = species)) + stat_bin()
+# ggplot(fish_db[fish_db$species == "Mola mola",], aes(x = datetime, fill = species)) + stat_bin()
 
-ggplot(fish_db[fish_db$species %in% unique(fish_db$species)[11:20],], aes(x = datetime, fill = species)) + geom_density(alpha = 0.25)
+# ggplot(fish_db[fish_db$species %in% unique(fish_db$species)[11:20],], aes(x = datetime, fill = species)) + geom_density(alpha = 0.25)
 
-ggplot(fish_db[fish_db$species %in% unique(fish_db$species)[11:20],], aes(x = datetime, fill = species)) + stat_bin() + facet_wrap(~species, scales = "free") + theme(legend.position = "none")
+# ggplot(fish_db[fish_db$species %in% unique(fish_db$species)[11:20],], aes(x = datetime, fill = species)) + stat_bin() + facet_wrap(~species, scales = "free") + theme(legend.position = "none")
 
 
 
@@ -81,12 +85,11 @@ ggplot(fish_db[fish_db$species %in% unique(fish_db$species)[11:20],], aes(x = da
 ### I'm sure I would find similar results, since the data is the same, but unclear how to make binary calls from this?
 
 ## OK, I also need to normalize for the # of observations per hour (which is very skewed)
-ggplot(fish_db, aes(x = datetime, fill = fill)) + stat_bin()
+# fish_db$fill <- 1
+# ggplot(fish_db, aes(x = datetime, fill = fill)) + stat_bin()
 
 ## First convert to matrix?
 ## I think maybe I first need to summarize by half hour bin, then convert this (which will have a sum column)
-
-
 
 fish_data <- fish_db %>% mutate(half_hour = floor_date(datetime, "30 minutes"))
 
@@ -97,7 +100,7 @@ summarised <- summarised[!(is.na(summarised$half_hour)),]
 
 row_names <- summarised$half_hour
 summarised <- summarised[,-1]
-summarised <- (summarised/rowSums(summarised,na.rm = T))*1000
+summarised <- (summarised/rowSums(summarised,na.rm = T))*10000
 rownames(summarised) <- row_names
 summarised[is.na(summarised)] <- 0
 
@@ -107,3 +110,32 @@ summarised[is.na(summarised)] <- 0
 diel.pca <- prcomp(summarised, center = TRUE, scale. = TRUE)
 biplot <- ggbiplot(diel.pca, choices = c(1,2), labels = row_names, var.axes = F) + theme_classic() 
 
+
+
+### Can I convert back to long format? To plot and compare to before normalization?
+summarised$time <- rownames(summarised)
+summarised2 <- summarised %>% pivot_longer(!time, names_to = "species", values_to = "n")
+
+summarised2$time <- as.POSIXct(summarised2$time, format = "%Y-%m-%d %H:%M:%S")
+
+ggplot(summarised2[summarised2$species == "Acipenser fulvescens",], aes(x = time, fill = species, y = n)) + geom_point()
+
+ggplot(summarised2[summarised2$species %in% unique(summarised2$species)[21:30],], aes(x = time, colour = species, y = n)) + geom_point() + facet_wrap(~species, scales = "free") + theme(legend.position = "none")
+
+## Add column for day vs night vs dawn vs dusk (if only one of these is higher, it's crepuscular)
+summarised2$diel_period <- NA
+summarised2$diel_period <- ifelse(between(summarised2$time, as.POSIXct("2024-01-01 00:00:00 EST"), as.POSIXct("2024-01-01 06:00:00 EST")), "night", summarised2$diel_period)
+summarised2$diel_period <- ifelse(between(summarised2$time, as.POSIXct("2024-01-01 06:00:00 EST"), as.POSIXct("2024-01-01 08:00:00 EST")), "dawn", summarised2$diel_period)
+summarised2$diel_period <- ifelse(between(summarised2$time, as.POSIXct("2024-01-01 08:00:00 EST"), as.POSIXct("2024-01-01 18:00:00 EST")), "day", summarised2$diel_period)
+summarised2$diel_period <- ifelse(between(summarised2$time, as.POSIXct("2024-01-01 18:00:00 EST"), as.POSIXct("2024-01-01 20:00:00 EST")), "dusk", summarised2$diel_period)
+summarised2$diel_period <- ifelse(between(summarised2$time, as.POSIXct("2024-01-01 20:00:00 EST"), as.POSIXct("2024-01-01 24:00:00 EST")), "night", summarised2$diel_period)
+
+ggplot(summarised2[summarised2$species == "Lepomis gibbosus",], aes(x = diel_period, fill = species, y = n)) + geom_boxplot()
+ggplot(summarised2[summarised2$species %in% unique(summarised2$species)[21:30],], aes(x = diel_period, colour = species, y = n)) + geom_boxplot() + facet_wrap(~species, scales = "free") + theme(legend.position = "none")
+
+
+fit = aov(n ~ diel_period, data = summarised2[summarised2$species == "Lepomis gibbosus",])
+summary(fit)
+
+library(ggfortify)
+autoplot(fit)
