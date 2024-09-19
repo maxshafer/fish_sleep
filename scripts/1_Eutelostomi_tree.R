@@ -2,7 +2,7 @@ library(rotl)
 library(stringr)
 library(ape)
 library(geiger)
-library(xlsx)
+# library(xlsx)
 
 ## OK, first part has to be run locally (because it needs internet access)
 
@@ -16,7 +16,7 @@ library(xlsx)
 # # Load in data files with names and activity patterns
 # # Modify, subset, and combine
 # 
-# fish_data <- read.csv(here("resolved_names_local.csv"), row.names = "X", header = TRUE)
+# fish_data <- read.csv(here("resolved_names_local_2024-08-23.csv"), row.names = "X", header = TRUE)
 # fish_data <- fish_data[,c("unique_name", "diel", "genus", "family", "order")]
 # fish_data$group <- "fish"
 # 
@@ -66,6 +66,9 @@ library(xlsx)
 # resolved_names$family <- all_data$family[match(resolved_names$unique_name, all_data$unique_name)]
 # resolved_names$order <- all_data$order[match(resolved_names$unique_name, all_data$unique_name)]
 # 
+# ## Remove tree shrew, because it's now a 'pruned_ott_id'
+# resolved_names <- resolved_names[resolved_names$ott_id != "276756",]
+# 
 # ## Fetch the tree
 # 
 # tr <- tol_induced_subtree(ott_ids = resolved_names$ott_id[resolved_names$flags %in% c("sibling_higher", "")], label_format = "id") # I need to use the id option here, and then use that to map the tip labels from resolved_names (that way I don't run into the issue with the difference in formatting between the two tools)
@@ -84,55 +87,55 @@ library(xlsx)
 ###################### SECOND PART #####################
 ######################################################## 
 
-# setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
-# 
-# ## This part is done on the cluster (calibrating with the timetrees)
-# ## Run the 1st part, commit and then run this part
-# 
-# tr <- readRDS(file = "tr_tree_AllGroups.rds")
-# resolved_names <- readRDS(file = "resolved_names_AllGroups.rds")
-# 
-# # Make the reference file
-# # Ensure that the rownames and tip.labels in the target match the species names in the reference
-# 
-# resolved_names$ott_id <- paste("ott", resolved_names$ott_id, sep = "")
-# 
-# reference.df <- resolved_names[resolved_names$ott_id %in% tr$tip.label,c("order", "family", "genus", "unique_name", "tips", "ott_id")] 
-# colnames(reference.df) <- c("order", "family", "genus", "unique_name", "tips_species", "tips")
-# rownames(reference.df) <- reference.df$tips
-# 
-# # # two tips can't be found in the resolved_names df, but I cannot figure out why
-# # > tr$tip.label[!(tr$tip.label %in% resolved_names$ott_id)]
-# # [1] "mrcaott320143ott351725" "mrcaott106188ott185786"
-# 
-# # some are duplicated, or have missing data, remove them
-# reference.df <- reference.df[!duplicated(reference.df$unique_name),]
-# reference.df <- reference.df[!is.na(reference.df$unique_name),]
-# 
-# # Load the timetree tree (genus level data works, but not species)
-# # Have download timetree data for species, genus, family, and order
-# # Genus level data has the most calibration points
-# setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
-# 
-# timetree_order <- ape::read.tree("timetree_data/euteleostomi_order.nwk")
-# timetree_family <- ape::read.tree("timetree_data/euteleostomi_family.nwk")
-# timetree_genus <- ape::read.tree("timetree_data/euteleostomi_genus.nwk")
-# 
-# # Use geiger to congruify the tree, works with treePL
-# # This seems to work up to genus, but not species (by replacing tip.labels with the same names)
-# setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
-# geiger.order <- congruify.phylo(reference = timetree_order, target = tr, taxonomy = reference.df, tol = 0, scale = "treePL")
-# setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
-# geiger.family <- congruify.phylo(reference = timetree_family, target = geiger.order$phy, taxonomy = reference.df, tol = 0, scale = "treePL")
-# setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
-# geiger.genus <- congruify.phylo(reference = timetree_genus, target = geiger.family$phy, taxonomy = reference.df, tol = 0, scale = "treePL")
-# 
-# tr.calibrated <- geiger.genus$phy
-# tr.calibrated$tip.label <- resolved_names$tips[match(tr.calibrated$tip.label, resolved_names$ott_id)]
-# 
-# ## Save out files
-# 
-# saveRDS(tr.calibrated, file = "tr_tree_calibrated_AllGroups.rds")
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
+
+## This part is done on the cluster (calibrating with the timetrees)
+## Run the 1st part, commit and then run this part
+
+tr <- readRDS(file = "tr_tree_AllGroups.rds")
+resolved_names <- readRDS(file = "resolved_names_AllGroups.rds")
+
+# Make the reference file
+# Ensure that the rownames and tip.labels in the target match the species names in the reference
+
+resolved_names$ott_id <- paste("ott", resolved_names$ott_id, sep = "")
+
+reference.df <- resolved_names[resolved_names$ott_id %in% tr$tip.label,c("order", "family", "genus", "unique_name", "tips", "ott_id")]
+colnames(reference.df) <- c("order", "family", "genus", "unique_name", "tips_species", "tips")
+rownames(reference.df) <- reference.df$tips
+
+# # two tips can't be found in the resolved_names df, but I cannot figure out why
+# > tr$tip.label[!(tr$tip.label %in% resolved_names$ott_id)]
+# [1] "mrcaott320143ott351725" "mrcaott106188ott185786"
+
+# some are duplicated, or have missing data, remove them
+reference.df <- reference.df[!duplicated(reference.df$unique_name),]
+reference.df <- reference.df[!is.na(reference.df$unique_name),]
+
+# Load the timetree tree (genus level data works, but not species)
+# Have download timetree data for species, genus, family, and order
+# Genus level data has the most calibration points
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
+
+timetree_order <- ape::read.tree("timetree_data/euteleostomi_order.nwk")
+timetree_family <- ape::read.tree("timetree_data/euteleostomi_family.nwk")
+timetree_genus <- ape::read.tree("timetree_data/euteleostomi_genus.nwk")
+
+# Use geiger to congruify the tree, works with treePL
+# This seems to work up to genus, but not species (by replacing tip.labels with the same names)
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
+geiger.order <- congruify.phylo(reference = timetree_order, target = tr, taxonomy = reference.df, tol = 0, scale = "treePL")
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
+geiger.family <- congruify.phylo(reference = timetree_family, target = geiger.order$phy, taxonomy = reference.df, tol = 0, scale = "treePL")
+setwd("/scicore/home/schiera/gizevo30/projects/fish_sleep/")
+geiger.genus <- congruify.phylo(reference = timetree_genus, target = geiger.family$phy, taxonomy = reference.df, tol = 0, scale = "treePL")
+
+tr.calibrated <- geiger.genus$phy
+tr.calibrated$tip.label <- resolved_names$tips[match(tr.calibrated$tip.label, resolved_names$ott_id)]
+
+## Save out files
+
+saveRDS(tr.calibrated, file = "tr_tree_calibrated_AllGroups.rds")
 
 ######################################################## 
 ###################### THIRD PART ######################

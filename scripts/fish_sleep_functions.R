@@ -469,7 +469,7 @@ switchHisto <- function(ancestral_states = ancestral_states, replace_variable_na
     node.data[nrow(node.data)+1,] <- list(max(ancestral_states$node.age), levels(node.data$variable)[1], 1, 1)
   }
   ## Should come up with function to make this? Yeah, and auto-find colors maybe from the red and blue scales
-  plot <- ggplot(node.data, aes(x = node.age, y = percentage, fill = variable)) + theme_classic() + geom_area() + scale_x_reverse()
+  plot <- ggplot(node.data, aes(x = node.age, y = percentage, fill = variable)) + theme_classic() + geom_area(stat = "identity") + scale_x_reverse()
   plot <- plot + xlab("Millions of years ago") + ylab("Fraction of lineages") #+ scale_fill_manual(values = c("blue4", "red4", "blue3", "red3", "blue1", "red1"))
   
 
@@ -519,6 +519,7 @@ switchRatio <- function(ancestral_states = ancestral_states, phylo_tree = trpy_n
   }
   
   if(use_types) {
+    df <- gather(df, key = "trans_type", value = "ratio", -node, -node.age, -transition_cumsum, -trans.ND.cumsum, -trans.DN.cumsum, -ltt_source, -ltt_cumsum, -ratio)
     plot <- ggplot(df[df$node.age > node.age.cutoff,], aes(x = node.age, y = ratio, colour = trans_type)) + geom_line() + theme_classic() + scale_x_reverse() #+ scale_x_reverse(limits = c(413,0.1)) + ylim(c(0,0.15)) # ltt would be the number of times it was possible to switch? Or something like that?
     plot <- plot + xlab("Millions of years ago") + ylab("Fraction of lineages transitioning")
   } else {
