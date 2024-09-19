@@ -145,7 +145,7 @@ dev.off()
 trait.data3state <- cetaceans_full[!(is.na(cetaceans$Diel_Pattern_2)),]
 trait.data3state <- trait.data3state[,c("Species_name", "Diel_Pattern_2", "tips")]
 trait.data3state$Diel_Pattern_2 <- str_replace_all(trait.data3state$Diel_Pattern_2, "nocturnal/crepuscular", "nocturnal")
-trait.data3state$Diel_Pattern_2 <- str_replace_all(trait.data3state$Diel_Pattern_2, "diurnal/crepuscular", "durnal")
+trait.data3state$Diel_Pattern_2 <- str_replace_all(trait.data3state$Diel_Pattern_2, "diurnal/crepuscular", "nocturnal")
 
 #plot out the three state tree
 custom.colours4 <- c("#dd8ae7", "#FC8D62", "#66C2A5")

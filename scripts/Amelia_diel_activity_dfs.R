@@ -378,18 +378,18 @@ cetaceans <- cetaceans[, c("Species_name", "Diel_Pattern_1", "Diel_Pattern_2", "
 maor_full <- rbind(maor_full, cetaceans)
 row.names(maor_full) <- c(maor_full$Species_name)
 
-write.csv(maor_full, here("artiodactyla_full.csv"))
+write.csv(maor_full, here("Maor_artiodactyla_full.csv"))
 
 # Section 4: Formatting the artiodactyla_without_cetaceans diel dataframe -----------------------
 
 #easiest way to do this is to drop the last chunk of rows in maor_full (to keep all the formatting)
-maor_full <- read.csv("artiodactyla_full.csv")
+maor_full <- read.csv("Maor_artiodactyla_full.csv")
 just_artio <- maor_full[1:151, ]
-write.csv(just_artio, here("artiodactyla_without_cetaceans.csv"))
+write.csv(just_artio, here("Maor_artiodactyla_without_cetaceans.csv"))
 
 
 # Section 5: See how Cox and Maor data compare ---------------------------------------
-maor_full <- read.csv(here("artiodactyla_without_cetaceans.csv"))
+maor_full <- read.csv(here("Maor_artiodactyla_without_cetaceans.csv"))
 Cox_df <- read.csv(here("Cox_artiodactyla_without_cetaceans.csv"))
 
 diel_merge <- merge(Cox_df,maor_full,by="Species_name")
@@ -571,7 +571,7 @@ tree
 dev.off()
 
 
-# #Formatting the primary source data -------------------------------------
+# #Formatting the artiodactyla primary source data -------------------------------------
 
 sheet <- 'https://docs.google.com/spreadsheets/d/1JGC7NZE_S36-IgUWpXBYyl2sgnBHb40DGnwPg2_F40M/edit?usp=sharing'
 sleepy_artio <- read.csv(text=gsheet2text(sheet, format='csv'), stringsAsFactors=FALSE)
