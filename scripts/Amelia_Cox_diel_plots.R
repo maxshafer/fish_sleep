@@ -38,34 +38,21 @@ dev.off()
 
 
 # Section 2: 5-state trait data tree --------------------------------------
-#use for cetaceans
-trait.data.all <- read.csv(here("cetaceans_full.csv"))
-
-#use for artiodactyla
-trait.data.all <- read.csv(here("cetaceans_full.csv"))
 
 #creating a tree with all trait data categories (diurnal, nocturnal, di/crep, noc/crep, cathemeral)
 
 #remove species with no data
 trait.data.all <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
-
-#rename nocturnal crepuscular to crepuscular to create 4 state max crep
-trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, "nocturnal/crepuscular", "crepuscular")
-
-#create a subtree with only the cetacean species
 trpy_n_all <- keep.tip(mam.tree, tip = trait.data.all$tips)
 
 #plot the tree
-custom.colours.all <- c("#dd8ae7", "#d5cab2", "#FC8D62", "#66C2A5")
-#use for a black and white plot
-#custom.colours.all <- c("black", "grey70", "grey40", "grey90")
-
+custom.colours.all <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
 diel.plot.all <- ggtree(trpy_n_all, layout = "circular") %<+% trait.data.all[,c("tips", "Diel_Pattern_2")]
 diel.plot.all <- diel.plot.all + geom_tile(data = diel.plot.all$data[1:length(trpy_n_all$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.all)
-diel.plot.all <- diel.plot.all #+ geom_tiplab(size = 2)
+diel.plot.all <- diel.plot.all + geom_tiplab(size = 2)
 diel.plot.all 
 
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_4_state.png", width=24,height=18,units="cm",res=1200)
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_5_state.png", width=24,height=18,units="cm",res=1200)
 print(diel.plot.all)
 dev.off()
 
@@ -311,14 +298,6 @@ ggtree(trpy_n_mam, layout = "circular") + geom_tiplab(size = 3)
 
 
 # Section 11: 6-state trait data tree --------------------------------------
-#use for cetaceans
-trait.data <- read.csv(here("cetaceans_full.csv"))
-
-#use for artiodactyla (including cetaceans)
-trait.data <- read.csv(here("Sleepy_artiodactyla_full.csv"))
-
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-trpy_n_mam <- keep.tip(mam.tree, tip = trait.data$tips)
 
 #creating a tree with all trait data categories (diurnal, nocturnal, di/crep, noc/crep, cathemeral, cath/crep)
 
@@ -326,33 +305,14 @@ trpy_n_mam <- keep.tip(mam.tree, tip = trait.data$tips)
 trait.data.all <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
 trpy_n_all <- keep.tip(mam.tree, tip = trait.data.all$tips)
 
-#optional rename nocturnal/crepuscular and diurnal/crepuscular to crepuscular to create 4 state max crep
-trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, "nocturnal/crepuscular", "crepuscular")
-trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, "diurnal/crepuscular", "crepuscular")
-trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, "cathemeral/crepuscular", "crepuscular")
-
-#optional rename nocturnal/crepuscular and diurnal/crepuscular to crepuscular to create 4 state max dinoc
-trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, "nocturnal/crepuscular", "nocturnal")
-trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, "diurnal/crepuscular", "diurnal")
-trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, "cathemeral/crepuscular", "crepuscular")
-
-
-#colours for 6 state
-#custom.colours.all <- c("#dd8ae7", "pink", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
-#colours for 4 state
-custom.colours.all <- c ("#934da3", "#faab8c", "#d5cab2", "#5bb095") 
-
-#Plot
+#plot the tree
+custom.colours.all <- c("#dd8ae7", "pink", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
 diel.plot.all <- ggtree(trpy_n_all, layout = "circular") %<+% trait.data.all[,c("tips", "Diel_Pattern_2")]
-diel.plot.all <- diel.plot.all + geom_tile(data = diel.plot.all$data[1:length(trpy_n_all$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2, width = 4), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.all, name = "Temporal activity pattern")
-diel.plot.all <- diel.plot.all #+ geom_tiplab(size = 2) 
+diel.plot.all <- diel.plot.all + geom_tile(data = diel.plot.all$data[1:length(trpy_n_all$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.all)
+diel.plot.all <- diel.plot.all + geom_tiplab(size = 2)
 diel.plot.all 
 
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_artio_4_state_max_crep.png", width=26,height=22,units="cm",res=1200)
-print(diel.plot.all)
-dev.off()
-
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_cet_4_state.png", width=26,height=22,units="cm",res=1200)
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_artio_minus_cet_6_state.png", width=26,height=22,units="cm",res=1200)
 print(diel.plot.all)
 dev.off()
 
