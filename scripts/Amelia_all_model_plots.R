@@ -1413,12 +1413,13 @@ dev.off()
 
 
 # #Section Y: Plot max_clade_cred tree results------------------------------------
-model_results <- readRDS(here("artiodactyla_max_clade_cred_six_state_traits_ER_SYM_ARD_models.rds"))
-filename <- "artiodactyla_max_clade_cred_six_state_traits_ER_SYM_ARD_models.rds"
+model_results <- readRDS(here("cetaceans_max_clade_cred_four_state_max_crep_traits_ARD_models.rds"))
+filename <- "artiodactyla_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_models.rds"
 
 # ER_results <- model_results$ER_model
 # SYM_results <- model_results$SYM_model
-# ARD_results <- model_results$ARD_model
+ARD_results <- model_results$ARD_model
+plotMKmodel(ARD_results)
 # bridge_results <- model_results$bridge_only
 # hidden_rates <- model_results$hidden_rates
 
@@ -1427,3 +1428,7 @@ likelihoods <- as.data.frame(likelihoods)
 likelihoods$model <- rownames(likelihoods)
 
 ggplot(likelihoods, aes(x = model, y = likelihoods)) + geom_point()
+
+ARD_matrix <- as.matrix(ARD_results$data)
+
+make.simmap(ARD_results$phy, as.matrix(ARD_results$data), model = ARD)

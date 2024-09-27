@@ -69,9 +69,10 @@ table(resolved_names$diel)
 
 ## Fetch the tree
 #subset the open tree of life to only include the species in resolved_names (find them by their ott_id)
-tr <- tol_induced_subtree(ott_ids = resolved_names$ott_id[resolved_names$flags %in% c("sibling_higher", "")], label_format = "id") # I need to use the id option here, and then use that to map the tip labels from resolved_names (that way I don't run into the issue with the difference in formatting between the two tools)
+tr <- tol_induced_subtree(ott_ids = resolved_names$ott_id[resolved_names$flags %in% c("sibling_higher", "")], label_format = "id") 
+# I need to use the id option here, and then use that to map the tip labels from resolved_names (that way I don't run into the issue with the difference in formatting between the two tools)
 
-# Time calibrate it using geiger and timetree.org 
+# Time calibrate it using geiger and timetree.org - the open tree of life is already time calibrated, so we don't need to do this step
 # First resolve polytomies ~randomly using multi2dr
 
 tr <- multi2di(tr)
@@ -160,7 +161,7 @@ dev.off()
 
 ##diel plot with clade labels for each major family
 #find the nodes for each family to add clade labels
-node_labels <- ggtree(tr, layout = "circular") + geom_text(aes(label=node), hjust=-.2, size = 1.8) + geom_tiplab(size = 1.8, hjust = -0.1)
+node_labels <- ggtree(tr, layout = "circular") + geom_text(aes(label=node, colour = "red"), hjust=-.2, size = 1.8) + geom_tiplab(size = 1.8, hjust = -0.1)
 node_labels 
 
 #create a dataframe with each cetacean family and its node

@@ -131,5 +131,74 @@ ancestral_plot_noc
 ancestral_plot_cath <- ggtree(phylo_tree, layout = "circular") %<+% lik.anc + aes(color = cathemeral) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdPu", direction = 1) + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5)
 ancestral_plot_cath
 
+#load in ARD model data
+all_model_results <- readRDS(here("fish_sleep/cetaceans_max_clade_cred_max_crep_traits_ARD_models.rds"))
+model_results <- all_model_results$ARD_model
 
+#create a dataframe of the likelihood of each trait state at each of the tips and internal nodes
+#I checked and this associates the tips with the correct state likelihoods, more difficult to check if the internal nodes are associated with the correct state likelihoods because they don't have species names :/
+lik.anc <- as.data.frame(rbind(model_results$tip.states, model_results$states))
+lik.anc$node <- c(1:nrow(lik.anc))
+
+phylo_tree <- model_results$phy
+base_tree <- ggtree(phylo_tree, layout = "rectangular") + geom_text(aes(label=node), colour = "blue", size = 3) + geom_tiplab(size = 2, hjust = -0.1) 
+
+#need to create pie charts of the likelihood of each of the 3 states at each of the internal nodes
+#can use the dataframe of state likelihoods we have and the function node pie
+#nodepie(data, cols, color, alpha = 1), where data is data a data.frame of stats with an additional column of node number
+#and cols is columns of the data.frame that store the stats
+
+#will need to adjust the number of columns based on the number of trait states (3, 4 or 6)
+pie <- nodepie(lik.anc, 1:3)
+#now we have a list containing a pie chart of the likelihoods for each of the nodes
+
+#now we simply add these pie charts to the phylogeny by node number
+pie_tree <- base_tree + geom_inset(pie, width = .05, height = .03) 
+pie_tree
+#to create a visualization using the results from the 1k trees
+#could average the likelihood of the state at each node
+
+###alternative method###
+
+
+# # Pie chart ancestral reconstruction ------------------------------------
+
+
+#load in ARD model data
+all_model_results <- readRDS(here("artiodactyla_max_clade_cred_four_state_max_dinoc_traits_ARD_models.rds"))
+model_results <- all_model_results$ARD_model
+file_name <- "artiodactyla_max_clade_cred_four_state_max_dinoc_traits_ARD_models"
+
+phylo_tree <- model_results$phy
+
+#rename column names for consistency in the next steps
+colnames(model_results$data) <- c("tips", "Diel_Pattern")
+
+#to make more clear we can colour the tips separately using geom_tipppoint 
+#may have to adjust what trait data column is called in each
+base_tree <- ggtree(phylo_tree, layout = "rectangular") + geom_tiplab(size = 1, hjust = -0.1)
+base_tree <- base_tree %<+% model_results$data[, c("tips", "Diel_Pattern")]
+base_tree <- base_tree + geom_tippoint(aes(color = Diel_Pattern), size = 1) 
+base_tree
+
+#make the dataframe of likelihoods at the internal nodes without the tips
+lik.anc <- as.data.frame(model_results$states)
+
+#for cetaceans we have to add 72 because we are skipping the tips (nodes 1-72)
+#the internal nodes start at 73 and end at node 143
+#for artiodactyla we add 300 because we are skipping the tips (nodes 1-300)
+#the internal nodes start at 301 and end at node 599
+lik.anc$node <- c(1:nrow(lik.anc)) + nrow(model_results$data)
+
+#get the pie charts from this database using nodepie
+#the number of columns changes depending on how many trait states
+pie <- nodepie(lik.anc, 1:(length(lik.anc)-1))
+
+pie_tree <- base_tree + geom_inset(pie, width = .02, height = .02) 
+pie_tree
+
+#save out
+png(paste("C:/Users/ameli/OneDrive/Documents/R_projects/New_ancestral_recon/pie_chart/", "pie_chart_anc_recon_", file_name, ".png", sep = ""), width=40,height=20, units="cm",res=600)
+pie_tree
+dev.off()
 
