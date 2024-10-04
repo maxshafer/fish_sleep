@@ -148,11 +148,70 @@ dev.off()
 
 # Cetacean discrete traits  -----------------------------------------------
 ###other cetacean dataframes of discrete traits to model with
-discrete_cet <- read.csv("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\resource.csv")
+trait.data <- read.csv(here("cetaceans_full.csv"))
+trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
+
+dive <- read.csv("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\resource.csv")
+dive$tips <- dive$Taxon
+
+dive <- dive %>% filter(dive$tips %in% trait.data$tips)
+
+trait.data <- merge(trait.data, dive, by = "tips")
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 
 #dive depth
-#body size
+custom.colours <- c("#dd8ae7", "grey20", "#FC8D62", "grey40",  "#66C2A5", "#A6D854", "grey80", "black")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "Divetype")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours)
+diel.plot <- diel.plot +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Divetype), inherit.aes = FALSE, colour = "transparent")
+diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
+diel.plot
 
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/dive_depth_vs_diel.png", width=20,height=15,units="cm",res=1200)
+diel.plot
+dev.off()
+
+#use cutoffs to make a continuous trait (body size) into a discrete trait
+trait.data$body_size <- "NA"
+
+for(i in 1:length(trait.data$Body.size)){
+  if(trait.data[i, 'Body.size'] >= 100){
+    trait.data[i, 'body_size'] <- "small"
+  }
+  if(trait.data[i, 'Body.size'] >= 100 & trait.data[i, 'Body.size'] <= 500){
+    trait.data[i, 'body_size'] <- "medium"
+  }
+  if(trait.data[i, 'Body.size'] >= 500 & trait.data[i, 'Body.size'] <= 1000){
+    trait.data[i, 'body_size'] <- "large"
+  }
+  if(trait.data[i, 'Body.size'] >= 1000){
+    trait.data[i, 'body_size'] <- "very large"
+  }
+}
+
+#body size
+custom.colours <- c("#dd8ae7", "#FC8D62", "grey30", "grey70",  "#66C2A5", "#A6D854", "grey90", "black")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "body_size")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours)
+diel.plot <- diel.plot +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = body_size), inherit.aes = FALSE, colour = "transparent")
+diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
+diel.plot
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/body_size_vs_diel.png", width=20,height=15,units="cm",res=1200)
+diel.plot
+dev.off()
+
+custom.colours <- c("#dd8ae7","grey20", "#FC8D62", "grey30", "grey70", "grey40", "grey50", "#66C2A5", "#A6D854", "grey90", "black", "grey60", 'grey80', "grey")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "Family")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours)
+diel.plot <- diel.plot +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Family), inherit.aes = FALSE, colour = "transparent")
+diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
+diel.plot
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/family_vs_diel.png", width=20,height=15,units="cm",res=1200)
+diel.plot
+dev.off()
 
 behav <- read.csv("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Manger_2013_discrete_cet.csv")
 

@@ -65,7 +65,7 @@ for(i in 1:nrow(cetaceans_full)){
 }
 
 #create new diel column for max_crep
-# diel pattern 4 maximizes for diuranlity and nocturnality (while keeping cathemerality as a trait state)
+# diel pattern 4 maximizes for diurnality and nocturnality (while keeping cathemerality as a trait state)
 cetaceans_full$Diel_Pattern_4 <- cetaceans_full$Diel_Pattern_2
 for(i in 1:nrow(cetaceans_full)){
   if(cetaceans_full[i, "Diel_Pattern_2"] == "diurnal/crepuscular"){
@@ -80,6 +80,34 @@ for(i in 1:nrow(cetaceans_full)){
 cetaceans_full <- cetaceans_full %>% relocate(Diel_Pattern_4, .after = Diel_Pattern_3)
 ## Probably should save out a local copy in case google goes bankrupt
 write.csv(cetaceans_full, file = here("cetaceans_full.csv"))
+
+
+# Section 1.5 High confidence cetacean data -------------------------------
+url <- 'https://docs.google.com/spreadsheets/d/1-5vhk_YOV4reklKyM98G4MRWEnNbcu6mnmDDJkO4DlM/edit?usp=sharing'
+cetaceans_full <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
+
+#drop na values
+cetaceans_full <- cetaceans_full[!is.na(cetaceans_full$Diel_Pattern_2),]
+
+cetaceans_full <- cetaceans_full[,1:10] 
+
+#create a column with the max confidence level for that species (out of the confidence level for all sources)
+#the confidence values are characters so convert to numerics
+cetaceans_full$Confidence <- lapply(cetaceans_full$Confidence, function(x) gsub(",", "\\1 ", x))
+cetaceans_full$Confidence <- lapply(cetaceans_full$Confidence,function(x) strsplit(x, " ")[[1]])
+cetaceans_full$max_conf <- lapply(cetaceans_full$Confidence, as.numeric)
+cetaceans_full$max_conf <- lapply(cetaceans_full$Confidence, max)
+
+#filter for species that are in the mammal tree
+#from 83 species to 75
+cetaceans_full <- cetaceans_full %>% filter(!(Alt_name.notes %in% c("Not in mam tree", "Not in mam tree, Limited data", "Not in mam tree, Likely not a valid subspecies")))
+
+#subet for the higher confidence levels (3-5)
+#from 75 species to 70, may be worth dropping them
+#for artiodactyla there's more, 50 level 1 only, 30 level 2
+cetaceans_full <- cetaceans_full %>% filter(max_conf >= 3)
+
+#save out
 
 # Section 2: Formatting the binary artiodactyla diel dataframe ??? data (only contains di/noc)-----------------------
 

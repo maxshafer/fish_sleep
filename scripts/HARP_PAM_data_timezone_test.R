@@ -93,7 +93,7 @@ for(i in 1:nrow(huh)){
   else if(huh[i, "hour"] >= 19 & huh[i, "hour"] < 20){
     huh[i, "daynight"] <- "Dusk"
   }
-  else if(huh[i, "hour"] > huh[i, "nauticalDusk"] & huh[i, "hour"] <= 24){
+  else if(huh[i, "hour"] > 20 & huh[i, "hour"] <= 24){
     huh[i, "daynight"] <- "Night"
   }
   else if(huh[i, "hour"] >= 0 & huh[i, "hour"] < 5){
