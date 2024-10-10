@@ -1412,9 +1412,9 @@ dev.off()
 
 
 
-# #Section Y: Plot max_clade_cred tree results------------------------------------
-model_results <- readRDS(here("cetaceans_max_clade_cred_four_state_max_crep_traits_ARD_models.rds"))
-filename <- "artiodactyla_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_models.rds"
+# #Section 9: Plot max_clade_cred tree results------------------------------------
+model_results <- readRDS(here("ruminants_max_clade_cred_six_state_traits_ER_SYM_ARD_models.rds"))
+filename <- "ruminants_max_clade_cred_six_state_traits_ER_SYM_ARD_models.rds"
 
 # ER_results <- model_results$ER_model
 # SYM_results <- model_results$SYM_model
@@ -1432,3 +1432,14 @@ ggplot(likelihoods, aes(x = model, y = likelihoods)) + geom_point()
 ARD_matrix <- as.matrix(ARD_results$data)
 
 make.simmap(ARD_results$phy, as.matrix(ARD_results$data), model = ARD)
+
+# #Section 10: Statistical significance -----------------------------------
+
+#we want to see if the difference between the mean likelihood of one model is greater than another
+
+#ie is the ARD model statistically more likely than the bridge_only model
+
+# Compute the analysis of variance
+res.aov <- aov(weight ~ group, data = my_data)
+# Summary of the analysis
+summary(res.aov)

@@ -165,9 +165,9 @@ pie_tree
 
 
 #load in ARD model data
-all_model_results <- readRDS(here("artiodactyla_max_clade_cred_four_state_max_dinoc_traits_ARD_models.rds"))
+all_model_results <- readRDS(here("artiodactyla_max_clade_cred_six_state_traits_ER_SYM_ARD_bridge_only_models.rds"))
 model_results <- all_model_results$ARD_model
-file_name <- "artiodactyla_max_clade_cred_four_state_max_dinoc_traits_ARD_models"
+file_name <- "artiodactyla_six_state_ARD_models"
 
 phylo_tree <- model_results$phy
 
@@ -194,7 +194,7 @@ lik.anc$node <- c(1:nrow(lik.anc)) + nrow(model_results$data)
 #the number of columns changes depending on how many trait states
 pie <- nodepie(lik.anc, 1:(length(lik.anc)-1))
 
-pie_tree <- base_tree + geom_inset(pie, width = .02, height = .02) 
+pie_tree <- base_tree + geom_inset(pie, width = .04, height = .04) 
 pie_tree
 
 #save out

@@ -32,7 +32,7 @@ if(!(args[1] %in% c("max_crep", "max_dinoc", "six_state", "four_state_max_crep",
   stop("first argument must be states in the model")
 }
 
-if(!(args[2] %in% c("cetaceans", "artiodactyla", "artiodactyla_minus_cetaceans"))) {  
+if(!(args[2] %in% c("cetaceans", "artiodactyla", "artiodactyla_minus_cetaceans", "ruminants"))) {  
   stop("second argument must be the phylogenetic tree")
 }
 
@@ -59,6 +59,10 @@ if(args[2] == "artiodactyla"){
 
 if(args[2] == "artiodactyla_minus_cetaceans"){
   trait.data <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv"))
+}
+
+if(args[2] == "ruminants"){
+  trait.data <- read.csv(here("ruminants_full.csv"))
 }
 
 #the cetacean and artiodactyla dataframes are formatted to have Diel_Pattern_3 be max_crep (di/crep and noc/crep classified as crep, cath and crep pooled together)
