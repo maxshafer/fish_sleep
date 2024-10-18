@@ -165,9 +165,9 @@ pie_tree
 
 
 #load in ARD model data
-all_model_results <- readRDS(here("artiodactyla_max_clade_cred_six_state_traits_ER_SYM_ARD_bridge_only_models.rds"))
+all_model_results <- readRDS(here("ruminants_max_clade_cred_six_state_traits_ER_SYM_ARD_models.rds"))
 model_results <- all_model_results$ARD_model
-file_name <- "artiodactyla_six_state_ARD_models"
+file_name <- "ruminant_six_state_ARD_models"
 
 phylo_tree <- model_results$phy
 
@@ -178,7 +178,7 @@ colnames(model_results$data) <- c("tips", "Diel_Pattern")
 #may have to adjust what trait data column is called in each
 base_tree <- ggtree(phylo_tree, layout = "rectangular") + geom_tiplab(size = 1, hjust = -0.1)
 base_tree <- base_tree %<+% model_results$data[, c("tips", "Diel_Pattern")]
-base_tree <- base_tree + geom_tippoint(aes(color = Diel_Pattern), size = 1) 
+base_tree <- base_tree + geom_tippoint(aes(color = Diel_Pattern), size = 2) 
 base_tree
 
 #make the dataframe of likelihoods at the internal nodes without the tips

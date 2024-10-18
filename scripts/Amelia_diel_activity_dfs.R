@@ -332,6 +332,8 @@ artio <- artio %>% filter(Family %in% c("Antilocapridae", "Bovidae", "Cervidae",
 # artio <- artio[artio$tips %in% mam.tree$tip.label,]
 # trpy <- keep.tip(mam.tree, tip = artio$tips)
 
+write.csv(artio, here("ruminants_full.csv"))
+
 #high confidence 
 #create a column with the max confidence level for that species (out of the confidence level for all sources)
 #the confidence values are characters so convert to numerics and then take the maximum value
@@ -343,7 +345,10 @@ artio$max_conf <- lapply(artio$Confidence, max)
 #of the 207 species, 145 have high confidence data
 artio <- artio %>% filter(max_conf >= 3)
 
-write.csv(artio, here("ruminants_full.csv"))
+#gets rid of the list so we can save as a csv
+artio <- apply(artio,2,as.character)
+
+write.csv(artio, here("ruminants_full_high_conf.csv"))
 
 # Section 6: Formatting the artiodactyla diel dataframe Maor data  --------
 #from https://doi.org/10.1038/s41559-017-0366-5
@@ -664,7 +669,7 @@ table(diel_merge$match, diel_merge$Confidence)
 table(diel_merge$match, diel_merge$Amelia_diel)
 
 
-# Section 10: Load in and examine the mam tree, check time calibration -----------------------------------------
+# Section 10: Load in and examine the mam tree, check time calibration, plus whippo df -----------------------------------------
 
 ## Read in the mammalian phylogeny
 #mammal_trees <- read.nexus("Cox_mammal_data/Complete_phylogeny.nex")
@@ -687,6 +692,7 @@ mam.tree <- readRDS("maxCladeCred_mammal_tree.rds")
 
 #we need to drop the missing species to create the tree
 cetaceans_full <- read.csv("cetaceans_full.csv")
+cetaceans_full <- cetaceans_full[,-(1)]
 cetaceans_full <- cetaceans_full[cetaceans_full$tips %in% mam.tree$tip.label,]
 trpy_n_test <- keep.tip(mam.tree, tip = cetaceans_full$tips)
 #check if time calibrated
@@ -695,12 +701,14 @@ test <- ggtree(trpy_n_test, layout = "circular", size = 0.5) + geom_tiplab(size 
 
 #look at the tree for whippomorpha (hippos + cetacea) and see if time calibrated
 whippomorpha <- cetaceans_full
-whippomorpha <- rbind(cetaceans_full, c("Hexaprotodon liberiensis", "", NA, NA, "Nocturnal", "Nocturnal", "Nocturnal", "", "3", "nocturnal", "Choeropsis_liberiensis"))
-whippomorpha <- rbind(whippomorpha, c("Hippopotamus amphibius", "", NA, NA, "Nocturnal", "Nocturnal/crepuscular", "Crepuscular", "", "4", "crepuscular", "Hippopotamus_amphibius"))
+whippomorpha <- rbind(cetaceans_full, c("Hexaprotodon liberiensis", "", NA, NA, "nocturnal", "nocturnal/crepuscular", "crepuscular", "", "3, 3, 3", "nocturnal", "Hippopotimiade", "Choeropsis_liberiensis"))
+whippomorpha <- rbind(whippomorpha, c("Hippopotamus amphibius", "", NA, NA, "nocturnal", "nocturnal/crepuscular", "crepuscular", "", "4, 4, 4", "crepuscular","Hippopotimiade", "Hippopotamus_amphibius"))
+rownames(whippomorpha) <- whippomorpha$tips
 write.csv(whippomorpha, file = here("whippomorpha.csv"))
+
 whippomorpha <- whippomorpha[whippomorpha$tips %in% mam.tree$tip.label,]
-trpy_n_whippo <- keep.tip(mam.tree, tip = whippomorpha$tips)
-whippo <- ggtree(trpy_n_whippo, layout = "circular", size = 0.5) + geom_tiplab(size = 1.5)
+trpy <- keep.tip(mam.tree, tip = whippomorpha$tips)
+whippo <- ggtree(trpy, layout = "circular", size = 0.5) + geom_tiplab(size = 2)
 #whippo$data shows the branch lengths (53.7 my to root). Also seems correct!
 
 

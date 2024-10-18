@@ -892,6 +892,151 @@ for(i in 1:22){
 # dev.off()
 
 
+# Section 4.5: Ruminants, six_state--------------------------------------
+
+#use below for new primary source data
+model_results <- readRDS(here("ruminants_six_state_traits_ER_SYM_ARD_models.rds"))
+
+ER_likelihoods <- unlist(lapply(model_results$ER_model, function(x) returnLikelihoods(model = x)))
+SYM_likelihoods  <- unlist(lapply(model_results$SYM_model, function(x) returnLikelihoods(model = x)))
+ARD_likelihoods  <- unlist(lapply(model_results$ARD_model, function(x) returnLikelihoods(model = x)))
+bridge_only_likelihoods  <- unlist(lapply(model_results$bridge_only_model, function(x) returnLikelihoods(model = x)))
+
+## combine and plot
+
+df1 <- data.frame(model = "ER", likelihoods = ER_likelihoods)
+df2 <- data.frame(model = "SYM", likelihoods = SYM_likelihoods)
+df3 <- data.frame(model = "ARD", likelihoods = ARD_likelihoods)
+df_s6x <- rbind(df1, df2, df3)
+
+all_six_states_artio_plot <- ggplot(df_s6x, aes(x = fct_inorder(model), y = likelihoods)) + geom_jitter(alpha = 0.6, color = "purple") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
+  labs(x = "Model", y = "Log likelihood") #+ scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only"))
+
+#save plot as a PNG, remember to change file name
+png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/ruminants_six_state_all_models_plot.png",  units = "cm", height = 15, width = 15, res = 225)
+all_six_states_artio_plot
+dev.off()
+
+
+
+# ###Ruminants_six_state_ER_rates### ----------------------------------------------------------------
+
+#use below for Amelia primary source data
+model_results <- readRDS(here("ruminants_six_state_traits_ER_SYM_ARD_models.rds"))
+
+rates <- unlist(lapply(model_results$ER_model, function(x) returnRates(model = x)))
+#we want to format this into a dataframe with three columns
+#model name, rates, solution number
+#this will allow us to plot the rates by which model they came from and by which 
+rates_df <- as.data.frame(rates)
+rates_df$model <- "six_state_ER"
+
+#drop rows with no transition rates (ie Di -> Di, Noc -> Noc)
+rates_df <- rates_df[!(is.na(rates_df$rates)),]
+
+rates_df$solution <- rep(c("Cath/crep -> Cath", "Di-> Cath", "Di/crep -> Cath", "Noc -> Cath", "Noc/crep -> Cath", "Cath -> Cath/crep", "Di -> Cath/crep", "Di/crep -> Cath/crep", "Noc -> Cath/crep", "Noc/crep -> Cath/crep", "Cath -> Di", "Cath/crep -> Di", "Di/crep -> Di", "Noc -> Di", "Noc/crep -> Di", "Cath -> Di/crep", "Cath/crep -> Di/crep", "Di -> Di/crep", "Noc -> Di/crep", "Noc/crep -> Di/crep", "Cath -> Noc", "Cath/crep -> Noc", "Di -> Noc", "Di/crep -> Noc", "Noc/crep -> Noc", "Cath -> Noc/crep", "Cath/crep -> Noc/crep", "Di -> Noc/crep", "Di/crep -> Noc/crep", "Noc -> Noc/crep"), 20)
+
+rates_colours <- rep(c("darkorchid1", "deeppink3", "maroon1", "dodgerblue2", "mediumpurple1", "darkorchid4","orchid1", "firebrick4", "slateblue1", "thistle3", "deeppink4", "orchid3", "darkorange","seagreen3","springgreen1","maroon3","firebrick1","darkorange3","olivedrab1","brown","dodgerblue4","slateblue4","seagreen4","olivedrab3","gold","mediumpurple4","thistle4","springgreen4","brown1","gold3"), 20)
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/ruminants_six_state_ER/all_rates_ER.png", width = 30, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution, ncol = 5, nrow = 6)
+dev.off() 
+
+for(i in 1:6){
+  png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/ruminants_six_state_ER/rates_plots", i, ".png"), width=20,height=10,units="cm",res=200)
+  print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 1, page = i)) 
+  dev.off()
+}
+
+# ###Ruminants_six_state_SYM_rates### ----------------------------------------------------------------
+
+#use below for Amelia primary source data
+model_results <- readRDS(here("ruminants_six_state_traits_ER_SYM_ARD_models.rds"))
+
+rates <- unlist(lapply(model_results$SYM_model, function(x) returnRates(model = x)))
+#we want to format this into a dataframe with three columns
+#model name, rates, solution number
+#this will allow us to plot the rates by which model they came from and by which 
+rates_df <- as.data.frame(rates)
+rates_df$model <- "six_state_SYM"
+
+#drop rows with no transition rates (ie Di -> Di, Noc -> Noc)
+rates_df <- rates_df[!(is.na(rates_df$rates)),]
+
+rates_df$solution <- rep(c("Cath/crep -> Cath", "Di-> Cath", "Di/crep -> Cath", "Noc -> Cath", "Noc/crep -> Cath", "Cath -> Cath/crep", "Di -> Cath/crep", "Di/crep -> Cath/crep", "Noc -> Cath/crep", "Noc/crep -> Cath/crep", "Cath -> Di", "Cath/crep -> Di", "Di/crep -> Di", "Noc -> Di", "Noc/crep -> Di", "Cath -> Di/crep", "Cath/crep -> Di/crep", "Di -> Di/crep", "Noc -> Di/crep", "Noc/crep -> Di/crep", "Cath -> Noc", "Cath/crep -> Noc", "Di -> Noc", "Di/crep -> Noc", "Noc/crep -> Noc", "Cath -> Noc/crep", "Cath/crep -> Noc/crep", "Di -> Noc/crep", "Di/crep -> Noc/crep", "Noc -> Noc/crep"), 20)
+
+rates_colours <- rep(c("darkorchid1", "deeppink3", "maroon1", "dodgerblue2", "mediumpurple1", "darkorchid4","orchid1", "firebrick4", "slateblue1", "thistle3", "deeppink4", "orchid3", "darkorange","seagreen3","springgreen1","maroon3","firebrick1","darkorange3","olivedrab1","brown","dodgerblue4","slateblue4","seagreen4","olivedrab3","gold","mediumpurple4","thistle4","springgreen4","brown1","gold3"), 20)
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/ruminants_six_state_SYM/all_rates_SYM.png", width = 30, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution, ncol = 5, nrow = 6)
+dev.off()
+
+for(i in 1:6){
+  png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/ruminants_six_state_SYM/rates_plots", i, ".png"), width=20,height=10,units="cm",res=200)
+  print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 5, nrow = 1, page = i))
+  dev.off()
+}
+
+# ###Ruminants_six_state_ARD_rates### ----------------------------------------------------------------
+
+#use below for Amelia primary source data
+model_results <- readRDS(here("ruminants_six_state_traits_ER_SYM_ARD_models.rds"))
+
+rates <- unlist(lapply(model_results$ARD_model, function(x) returnRates(model = x)))
+#we want to format this into a dataframe with three columns
+#model name, rates, solution number
+#this will allow us to plot the rates by which model they came from and by which 
+rates_df <- as.data.frame(rates)
+rates_df$model <- "six_state_ARD"
+
+#drop rows with no transition rates (ie Di -> Di, Noc -> Noc)
+rates_df <- rates_df[!(is.na(rates_df$rates)),]
+row.names(rates_df) <- 1:length(rates_df$rates)
+
+rates_df$solution <- rep(c("Cath/crep -> Cath", "Di -> Cath", "Di/crep -> Cath", "Noc -> Cath", "Noc/crep -> Cath", "Cath -> Cath/crep", "Di -> Cath/crep", "Di/crep -> Cath/crep", "Noc -> Cath/crep", "Noc/crep -> Cath/crep", "Cath -> Di", "Cath/crep -> Di", "Di/crep -> Di", "Noc -> Di", "Noc/crep -> Di", "Cath -> Di/crep", "Cath/crep -> Di/crep", "Di -> Di/crep", "Noc -> Di/crep", "Noc/crep -> Di/crep", "Cath -> Noc", "Cath/crep -> Noc", "Di -> Noc", "Di/crep -> Noc", "Noc/crep -> Noc", "Cath -> Noc/crep", "Cath/crep -> Noc/crep", "Di -> Noc/crep", "Di/crep -> Noc/crep", "Noc -> Noc/crep"), 20)
+
+#rates_colours <- rep(c("darkorchid1", "deeppink3", "maroon1", "dodgerblue2", "mediumpurple1", "darkorchid4","orchid1", "firebrick4", "slateblue1", "thistle3", "deeppink4", "orchid3", "darkorange","seagreen3","springgreen1","maroon3","firebrick1","darkorange3","olivedrab1","brown","dodgerblue4","slateblue4","seagreen4","olivedrab3","gold","mediumpurple4","thistle4","springgreen4","brown1","gold3"), 1000)
+
+rates_colours <- rep(c("#ac00b6", "#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3","#2a2956", "#383e6f", "#47558a", "#556ca4", "#6385bf", "#bd5c35", "#d37a57", "#e79979", "#fbb89d",  "#a63d13", "#b48204", "#c6952e", "#d7a84a", "#e9bb65","#facf80","#176d56", "#40826d","#629884","#82ae9d","#a2c4b6", "#5c8816", "#779d40", "#92b264", "#adc887", "#c9deab"),1000)
+ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 5, nrow = 6)
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/ruminants_six_state_ARD/all_rates_ARD.png", width = 30, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution, ncol = 5, nrow = 6)
+dev.off()
+
+#save out as png, remember to change file name
+for(i in 1:6){
+  png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/ruminants_six_state_ARD/rates_plots", i, ".png"), width=30,height=5,units="cm",res=200)
+  print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 5, nrow = 1, page = i))
+  dev.off()
+}
+
+#get the mean rate out of the 1000 model results for each of the 30 rates
+#group by solution, calculate the mean
+rates_colours_30 <- c("#ac00b6", "#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3","#2a2956", "#383e6f", "#47558a", "#556ca4", "#6385bf", "#a63d13", "#bd5c35", "#d37a57", "#e79979", "#fbb89d", "#b48204", "#c6952e", "#d7a84a", "#e9bb65","#facf80","#176d56", "#40826d","#629884","#82ae9d","#a2c4b6", "#5c8816", "#779d40", "#92b264", "#adc887", "#c9deab")
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/ruminants_six_state_ARD/all_rates_mean_ARD.png", width = 30, height = 15, units = "cm", res = 600)
+rates_df %>% group_by(solution) %>% summarise(mean_rates = mean(rates)) %>% ggplot(., aes(x = solution, y = mean_rates)) + geom_col(fill = rates_colours_30) + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95, size = 8))
+dev.off()
+
+test <- rates_df %>% group_by(solution) %>% summarise(mean_rates = mean(rates)) 
+
+# ##To colour each of the rates by their model likelihood
+# #there are six rates for each model (except bridge_only which has 4), so duplicate the likelihood of each model 6 times
+# likelihood<- unlist(lapply(model_results$ARD_model, function(x) returnLikelihoods(model = x)))
+# likelihood <- as.data.frame(likelihood)
+# index <- rep(1:nrow(likelihood), times = c(rep(x = 6, times = 1000)))
+# likelihood <- likelihood[index,]
+# 
+# #add this column to the rates dataframe
+# rates_df <- cbind(rates_df, likelihood)
+# rates_df$likelihood <- as.integer(rates_df$likelihood)
+# rates_df$likelihood <- as.factor(rates_df$likelihood)
+# 
+# png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/new_artiodactyla_max_dinoc_ARD/likelihood_rates_plot.png", width=20,height=12,units="cm",res=200)
+# ggplot(rates_df, aes(x= rates, fill = likelihood)) + geom_histogram() + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank()) + facet_wrap(~solution)
+# dev.off()
+
 # Section 5: Artiodactyla without cetaceans, max_crep--------------------------------------
 
 #use below for Cox data
@@ -1413,15 +1558,45 @@ dev.off()
 
 
 # #Section 9: Plot max_clade_cred tree results------------------------------------
-model_results <- readRDS(here("ruminants_max_clade_cred_six_state_traits_ER_SYM_ARD_models.rds"))
-filename <- "ruminants_max_clade_cred_six_state_traits_ER_SYM_ARD_models.rds"
+model_results <- readRDS(here("artiodactyla_max_clade_cred_six_state_traits_ER_SYM_ARD_models.rds"))
+
+model_results_old <- readRDS(here("old_artiodactyla_max_clade_cred_six_state_traits_ER_SYM_ARD_bridge_only_models.rds"))
 
 # ER_results <- model_results$ER_model
 # SYM_results <- model_results$SYM_model
 ARD_results <- model_results$ARD_model
 plotMKmodel(ARD_results)
+
+ARD_results_old <- model_results_old$ARD_model
+plotMKmodel(ARD_results_old)
 # bridge_results <- model_results$bridge_only
 # hidden_rates <- model_results$hidden_rates
+
+rates_df <- as.data.frame(ARD_results$solution)
+
+#use below to plot rates from 6 state model
+#rates_df <- pivot_longer(rates_df, cols = 1:6, names_to = "rates")
+
+#use below for 5 state model
+rates_df <- pivot_longer(rates_df, cols = 1:5, names_to = "rates")
+
+#drop rows with no transition rates (ie Di -> Di, Noc -> Noc)
+rates_df <- rates_df[!(is.na(rates_df$value)),]
+row.names(rates_df) <- 1:length(rates_df$rates)
+
+#add a column indicating what transition rate the value is for
+#use below for 6 states
+# rates_df$solution <- c("Cath -> Cath/crep", "Cath -> Di", "Cath -> Di/crep", "Cath -> Noc", "Cath -> Noc/crep", "Cath/crep -> Cath", "Cath/crep -> Di", "Cath/crep -> Di/crep", "Cath/crep -> Noc", "Cath/crep -> Noc/crep", "Di -> Cath", "Di -> Cath/crep", "Di -> Di/crep", "Di -> Noc", "Di -> Noc/crep", "Di/crep -> Cath", "Di/crep -> Cath/crep", "Di/crep -> Di", "Di/crep -> Noc", "Di/crep -> Noc/crep", "Noc -> Cath", "Noc -> Cath/crep", "Noc -> Di", "Noc -> Di/crep", "Noc -> Noc/crep", "Noc/crep -> Cath", "Noc/crep -> Cath/crep", "Noc/crep -> Di", "Noc/crep -> Di/crep", "Noc/crep -> Noc" )
+# rates_colours_30 <- c("#ac00b6", "#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3","#2a2956", "#383e6f", "#47558a", "#556ca4", "#6385bf", "#bd5c35", "#d37a57", "#e79979", "#fbb89d",  "#a63d13", "#b48204", "#c6952e", "#d7a84a", "#e9bb65","#facf80","#176d56", "#40826d","#629884","#82ae9d","#a2c4b6", "#5c8816", "#779d40", "#92b264", "#adc887", "#c9deab")
+
+#use below for 5 states
+rates_df$solution <- c("Cath -> Di", "Cath -> Di/crep", "Cath -> Noc", "Cath -> Noc/crep",  "Di -> Cath", "Di -> Di/crep", "Di -> Noc", "Di -> Noc/crep", "Di/crep -> Cath", "Di/crep -> Di", "Di/crep -> Noc", "Di/crep -> Noc/crep", "Noc -> Cath", "Noc -> Di", "Noc -> Di/crep", "Noc -> Noc/crep", "Noc/crep -> Cath", "Noc/crep -> Di", "Noc/crep -> Di/crep", "Noc/crep -> Noc" )
+rates_colours_30 <- c("#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3", "#bd5c35", "#e79979", "#fbb89d",  "#a63d13", "#b48204", "#c6952e", "#e9bb65","#facf80","#176d56","#629884","#82ae9d","#a2c4b6", "#5c8816", "#92b264", "#adc887", "#c9deab")
+
+#remember to change file name
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/whippomorpha_five_state_ARD/all_rates_max_clade_ARD.png", width = 30, height = 15, units = "cm", res = 600)
+ggplot(rates_df, aes(x = solution, y = value)) + geom_col(fill = rates_colours_30) + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95, size = 8))
+dev.off()
 
 likelihoods <- unlist(lapply(model_results, function(x) returnLikelihoods(model = x)))
 likelihoods <- as.data.frame(likelihoods)

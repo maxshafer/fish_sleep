@@ -17,7 +17,7 @@ setwd(here())
 source("scripts/fish_sleep_functions.R")
 source("scripts/Amelia_functions.R")
 
-# Section 1: Create diel plots with Cox mammal tree -----------------------
+# Section 1: Load in Cox mammal tree + Amelia primary source data -----------------------
 
 #need to use the mamm tree for modelling and ancestral trait reconstruction
 #trees to make: trinary dataset -maxdinoc, trinary dataset -maxcrep, 5state
@@ -25,8 +25,26 @@ source("scripts/Amelia_functions.R")
 # ## Read in the mammalian phylogeny
 mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-#use trait data below for Cox data
+
+#use trait data below for Amelia primary source cetacean data
 trait.data <- read.csv(here("cetaceans_full.csv"))
+clade_name <- "cetcaeans"
+
+#use below for primary source whippomorpha data
+#trait.data <- read.csv(here("whippomorpha_full.csv"))
+#clade_name <- "whippomorpha"
+
+#use below for all artiodactyla
+#trait.data <- read.csv(here("sleepy_artiodactyla_full.csv"))
+#clade_name <- "artiodactyla"
+
+#use below for artiodactyla minus cetaceans
+#trait.data <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv"))
+#clade_name <- "artiodactyla_minus_cetaceans"
+
+#trait.data <- read.csv(here("ruminants_full.csv"))
+#clade_name <- "ruminants"
+
 
 trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
 trpy_n_mam <- keep.tip(mam.tree, tip = trait.data$tips)
@@ -36,8 +54,7 @@ png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/all_cetacean_tr
 ggtree(trpy_n_mam, layout = "circular") + geom_tiplab(size = 3)
 dev.off()
 
-
-# Section 2: 5-state trait data tree --------------------------------------
+# Section 2: Plot all state trait data tree --------------------------------------
 
 #creating a tree with all trait data categories (diurnal, nocturnal, di/crep, noc/crep, cathemeral)
 
@@ -45,23 +62,21 @@ dev.off()
 trait.data.all <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
 trpy_n_all <- keep.tip(mam.tree, tip = trait.data.all$tips)
 
+custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
+
 #plot the tree
-custom.colours.all <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
 diel.plot.all <- ggtree(trpy_n_all, layout = "circular") %<+% trait.data.all[,c("tips", "Diel_Pattern_2")]
 diel.plot.all <- diel.plot.all + geom_tile(data = diel.plot.all$data[1:length(trpy_n_all$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.all)
 diel.plot.all <- diel.plot.all + geom_tiplab(size = 2)
 diel.plot.all 
 
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_5_state.png", width=24,height=18,units="cm",res=1200)
+png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/", clade_name, "diel_plot_all_state.png"), width=24,height=18,units="cm",res=1200)
 print(diel.plot.all)
 dev.off()
 
-
-# Section 3: maxdinoc tree --------------------------------------
+# Section 3: Plot 3-state maxdinoc tree --------------------------------------
 
 #creating a tree with three trait states (cathemeral, diurnal, nocturnal)
-trait.data <- read.csv(here("cetaceans_full.csv"))
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
 
 #remove species with no data
 trait.data.maxDN <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
@@ -77,15 +92,13 @@ diel.plot.MDN <- diel.plot.MDN + geom_tile(data = diel.plot.MDN$data[1:length(tr
 diel.plot.MDN <- diel.plot.MDN + geom_tiplab(size = 2)
 diel.plot.MDN 
 
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_maxdinoc.png", width=24,height=18,units="cm",res=1200)
+png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/", clade_name, "diel_plot_max_dinoc.png"), width=24,height=18,units="cm",res=1200)
 print(diel.plot.MDN)
 dev.off()
 
-# Section 4: maxcrep tree --------------------------------------
+# Section 4: Plot 3-state maxcrep tree --------------------------------------
 
 #creating a tree with three trait states (crepuscular, diurnal, nocturnal)
-trait.data <- read.csv(here("cetaceans_full.csv"))
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
 
 #remove species with no data
 trait.data.maxcrep <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
@@ -103,7 +116,7 @@ diel.plot.MC <- diel.plot.MC + geom_tile(data = diel.plot.MC$data[1:length(trpy_
 diel.plot.MC <- diel.plot.MC + geom_tiplab(size = 2)
 diel.plot.MC 
 
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_maxcrep.png", width=24,height=18,units="cm",res=1200)
+png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/", clade_name, "diel_plot_max_crep.png"), width=24,height=18,units="cm",res=1200)
 print(diel.plot.MC)
 dev.off()
 
@@ -141,256 +154,36 @@ dev.off()
 
 
 
-# Section ?: NOT DONE Create diel plots with Cox mammal tree -----------------------
-
-#doing the same as above but with Cox's mammal tree instead of open tree of life
-#need to use the mamm tree for modelling and ancestral trait reconstruction
-
-# ## Read in the mammalian phylogeny
-#mammal_trees <- read.nexus("Cox_mammal_data/Complete_phylogeny.nex")
-#mam.tree <- maxCladeCred(mammal_trees, tree = TRUE)
-
-# trait.data <- cetaceans[cetaceans$Diel_Pattern_1 %in% c("diurnal", "nocturnal"),]
-# trait.data$tips <- trait.data$Species_name
-# trait.data$tips <- str_replace(trait.data$tips, pattern = " ", replacement = "_")
-# trait.data2 <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-# 
-# "Lagenorhynchus_obscurus" %in% mam.tree$tip.label
-# 
-# View(trait.data$tips)
-# View(mam.tree$tip.label)
-# mam.tree$tip.label[(grepl("Balaenoptera", mam.tree$tip.label))]
-# 
-# #find which species in trait data are missing from mam.tree
-# trait.data$tips[!(trait.data$tips %in% mam.tree$tip.label)]
-# 
-# row.names(trait.data) <- trait.data$tips
-# trpy_n_mam <- keep.tip(mam.tree, tip = trait.data$tips)
-# 
-# #change this to work with the open tree of life
-# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-# 
-# model<- corHMM(phy = trpy_n_mam, data = trait.data[trpy_n_mam$tip.label, c("tips", "diel")], rate.cat = 1, model = "ARD", node.states = "marginal")
-# 
-# #models <- readRDS(file = paste("marginal_and_joint_tests", dataset_variable, name_variable, length(trpy_n$tip.label), "species.rds", sep = "_"))
-# #model <- models$HMM_2state_2rate_marg
-# 
-# lik.anc <- as.data.frame(rbind(model$tip.states, model$states))
-# colnames(lik.anc) <- c("diurnal", "nocturnal")
-# 
-# lik.anc$node <- c(1:length(trpy_n_mam$tip.label), (length(trpy_n_mam$tip.label) + 1):(trpy_n_mam$Nnode + length(trpy_n_mam$tip.label)))
-# 
-# ancestral_plot <- ggtree(trpy_n_mam, layout = "circular") %<+% lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdBu") + scale_color_distiller(palette = "RdBu")
-# 
-# 
-# ancestral_plot + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
-
-
-# Section 6: Create artiodactyla diel plots with Cox mammal tree or Amelia primary source data -----------------------
-
-#need to use the mamm tree for modelling and ancestral trait reconstruction
-#trees to make: trinary dataset -maxdinoc, trinary dataset -maxcrep, 5state
-
-# ## Read in the mammalian phylogeny
-mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
-mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-#use below for Cox data
-#trait.data <- read.csv(here("Cox_artiodactyla_full.csv"))
-
-#use trait data below for Amelia data
-trait.data <- read.csv(here("sleepy_artiodactyla.csv"))
-
-
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-trpy_n_mam <- keep.tip(mam.tree, tip = trait.data$tips)
-
-#currently includes species with no activity pattern data
-ggtree(trpy_n_mam, layout = "circular") + geom_tiplab(size = 3)
-
-
-# Section 7: 6-state trait data tree --------------------------------------
-
-#creating a tree with all trait data categories (diurnal, nocturnal, di/crep, noc/crep, cathemeral, cath/crep)
-
-#remove species with no data
-trait.data.all <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
-trpy_n_all <- keep.tip(mam.tree, tip = trait.data.all$tips)
-
-#plot the tree
-custom.colours.all <- c("#dd8ae7", "pink", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
-diel.plot.all <- ggtree(trpy_n_all, layout = "circular") %<+% trait.data.all[,c("tips", "Diel_Pattern_2")]
-diel.plot.all <- diel.plot.all + geom_tile(data = diel.plot.all$data[1:length(trpy_n_all$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.all)
-diel.plot.all <- diel.plot.all + geom_tiplab(size = 2)
-diel.plot.all 
-
-#png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_artio_6_state.png", width=26,height=22,units="cm",res=1200)
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/diel_artio_6_state.png", width=26,height=22,units="cm",res=1200)
-
-print(diel.plot.all)
-dev.off()
-
-
-# Section 8: maxdinoc tree --------------------------------------
-
-#creating a tree with only three trait states (nocturnal, diurnal, cathemeral)
-
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-
-#remove species with no data
-trait.data.maxDN <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_4")]
-
-trpy_n <- keep.tip(mam.tree, tip = trait.data.maxDN$tips)
-
-#plot the tree
-custom.colours.MDN <- c("#dd8ae7", "#FC8D62", "#66C2A5")
-diel.plot.MDN <- ggtree(trpy_n, layout = "circular") %<+% trait.data.maxDN[,c("tips", "Diel_Pattern_4")]
-diel.plot.MDN <- diel.plot.MDN + geom_tile(data = diel.plot.MDN$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_4), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.MDN)
-diel.plot.MDN <- diel.plot.MDN + geom_tiplab(size = 2)
-diel.plot.MDN 
-
-#png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_artio_maxdinoc.png", width=27,height=24,units="cm",res=1200)
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/diel_artio_maxdinoc.png", width=27,height=24,units="cm",res=1200)
-
-print(diel.plot.MDN)
-dev.off()
-
-# Section 9: maxcrep tree --------------------------------------
-
-#creating a tree with three trait states (crepuscular, diurnal, nocturnal)
-
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-
-#remove species with no data
-trait.data.maxcrep <- trait.data[!(is.na(trait.data$Diel_Pattern_3)), c("tips", "Diel_Pattern_3")]
-
-trpy_n <- keep.tip(mam.tree, tip = trait.data.maxcrep$tips)
-
-#plot the tree
-custom.colours.MC <- c("pink", "#FC8D62", "#66C2A5")
-diel.plot.MC <- ggtree(trpy_n, layout = "circular") %<+% trait.data.maxcrep[,c("tips", "Diel_Pattern_3")]
-diel.plot.MC <- diel.plot.MC + geom_tile(data = diel.plot.MC$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_3), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.MC)
-diel.plot.MC <- diel.plot.MC + geom_tiplab(size = 2)
-diel.plot.MC 
-
-#png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_artio_maxcrep.png", width=27,height=24,units="cm",res=1200)
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/diel_artio_maxcrep.png", width=27,height=24,units="cm",res=1200)
-
-print(diel.plot.MC)
-dev.off()
-
-
-
-# Section 10: Create artiodactyla without cetaceans diel plots with Cox mammal tree -----------------------
-
-#need to use the mamm tree for modelling and ancestral trait reconstruction
-#trees to make: trinary dataset -maxdinoc, trinary dataset -maxcrep, 5state
-
-# ## Read in the mammalian phylogeny
-mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
-mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-trait.data <- read.csv(here("Cox_artiodactyla_without_cetaceans.csv"))
-
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-trpy_n_mam <- keep.tip(mam.tree, tip = trait.data$tips)
-
-#currently includes species with no activity pattern data
-ggtree(trpy_n_mam, layout = "circular") + geom_tiplab(size = 3)
-
-
-# Section 11: 6-state trait data tree --------------------------------------
-
-#creating a tree with all trait data categories (diurnal, nocturnal, di/crep, noc/crep, cathemeral, cath/crep)
-
-#remove species with no data
-trait.data.all <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
-trpy_n_all <- keep.tip(mam.tree, tip = trait.data.all$tips)
-
-#plot the tree
-custom.colours.all <- c("#dd8ae7", "pink", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
-diel.plot.all <- ggtree(trpy_n_all, layout = "circular") %<+% trait.data.all[,c("tips", "Diel_Pattern_2")]
-diel.plot.all <- diel.plot.all + geom_tile(data = diel.plot.all$data[1:length(trpy_n_all$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.all)
-diel.plot.all <- diel.plot.all + geom_tiplab(size = 2)
-diel.plot.all 
-
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_artio_minus_cet_6_state.png", width=26,height=22,units="cm",res=1200)
-print(diel.plot.all)
-dev.off()
-
-
-# Section 12: maxdinoc tree --------------------------------------
-
-#creating a tree with only three trait states (nocturnal, diurnal, cathemeral)
-trait.data <- read.csv(here("Cox_artiodactyla_full.csv"))
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-
-#remove species with no data
-trait.data.maxDN <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_4")]
-
-trpy_n <- keep.tip(mam.tree, tip = trait.data.maxDN$tips)
-
-#plot the tree
-custom.colours.MDN <- c("#dd8ae7", "#FC8D62", "#66C2A5")
-diel.plot.MDN <- ggtree(trpy_n, layout = "circular") %<+% trait.data.maxDN[,c("tips", "Diel_Pattern_4")]
-diel.plot.MDN <- diel.plot.MDN + geom_tile(data = diel.plot.MDN$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_4), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.MDN)
-diel.plot.MDN <- diel.plot.MDN + geom_tiplab(size = 2)
-diel.plot.MDN 
-
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_artio_minus_cet_maxdinoc.png", width=27,height=24,units="cm",res=1200)
-print(diel.plot.MDN)
-dev.off()
-
-# Section 13: maxcrep tree --------------------------------------
-
-#creating a tree with three trait states (crepuscular, diurnal, nocturnal)
-trait.data <- read.csv(here("Cox_artiodactyla_full.csv"))
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-
-#remove species with no data
-trait.data.maxcrep <- trait.data[!(is.na(trait.data$Diel_Pattern_3)), c("tips", "Diel_Pattern_3")]
-
-trpy_n <- keep.tip(mam.tree, tip = trait.data.maxcrep$tips)
-
-#plot the tree
-custom.colours.MC <- c("pink", "#FC8D62", "#66C2A5")
-diel.plot.MC <- ggtree(trpy_n, layout = "circular") %<+% trait.data.maxcrep[,c("tips", "Diel_Pattern_3")]
-diel.plot.MC <- diel.plot.MC + geom_tile(data = diel.plot.MC$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_3), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.MC)
-diel.plot.MC <- diel.plot.MC + geom_tiplab(size = 2)
-diel.plot.MC 
-
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Cox_diel_plots/diel_plot_artio_minus_cet_maxcrep.png", width=27,height=24,units="cm",res=1200)
-print(diel.plot.MC)
-dev.off()
-
-
-# Section X: Artiodactyla suborders ---------------------------------------
+# Section 6: Artiodactyla suborders ---------------------------------------
 
 # ## Read in the mammalian phylogeny
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 #use trait data below for Amelia data
-trait.data <- read.csv(here("sleepy_artiodactyla.csv"))
-trait.data <- trait.data[!trait.data$tips %in% mam.tree$tip.label,]
+trait.data <- read.csv(here("sleepy_artiodactyla_full.csv"))
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
 
 #filter for the suborder you want
 #trait.data <- trait.data %>% filter(Order == "Ruminantia")
 #trait.data <- trait.data %>% filter(Order == "Suina")
 #trait.data <- trait.data %>% filter(Order == "Tylopoda")
-#trait.data <- trait.data %>% filter(Order == "Whippomorpha")
+trait.data <- trait.data %>% filter(Order == "Whippomorpha")
 
 trait.data.all <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
 trpy_n_all <- keep.tip(mam.tree, tip = trait.data.all$tips)
 
 #plot the tree
-custom.colours.all <- c("#dd8ae7", "pink", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854", "grey")
+#custom.colours.all <- c("#dd8ae7", "pink", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854", "grey")
+custom.colours.all <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854", "grey")
 diel.plot.all <- ggtree(trpy_n_all, layout = "circular") %<+% trait.data.all[,c("tips", "Diel_Pattern_2")]
-diel.plot.all <- diel.plot.all + geom_tile(data = diel.plot.all$data[1:length(trpy_n_all$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.all)
-diel.plot.all <- diel.plot.all + geom_tiplab(size = 2)
+diel.plot.all <- diel.plot.all + geom_tile(data = diel.plot.all$data[1:length(trpy_n_all$tip.label),], aes(x=x+1.1, y=y, fill = Diel_Pattern_2), width = 2, inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.all, name = "Temporal activity pattern")
+diel.plot.all <- diel.plot.all + geom_tiplab(size = 4, offset = 2.2)
 diel.plot.all 
 
 #png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/Ruminantia_6_state.png", width=46,height=42,units="cm",res=1200)
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/Suina_6_state.png", width=46,height=40,units="cm",res=1200)
+#png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/Suina_6_state.png", width=46,height=40,units="cm",res=1200)
 #png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/Tylopoda_6_state.png", width=46,height=40,units="cm",res=200)
-#png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/Whippomorpha_6_state.png", width=46,height=40,units="cm", res= 1200)
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/Whippomorpha_6_state.png", width=46,height=40,units="cm", res= 1200)
 
 print(diel.plot.all)
 dev.off()
