@@ -334,6 +334,9 @@ artio <- artio %>% filter(Family %in% c("Antilocapridae", "Bovidae", "Cervidae",
 
 write.csv(artio, here("ruminants_full.csv"))
 
+#artio <- read.csv(here("ruminants_full.csv"))
+artio <- read.csv(here("sleepy_artiodactyla_full.csv"))
+
 #high confidence 
 #create a column with the max confidence level for that species (out of the confidence level for all sources)
 #the confidence values are characters so convert to numerics and then take the maximum value
@@ -341,6 +344,8 @@ artio$Confidence <- lapply(artio$Confidence, function(x) gsub(",", "\\1 ", x))
 artio$Confidence <- lapply(artio$Confidence,function(x) strsplit(x, " ")[[1]])
 artio$max_conf <- lapply(artio$Confidence, as.numeric)
 artio$max_conf <- lapply(artio$Confidence, max)
+
+artio$max_conf <- as.integer(artio$max_conf)
 
 #of the 207 species, 145 have high confidence data
 artio <- artio %>% filter(max_conf >= 3)

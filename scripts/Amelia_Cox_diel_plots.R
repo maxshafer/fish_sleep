@@ -188,3 +188,42 @@ png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/Whippom
 print(diel.plot.all)
 dev.off()
 
+
+# Venn diagram of confidence levels ---------------------------------------
+
+library(venneuler)
+MyVenn <- venneuler(c(A=86,B=85,C=189,D=92, E = 21, "A&B"=13, 
+                      "B&C"=42,"C&D"=53, "D&E"=5,"C&D&E"=5,"C&E"=12))
+MyVenn$labels <- c("A\n86","B\n85","C\n189","D\n92", "E\n21")
+plot(MyVenn)
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/fish_sleep/confidence_venn.png", width=20,height=20,units="cm", res= 1200)
+MyVenn <- venneuler(c(A=86,B=85,C=189,D=92, E = 21, "A&B"=13, "A&C" = 9, "A&D" = 5, "A&E" = 5, 
+                      "B&C"=42,"C&D"=53, "D&E"=7,"C&D&E"=5,"C&E"=12, "A&D&E" = 2, "B&C&E" = 7))
+MyVenn$labels <- c("A\n86","B\n85","C\n189","D\n92", "E\n21")
+plot(MyVenn)
+dev.off()
+
+
+# Crepuscular vs day-night diel plots -------------------------------------
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+
+#use trait data below for Amelia data
+trait.data <- read.csv(here("sleepy_artiodactyla_full.csv"))
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+#we want to play cath, di, noc preference separately than crep- non crep preference
+#so separate the diel pattern 2 column, into its component parts
+trait.data <- separate(trait.data, col = Diel_Pattern_2, into = c("Diel", "Crepuscularity"), sep = "/")
+
+custom_colours <- c("#dd8ae7","steelblue1", "#FC8D62", "#66C2A5")
+
+crep_diel_tree <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel", "Crepuscularity")]
+crep_diel_tree <- crep_diel_tree + geom_tile(data = crep_diel_tree$data[1:length(trpy_n$tip.label),], aes(y=y, x=x, fill = Diel, width = 4),  inherit.aes = FALSE, color = "transparent")
+crep_diel_tree <- crep_diel_tree + geom_tile(data = crep_diel_tree$data[1:length(trpy_n$tip.label),], aes(y=y, x = x + 5, fill = Crepuscularity, width = 4), inherit.aes = FALSE, color = "transparent") + scale_fill_manual(values = custom_colours, na.value = "grey80")
+crep_diel_tree
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/diel_v_crepuscular.png", width=46,height=40,units="cm", res= 1200)
+crep_diel_tree
+dev.off()

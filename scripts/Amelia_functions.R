@@ -63,3 +63,19 @@ returnRates <- function(model = cetacean_sim_ace[[1]], return = "solution"){
   
   return(model[return])
 }
+
+#sixth function
+corhmm_model <- readRDS("~/R_projects/fish_sleep/cetaceans_max_clade_cred_six_state_traits_ER_SYM_ARD_models.rds")
+corhmm_model <- corhmm_model$ARD_model
+returnAICc <- function(model = corhmm_model, return = "AICc"){
+  
+  return(model[return])
+}
+
+#seventh function
+corhmm_model <- readRDS("~/R_projects/fish_sleep/cetaceans_max_clade_cred_six_state_traits_ER_SYM_ARD_models.rds")
+corhmm_model <- corhmm_model$ARD_model
+returnAIC <- function(model = corhmm_model, return = "AIC"){
+  
+  return(model[return])
+}

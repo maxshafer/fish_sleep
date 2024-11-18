@@ -33,11 +33,15 @@ library(RColorBrewer)
 library(ggforce)
 library(forcats)
 library(tidyr)
+
+setwd(here())
+source("scripts/fish_sleep_functions.R")
+source("scripts/Amelia_functions.R")
+
 # Set the working directory and source the functions (not used yet)
 setwd("C:/Users/ameli/OneDrive/Documents/R_projects/fish_sleep/1k_model_results")
 
-source("scripts/fish_sleep_functions.R")
-source("scripts/Amelia_functions.R")
+
 #load in mammal tree and cetacean dataframe
 mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
@@ -45,6 +49,7 @@ mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 
 # Section 1: Cetaceans, max_crep dataset#########
+#extract and plot the likelihoods
 ER_results <- readRDS(here("cetaceans_tree_max_crep_traits_ER_models.rds"))
 SYM_results <- readRDS(here("cetaceans_tree_max_crep_traits_SYM_models.rds"))
 ARD_results <- readRDS(here("cetaceans_tree_max_crep_traits_ARD_models.rds"))
@@ -69,6 +74,61 @@ all_maxcrep_plot <- ggplot(df_crep, aes(x = fct_inorder(model), y = likelihoods)
 
 #save plot as a PNG
 png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/cetaceans_maxcrep_all_models_1k_trees_plot.png", units = "cm", height = 15, width = 15, res = 225)
+all_maxcrep_plot
+dev.off()
+
+#extract and plot the AICc scores
+ER_results <- readRDS(here("cetaceans_tree_max_crep_traits_ER_models.rds"))
+SYM_results <- readRDS(here("cetaceans_tree_max_crep_traits_SYM_models.rds"))
+ARD_results <- readRDS(here("cetaceans_tree_max_crep_traits_ARD_models.rds"))
+bridge_only_results <- readRDS(here("cetaceans_tree_max_crep_traits_bridge_only_models.rds"))
+
+
+ER_AICc <- unlist(lapply(ER_results$ER_model, function(x) returnAICc(model = x)))
+SYM_AICc <- unlist(lapply(SYM_results$SYM_model, function(x) returnAICc(model = x)))
+ARD_AICc <- unlist(lapply(ARD_results$ARD_model, function(x) returnAICc(model = x)))
+bridge_only_AICc  <- unlist(lapply(bridge_only_results$bridge_only_model, function(x) returnAICc(model = x)))
+
+## combine and plot
+
+df1 <- data.frame(model = "ER max_crep", AICc = ER_AICc)
+df2 <- data.frame(model = "SYM max_crep", AICc = SYM_AICc)
+df3 <- data.frame(model = "ARD max_crep", AICc = ARD_AICc)
+df4 <- data.frame(model = "bridge_only max_crep", AICc = bridge_only_AICc)
+df_crep <- rbind(df1, df2, df3, df4)
+
+all_maxcrep_plot <- ggplot(df_crep, aes(x = fct_inorder(model), y = AICc)) + geom_jitter(alpha = 0.6, color = "#F8766D") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
+  labs(x = "Model", y = "AICc") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only")) + ggtitle("Cetaceans")
+
+#save plot as a PNG, remember to change file name
+png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/cetaceans_three_state_maxcrep_AICc_all_models_1k_trees_plot.png", units = "cm", height = 15, width = 15, res = 225)
+all_maxcrep_plot
+dev.off()
+
+#extract and plot the AIC scores
+ER_results <- readRDS(here("cetaceans_tree_max_crep_traits_ER_models.rds"))
+SYM_results <- readRDS(here("cetaceans_tree_max_crep_traits_SYM_models.rds"))
+ARD_results <- readRDS(here("cetaceans_tree_max_crep_traits_ARD_models.rds"))
+bridge_only_results <- readRDS(here("cetaceans_tree_max_crep_traits_bridge_only_models.rds"))
+
+
+ER_AIC <- unlist(lapply(ER_results$ER_model, function(x) returnAIC(model = x)))
+SYM_AIC <- unlist(lapply(SYM_results$SYM_model, function(x) returnAIC(model = x)))
+ARD_AIC <- unlist(lapply(ARD_results$ARD_model, function(x) returnAIC(model = x)))
+bridge_only_AIC  <- unlist(lapply(bridge_only_results$bridge_only_model, function(x) returnAIC(model = x)))
+
+## combine and plot
+df1 <- data.frame(model = "ER max_crep", AIC = ER_AIC)
+df2 <- data.frame(model = "SYM max_crep", AIC = SYM_AIC)
+df3 <- data.frame(model = "ARD max_crep", AIC = ARD_AIC)
+df4 <- data.frame(model = "bridge_only max_crep", AIC = bridge_only_AIC)
+df_crep <- rbind(df1, df2, df3, df4)
+
+all_maxcrep_plot <- ggplot(df_crep, aes(x = fct_inorder(model), y = AIC)) + geom_jitter(alpha = 0.6, color = "#F8766D") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
+  labs(x = "Model", y = "AIC") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only")) + ggtitle("Cetaecans")
+
+#save plot as a PNG, remember to change file name
+png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/cetaceans_three_state_maxcrep_AIC_all_models_1k_trees_plot.png", units = "cm", height = 15, width = 15, res = 225)
 all_maxcrep_plot
 dev.off()
 
@@ -142,19 +202,25 @@ rates_df <- rates_df[!(is.na(rates_df$rates)),]
 
 rates_df$solution <- rep(c("Di -> Cath/crep", "Noc -> Cath/crep", "Cath/crep -> Di", "Noc -> Di", "Cath/crep -> Noc", "Di -> Noc"), 1000)
 
-
 rates_colours <- c("deeppink4", "dodgerblue4", "deeppink3", "seagreen4", "dodgerblue2", "seagreen3")
 
 #ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution)
 #ggplot(rates_df, aes(x= solution, y = rates, colour = solution)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) #+ scale_y_continuous(trans='log10') #+  scale_y_sqrt()
 rates_plot <- ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 3, page = 2)
 
-
 for(i in 1:6){
   png(paste0("C:/Users/ameli/Downloads/rates_dump/cetacean_max_crep_ARD/rates_plots_MAXCREP_ARD", i, ".png"), width=20,height=10,units="cm",res=200)
   print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 1, page = i) +  theme(strip.text = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold")))
   dev.off()
 }
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/cetacean_max_crep_ARD/all_rates_ARD.png", width = 30, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution, ncol = 2, nrow = 3)
+dev.off()
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/cetacean_max_crep_ARD/all_rates_ARD_violinplot_median.png", width = 40, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_colours) + geom_violin(color = "black", scale = "width") + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_colours) + theme(legend.position = "none") + ggtitle("Cetaceans") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=3, colour = "red") 
+dev.off()
 
 
 # ###Cetacean_max_crep_bridge_only_rates### -----------------------------
@@ -176,13 +242,26 @@ rates_colours <- c("deeppink4", "dodgerblue4", "deeppink3", "dodgerblue2")
 #ggplot(rates_df, aes(x= solution, y = rates, colour = solution)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) #+ scale_y_continuous(trans='log10') #+  scale_y_sqrt()
 rates_plot <- ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 3, page = 2)
 
-
 for(i in 1:4){
   png(paste0("C:/Users/ameli/Downloads/rates_dump/cetacean_max_crep_bridge_only/rates_plots_MAXCREP_BRIDGE", i, ".png"), width=20,height=10,units="cm",res=200)
   print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 1, page = i) +  theme(strip.text = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold")))
   dev.off()
 }
 
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/cetacean_max_crep_bridge_only/all_rates_bridge_only.png", width = 30, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution, ncol = 2, nrow = 2)
+dev.off()
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/cetacean_max_crep_bridge_only/all_rates_bridge_only_violinplot_median.png", width = 40, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_colours) + geom_violin(color = "black", scale = "width") + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_colours) + theme(legend.position = "none") + ggtitle("Cetaceans") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=3, colour = "red") 
+dev.off()
+
+#save out as png, remember to change file name
+for(i in 1:6){
+  png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/ruminants_six_state_ARD/rates_plots", i, ".png"), width=30,height=5,units="cm",res=200)
+  print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 5, nrow = 1, page = i))
+  dev.off()
+}
 
 
 # Section 2: Cetaceans, max_dinoc dataset ###########
@@ -210,6 +289,58 @@ all_maxdinoc_plot <- ggplot(df_dinoc, aes(x = fct_inorder(model), y = likelihood
 #save plot as a PNG
 png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/cetaceans_maxdinoc_all_models_1k_trees_plots.png", units = "cm", height = 15, width = 15, res = 225)
 all_maxdinoc_plot
+dev.off()
+
+#extract and plot AICc scores from 1k models
+ER_SYM_results <- readRDS(here("cetaceans_tree_max_dinoc_traits_ER_SYM_models.rds"))
+ARD_results <- readRDS(here("cetaceans_tree_max_dinoc_traits_ARD_models.rds"))
+bridge_only_results <- readRDS(here("cetaceans_tree_max_dinoc_traits_bridge_only_models.rds"))
+
+ER_AICc <- unlist(lapply(ER_SYM_results$ER_model, function(x) returnAICc(model = x)))
+SYM_AICc  <- unlist(lapply(ER_SYM_results$SYM_model, function(x) returnAICc(model = x)))
+ARD_AICc  <- unlist(lapply(ARD_results$ARD_model, function(x) returnAICc(model = x)))
+bridge_only_AICc  <- unlist(lapply(bridge_only_results$bridge_only_model, function(x) returnAICc(model = x)))
+
+## combine and plot
+
+df1 <- data.frame(model = "ER", AICc = ER_AICc)
+df2 <- data.frame(model = "SYM", AICc = SYM_AICc)
+df3 <- data.frame(model = "ARD", AICc = ARD_AICc)
+df4 <- data.frame(model = "Bridge_only", AICc = bridge_only_AICc)
+df_s6x <- rbind(df1, df2, df3, df4)
+
+AICc_cet_plot <- ggplot(df_s6x, aes(x = fct_inorder(model), y = AICc)) + geom_jitter(alpha = 0.6, color = "#00BFC4") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 0, vjust = 0, hjust=0.5, size =10), axis.text.y = element_text(size =10)) +
+  labs(x = "Model", y = "AICc score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only")) + ggtitle("Cetaceans") 
+
+#save plot as a PNG, remember to change file name
+png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/cetaceans_three_state_max_dinoc_all_models_AICc.png",  units = "cm", height = 15, width = 15, res = 225)
+AICc_cet_plot
+dev.off()
+
+#extract and plot AIC
+ER_SYM_results <- readRDS(here("cetaceans_tree_max_dinoc_traits_ER_SYM_models.rds"))
+ARD_results <- readRDS(here("cetaceans_tree_max_dinoc_traits_ARD_models.rds"))
+bridge_only_results <- readRDS(here("cetaceans_tree_max_dinoc_traits_bridge_only_models.rds"))
+
+ER_AIC <- unlist(lapply(ER_SYM_results$ER_model, function(x) returnAIC(model = x)))
+SYM_AIC  <- unlist(lapply(ER_SYM_results$SYM_model, function(x) returnAIC(model = x)))
+ARD_AIC  <- unlist(lapply(ARD_results$ARD_model, function(x) returnAIC(model = x)))
+bridge_only_AIC  <- unlist(lapply(bridge_only_results$bridge_only_model, function(x) returnAIC(model = x)))
+
+## combine and plot
+
+df1 <- data.frame(model = "ER", AIC = ER_AIC)
+df2 <- data.frame(model = "SYM", AIC = SYM_AIC)
+df3 <- data.frame(model = "ARD", AIC = ARD_AIC)
+df4 <- data.frame(model = "Bridge only", AIC = bridge_only_AIC)
+df_s6x <- rbind(df1, df2, df3, df4)
+
+AIC_cet_plot <- ggplot(df_s6x, aes(x = fct_inorder(model), y = AIC)) + geom_jitter(alpha = 0.6, color = "#00BFC4") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 0, vjust = 0, hjust=0.5, size =10), axis.text.y = element_text(size =10)) +
+  labs(x = "Model", y = "AIC score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only")) + ggtitle("Cetaceans") 
+
+#save plot as a PNG, remember to change file name
+png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/cetaceans_three_state_maxdinoc_AIC.png",  units = "cm", height = 15, width = 15, res = 225)
+AIC_cet_plot
 dev.off()
 
 # ###Cetaceans_max_dinoc_ER_rates### ----------------------------------------------------------------
@@ -265,6 +396,14 @@ for(i in 1:6){
   dev.off()
 }
 
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/cetacean_max_dinoc_SYM/all_rates_SYM.png", width = 30, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution, ncol = 3, nrow = 2)
+dev.off()
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/cetacean_max_dinoc_SYM/all_rates_SYM_violinplot_median.png", width = 40, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_colours) + geom_violin(color = "black", scale = "width") + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_colours) + theme(legend.position = "none") + ggtitle("Cetaceans") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=3, colour = "red") 
+dev.off()
+
 # ####Cetaceans_max_dinoc_ARD_rates### #####
 
 ARD_results <- readRDS(here("cetaceans_tree_max_dinoc_traits_ARD_models.rds"))
@@ -285,12 +424,19 @@ rates_colours <- c("deeppink4", "dodgerblue4", "deeppink3", "seagreen4", "dodger
 
 rates_plot <- ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 3, page = 2)
 
-
 for(i in 1:6){
   png(paste0("C:/Users/ameli/Downloads/rates_dump/cetacean_max_dinoc_ARD/rates_plots", i, ".png"), width=20,height=10,units="cm",res=200)
   print(ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 1, nrow = 1, page = i) +  theme(strip.text = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold")))
   dev.off()
   }
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/cetacean_max_dinoc_ARD/all_rates_ARD.png", width = 30, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution, ncol = 3, nrow = 2)
+dev.off()
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/cetacean_max_dinoc_ARD/all_rates_ARD_violinplot_median.png", width = 40, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_colours) + geom_violin(color = "black", scale = "width") + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_colours) + theme(legend.position = "none") + ggtitle("Cetaceans") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=3, colour = "red") 
+dev.off()
 
 # ####Cetaceans_max_dinoc_bridge_only_rates###########
 bridge_only_results <- readRDS(here("cetaceans_tree_max_dinoc_traits_bridge_only_models.rds"))
@@ -894,7 +1040,7 @@ for(i in 1:22){
 
 # Section 4.5: Ruminants, six_state--------------------------------------
 
-#use below for new primary source data
+#plot likelihoods of all 1k model results
 model_results <- readRDS(here("ruminants_six_state_traits_ER_SYM_ARD_models.rds"))
 
 ER_likelihoods <- unlist(lapply(model_results$ER_model, function(x) returnLikelihoods(model = x)))
@@ -909,15 +1055,57 @@ df2 <- data.frame(model = "SYM", likelihoods = SYM_likelihoods)
 df3 <- data.frame(model = "ARD", likelihoods = ARD_likelihoods)
 df_s6x <- rbind(df1, df2, df3)
 
-all_six_states_artio_plot <- ggplot(df_s6x, aes(x = fct_inorder(model), y = likelihoods)) + geom_jitter(alpha = 0.6, color = "purple") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
-  labs(x = "Model", y = "Log likelihood") #+ scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only"))
+six_states_likelihood_artio_plot <- ggplot(df_s6x, aes(x = fct_inorder(model), y = likelihoods)) + geom_jitter(alpha = 0.6, color = "salmon") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 0, vjust = 0, hjust=0.5, size =10), axis.text.y = element_text(size =10)) +
+  labs(x = "Model", y = "Log likelihood") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only")) + ggtitle("Ruminantia") 
 
 #save plot as a PNG, remember to change file name
 png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/ruminants_six_state_all_models_plot.png",  units = "cm", height = 15, width = 15, res = 225)
-all_six_states_artio_plot
+six_states_likelihood_artio_plot
 dev.off()
 
+#extract and plot AICc scores from 1k models
+model_results <- readRDS(here("ruminants_six_state_traits_ER_SYM_ARD_models.rds"))
 
+ER_AICc <- unlist(lapply(model_results$ER_model, function(x) returnAICc(model = x)))
+SYM_AICc  <- unlist(lapply(model_results$SYM_model, function(x) returnAICc(model = x)))
+ARD_AICc  <- unlist(lapply(model_results$ARD_model, function(x) returnAICc(model = x)))
+
+## combine and plot
+
+df1 <- data.frame(model = "ER", AICc = ER_AICc)
+df2 <- data.frame(model = "SYM", AICc = SYM_AICc)
+df3 <- data.frame(model = "ARD", AICc = ARD_AICc)
+df_s6x <- rbind(df1, df2, df3)
+
+six_states_AICc_artio_plot <- ggplot(df_s6x, aes(x = fct_inorder(model), y = AICc)) + geom_jitter(alpha = 0.6, color = "salmon") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 0, vjust = 0, hjust=0.5, size =10), axis.text.y = element_text(size =10)) +
+  labs(x = "Model", y = "AICc score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only")) + ggtitle("Ruminantia") 
+
+#save plot as a PNG, remember to change file name
+png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/ruminants_six_state_all_models_AICc.png",  units = "cm", height = 15, width = 15, res = 225)
+six_states_AICc_artio_plot
+dev.off()
+
+#extract and plot AIC
+model_results <- readRDS(here("ruminants_six_state_traits_ER_SYM_ARD_models.rds"))
+
+ER_AIC <- unlist(lapply(model_results$ER_model, function(x) returnAIC(model = x)))
+SYM_AIC  <- unlist(lapply(model_results$SYM_model, function(x) returnAIC(model = x)))
+ARD_AIC  <- unlist(lapply(model_results$ARD_model, function(x) returnAIC(model = x)))
+
+## combine and plot
+
+df1 <- data.frame(model = "ER", AIC = ER_AIC)
+df2 <- data.frame(model = "SYM", AIC = SYM_AIC)
+df3 <- data.frame(model = "ARD", AIC = ARD_AIC)
+df_s6x <- rbind(df1, df2, df3)
+
+six_states_AIC_artio_plot <- ggplot(df_s6x, aes(x = fct_inorder(model), y = AIC)) + geom_jitter(alpha = 0.6, color = "salmon") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 0, vjust = 0, hjust=0.5, size =10), axis.text.y = element_text(size =10)) +
+  labs(x = "Model", y = "AIC score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only")) + ggtitle("Ruminantia") 
+
+#save plot as a PNG, remember to change file name
+png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/ruminants_six_state_all_models_AIC.png",  units = "cm", height = 15, width = 15, res = 225)
+six_states_AIC_artio_plot
+dev.off()
 
 # ###Ruminants_six_state_ER_rates### ----------------------------------------------------------------
 
@@ -1001,11 +1189,15 @@ rates_df$solution <- rep(c("Cath/crep -> Cath", "Di -> Cath", "Di/crep -> Cath",
 
 #rates_colours <- rep(c("darkorchid1", "deeppink3", "maroon1", "dodgerblue2", "mediumpurple1", "darkorchid4","orchid1", "firebrick4", "slateblue1", "thistle3", "deeppink4", "orchid3", "darkorange","seagreen3","springgreen1","maroon3","firebrick1","darkorange3","olivedrab1","brown","dodgerblue4","slateblue4","seagreen4","olivedrab3","gold","mediumpurple4","thistle4","springgreen4","brown1","gold3"), 1000)
 
-rates_colours <- rep(c("#ac00b6", "#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3","#2a2956", "#383e6f", "#47558a", "#556ca4", "#6385bf", "#bd5c35", "#d37a57", "#e79979", "#fbb89d",  "#a63d13", "#b48204", "#c6952e", "#d7a84a", "#e9bb65","#facf80","#176d56", "#40826d","#629884","#82ae9d","#a2c4b6", "#5c8816", "#779d40", "#92b264", "#adc887", "#c9deab"),1000)
+rates_colours <- rep(c("#ac00b6", "#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3","#2a2956", "#383e6f", "#47558a", "#556ca4", "#6385bf",  "#a63d13", "#bd5c35", "#d37a57", "#e79979", "#fbb89d", "#b48204", "#c6952e", "#d7a84a", "#e9bb65","#facf80","#176d56", "#40826d","#629884","#82ae9d","#a2c4b6", "#5c8816", "#779d40", "#92b264", "#adc887", "#c9deab"),1000)
 ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 5, nrow = 6)
 
 png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/ruminants_six_state_ARD/all_rates_ARD.png", width = 30, height = 20, units = "cm", res = 600)
 ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution, ncol = 5, nrow = 6)
+dev.off()
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/ruminants_six_state_ARD/all_rates_ARD_violinplot_median.png", width = 40, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_colours) + geom_violin(color = "black", scale = "width") + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_colours) + theme(legend.position = "none") + ggtitle("Ruminantia") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=3, colour = "red") 
 dev.off()
 
 #save out as png, remember to change file name
@@ -1020,7 +1212,7 @@ for(i in 1:6){
 rates_colours_30 <- c("#ac00b6", "#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3","#2a2956", "#383e6f", "#47558a", "#556ca4", "#6385bf", "#a63d13", "#bd5c35", "#d37a57", "#e79979", "#fbb89d", "#b48204", "#c6952e", "#d7a84a", "#e9bb65","#facf80","#176d56", "#40826d","#629884","#82ae9d","#a2c4b6", "#5c8816", "#779d40", "#92b264", "#adc887", "#c9deab")
 
 png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/ruminants_six_state_ARD/all_rates_mean_ARD.png", width = 30, height = 15, units = "cm", res = 600)
-rates_df %>% group_by(solution) %>% summarise(mean_rates = mean(rates)) %>% ggplot(., aes(x = solution, y = mean_rates)) + geom_col(fill = rates_colours_30) + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95, size = 8))
+rates_df %>% group_by(solution) %>% summarise(mean_rates = mean(rates)) %>% ggplot(., aes(x = solution, y = mean_rates)) + geom_col(fill = rates_colours_30) + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95, size = 10)) + ggtitle("Ruminantia") + labs(x = "Transition", y = "Mean rate")
 dev.off()
 
 test <- rates_df %>% group_by(solution) %>% summarise(mean_rates = mean(rates)) 
@@ -1043,7 +1235,7 @@ test <- rates_df %>% group_by(solution) %>% summarise(mean_rates = mean(rates))
 
 # Section 4.5: Whippomorpha, five_state--------------------------------------
 
-#use below for new primary source data
+#extract and plot likelihood scores
 model_results <- readRDS(here("whippomorpha_six_state_traits_ER_SYM_ARD_models.rds"))
 
 ER_likelihoods <- unlist(lapply(model_results$ER_model, function(x) returnLikelihoods(model = x)))
@@ -1057,14 +1249,59 @@ df2 <- data.frame(model = "SYM", likelihoods = SYM_likelihoods)
 df3 <- data.frame(model = "ARD", likelihoods = ARD_likelihoods)
 df_s6x <- rbind(df1, df2, df3)
 
-all_six_states_artio_plot <- ggplot(df_s6x, aes(x = fct_inorder(model), y = likelihoods)) + geom_jitter(alpha = 0.6, color = "purple") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
-  labs(x = "Model", y = "Log likelihood") #+ scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only"))
+all_six_states_whippo_plot <- ggplot(df_s6x, aes(x = fct_inorder(model), y = likelihoods)) + geom_jitter(alpha = 0.6, color = "blue") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 0, vjust = 0, hjust=0.5, size =10), axis.text.y = element_text(size =10)) +
+  labs(x = "Model", y = "Log likelihood") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different")) + ggtitle("Whippomorpha") 
 
 #save plot as a PNG, remember to change file name
 png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/whippomorpha_six_state_all_models_plot.png",  units = "cm", height = 15, width = 15, res = 225)
-all_six_states_artio_plot
+all_six_states_whippo_plot
 dev.off()
 
+#extract and plot AICc scores from 1k models
+model_results <- readRDS(here("whippomorpha_six_state_traits_ER_SYM_ARD_models.rds"))
+
+ER_AICc <- unlist(lapply(model_results$ER_model, function(x) returnAICc(model = x)))
+SYM_AICc  <- unlist(lapply(model_results$SYM_model, function(x) returnAICc(model = x)))
+ARD_AICc  <- unlist(lapply(model_results$ARD_model, function(x) returnAICc(model = x)))
+bridge_only_AICc  <- unlist(lapply(model_results$bridge_only_model, function(x) returnAICc(model = x)))
+
+## combine and plot
+
+df1 <- data.frame(model = "ER", AICc = ER_AICc)
+df2 <- data.frame(model = "SYM", AICc = SYM_AICc)
+df3 <- data.frame(model = "ARD", AICc = ARD_AICc)
+df_s6x <- rbind(df1, df2, df3)
+
+six_states_AICc_whippo_plot <- ggplot(df_s6x, aes(x = fct_inorder(model), y = AICc)) + geom_jitter(alpha = 0.6, color = "blue") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 0, vjust = 0, hjust=0.5, size =10), axis.text.y = element_text(size =10)) +
+  labs(x = "Model", y = "AICc score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different")) + ggtitle("Whippomorpha") 
+
+#save plot as a PNG, remember to change file name
+png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/whippomorpha_six_state_all_models_AICc.png",  units = "cm", height = 15, width = 15, res = 225)
+six_states_AICc_whippo_plot
+dev.off()
+
+#extract and plot AIC
+model_results <- readRDS(here("whippomorpha_six_state_traits_ER_SYM_ARD_models.rds"))
+
+ER_AIC <- unlist(lapply(model_results$ER_model, function(x) returnAIC(model = x)))
+SYM_AIC  <- unlist(lapply(model_results$SYM_model, function(x) returnAIC(model = x)))
+ARD_AIC  <- unlist(lapply(model_results$ARD_model, function(x) returnAIC(model = x)))
+bridge_only_AIC  <- unlist(lapply(model_results$bridge_only_model, function(x) returnAIC(model = x)))
+
+## combine and plot
+
+df1 <- data.frame(model = "ER", AIC = ER_AIC)
+df2 <- data.frame(model = "SYM", AIC = SYM_AIC)
+df3 <- data.frame(model = "ARD", AIC = ARD_AIC)
+df_s6x <- rbind(df1, df2, df3)
+
+six_states_AIC_whippo_plot <- ggplot(df_s6x, aes(x = fct_inorder(model), y = AIC)) + geom_jitter(alpha = 0.6, color = "blue") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 0, vjust = 0, hjust=0.5, size =10), axis.text.y = element_text(size =10)) +
+  labs(x = "Model", y = "AIC score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different")) + ggtitle("Whippomorpha") 
+
+#save plot as a PNG, remember to change file name
+png("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/whippo_six_state_all_models_AIC.png",  units = "cm", height = 15, width = 15, res = 225)
+six_states_AIC_whippo_plot
+dev.off()
 
 # ###Whippomorpha_five_state_ER_rates### ----------------------------------------------------------------
 
@@ -1082,7 +1319,7 @@ rates_df$model <- "six_state_ER"
 rates_df <- rates_df[!(is.na(rates_df$rates)),]
 
 rates_df$solution <- c("Cath -> Di", "Cath -> Di/crep", "Cath -> Noc", "Cath -> Noc/crep",  "Di -> Cath", "Di -> Di/crep", "Di -> Noc", "Di -> Noc/crep", "Di/crep -> Cath", "Di/crep -> Di", "Di/crep -> Noc", "Di/crep -> Noc/crep", "Noc -> Cath", "Noc -> Di", "Noc -> Di/crep", "Noc -> Noc/crep", "Noc/crep -> Cath", "Noc/crep -> Di", "Noc/crep -> Di/crep", "Noc/crep -> Noc" )
-rates_colours_30 <- c("#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3", "#bd5c35", "#e79979", "#fbb89d",  "#a63d13", "#b48204", "#c6952e", "#e9bb65","#facf80","#176d56","#629884","#82ae9d","#a2c4b6", "#5c8816", "#92b264", "#adc887", "#c9deab")
+rates_colours_30 <- c("#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3", "#a63d13", "#bd5c35", "#e79979", "#fbb89d", "#b48204", "#c6952e", "#e9bb65","#facf80","#176d56","#629884","#82ae9d","#a2c4b6", "#5c8816", "#92b264", "#adc887", "#c9deab")
 
 png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/whippomorpha_five_state_ER/all_rates_ER.png", width = 30, height = 20, units = "cm", res = 600)
 ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution, ncol = 4, nrow = 5)
@@ -1094,7 +1331,7 @@ for(i in 1:5){
   dev.off()
 }
 
-# ###Ruminants_six_state_SYM_rates### ----------------------------------------------------------------
+# ###Whippomorpha_six_state_SYM_rates### ----------------------------------------------------------------
 
 #use below for Amelia primary source data
 model_results <- readRDS(here("whippomorpha_six_state_traits_ER_SYM_ARD_models.rds"))
@@ -1110,7 +1347,7 @@ rates_df$model <- "six_state_SYM"
 rates_df <- rates_df[!(is.na(rates_df$rates)),]
 
 rates_df$solution <- c("Cath -> Di", "Cath -> Di/crep", "Cath -> Noc", "Cath -> Noc/crep",  "Di -> Cath", "Di -> Di/crep", "Di -> Noc", "Di -> Noc/crep", "Di/crep -> Cath", "Di/crep -> Di", "Di/crep -> Noc", "Di/crep -> Noc/crep", "Noc -> Cath", "Noc -> Di", "Noc -> Di/crep", "Noc -> Noc/crep", "Noc/crep -> Cath", "Noc/crep -> Di", "Noc/crep -> Di/crep", "Noc/crep -> Noc" )
-rates_colours_30 <- c("#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3", "#bd5c35", "#e79979", "#fbb89d",  "#a63d13", "#b48204", "#c6952e", "#e9bb65","#facf80","#176d56","#629884","#82ae9d","#a2c4b6", "#5c8816", "#92b264", "#adc887", "#c9deab")
+rates_colours_30 <- c("#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3", "#a63d13", "#bd5c35", "#e79979", "#fbb89d",  "#b48204", "#c6952e", "#e9bb65","#facf80","#176d56","#629884","#82ae9d","#a2c4b6", "#5c8816", "#92b264", "#adc887", "#c9deab")
 
 png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/whippomorpha_five_state_SYM/all_rates_SYM.png", width = 30, height = 20, units = "cm", res = 600)
 ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution, ncol = 4, nrow = 5)
@@ -1139,13 +1376,23 @@ rates_df <- rates_df[!(is.na(rates_df$rates)),]
 row.names(rates_df) <- 1:length(rates_df$rates)
 
 rates_df$solution <- c("Cath -> Di", "Cath -> Di/crep", "Cath -> Noc", "Cath -> Noc/crep",  "Di -> Cath", "Di -> Di/crep", "Di -> Noc", "Di -> Noc/crep", "Di/crep -> Cath", "Di/crep -> Di", "Di/crep -> Noc", "Di/crep -> Noc/crep", "Noc -> Cath", "Noc -> Di", "Noc -> Di/crep", "Noc -> Noc/crep", "Noc/crep -> Cath", "Noc/crep -> Di", "Noc/crep -> Di/crep", "Noc/crep -> Noc" )
-rates_colours <- c("#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3", "#bd5c35", "#e79979", "#fbb89d",  "#a63d13", "#b48204", "#c6952e", "#e9bb65","#facf80","#176d56","#629884","#82ae9d","#a2c4b6", "#5c8816", "#92b264", "#adc887", "#c9deab")
+rates_colours <- c("#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3", "#a63d13", "#bd5c35", "#e79979", "#fbb89d", "#b48204", "#c6952e", "#e9bb65","#facf80","#176d56","#629884","#82ae9d","#a2c4b6", "#5c8816", "#92b264", "#adc887", "#c9deab")
 
 ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap_paginate(~solution, ncol = 4, nrow = 5)
 
 png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/whippomorpha_five_state_ARD/all_rates_ARD.png", width = 30, height = 20, units = "cm", res = 600)
 ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_colours)+ scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + facet_wrap(~solution, ncol = 4, nrow = 5)
 dev.off()
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/whippomorpha_five_state_ARD/all_rates_ARD_violinplot_median.png", width = 40, height = 20, units = "cm", res = 600)
+ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_colours) + geom_violin(color = "black", scale = "width") + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_colours) + theme(legend.position = "none") + ggtitle("Whippomorpha") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=3, colour = "red") 
+dev.off()
+
+rates_df <- rates_df %>% mutate(log_rates = log10(rates) + 10)
+ggplot(rates_df, aes(x= solution, y = log(log_rates), group = solution, fill = solution, color = solution)) + geom_jitter(aes(color = solution, alpha = 0.2)) + geom_violin(colour = "black")
+
+ggplot(rates_df, aes(x= solution, y = log(rates), group = solution)) + geom_boxplot(outlier.shape = NA) #+ theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_colours) + theme(legend.position = "none") + ggtitle("Whippomorpha") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=3, colour = "red") 
+ggplot(rates_df, aes(x= solution, y = log_rates, group = solution, fill = solution, color = solution)) + geom_jitter(aes(color = solution, alpha = 0.2)) + geom_violin(colour = "black") + scale_y_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_colours) + theme(legend.position = "none") + ggtitle("Whippomorpha") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=3, colour = "red") 
 
 #save out as png, remember to change file name
 for(i in 1:5){
@@ -1156,10 +1403,10 @@ for(i in 1:5){
 
 #get the mean rate out of the 1000 model results for each of the 30 rates
 #group by solution, calculate the mean
-rates_colours <- c("#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3", "#bd5c35", "#e79979", "#fbb89d",  "#a63d13", "#b48204", "#c6952e", "#e9bb65","#facf80","#176d56","#629884","#82ae9d","#a2c4b6", "#5c8816", "#92b264", "#adc887", "#c9deab")
+rates_colours <- c("#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3","#a63d13", "#bd5c35", "#e79979", "#fbb89d", "#b48204", "#c6952e", "#e9bb65","#facf80","#176d56","#629884","#82ae9d","#a2c4b6", "#5c8816", "#92b264", "#adc887", "#c9deab")
 
 png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/whippomorpha_five_state_ARD/all_rates_mean_ARD.png", width = 30, height = 15, units = "cm", res = 600)
-rates_df %>% group_by(solution) %>% summarise(mean_rates = mean(rates)) %>% ggplot(., aes(x = solution, y = mean_rates)) + geom_col(fill = rates_colours) + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95, size = 8))
+rates_df %>% group_by(solution) %>% summarise(mean_rates = mean(rates)) %>% ggplot(., aes(x = solution, y = mean_rates)) + geom_col(fill = rates_colours) + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95, size = 10)) + ggtitle("Whippomorpha") + labs(x = "Transition", y = "Mean rate") 
 dev.off()
 
 # Section 5: Artiodactyla without cetaceans, max_crep--------------------------------------
@@ -1535,9 +1782,9 @@ dev.off()
 
 # ### Rates Scatterplot Max_crep bridge_only ###----------------------------
 #use below for cetacean
-#bridge_only_results <- readRDS(here("cetaceans_tree_max_crep_traits_bridge_only_models.rds"))
+bridge_only_results <- readRDS(here("cetaceans_tree_max_crep_traits_bridge_only_models.rds"))
 #use below for artiodactyla -primary source data 
-bridge_only_results <- readRDS(here("artiodactyla_new_max_crep_traits_ER_SYM_bridge_only_models.rds"))
+#bridge_only_results <- readRDS(here("artiodactyla_new_max_crep_traits_ER_SYM_bridge_only_models.rds"))
 
 rates <- unlist(lapply(bridge_only_results$bridge_only_model, function(x) returnRates(model = x)))
 #we want to format this into a dataframe with three columns
@@ -1563,25 +1810,45 @@ rates_pivot <- cbind( rates_pivot, likelihoods_df)
 
 colnames(rates_pivot) <- c("model", "DiCath", "NocCath", "CathDi", "CathNoc", "likelihoods")
 
-scatter_dicath <- ggplot(rates_pivot, aes(x = CathDi, y = DiCath, colour = likelihoods)) + geom_point() + scale_colour_gradient(low = "deeppink4", high = "plum") +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold")) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + scale_y_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) 
+#coloured by likelihood
+# scatter_dicath <- ggplot(rates_pivot, aes(x = CathDi, y = DiCath, colour = likelihoods)) + geom_point() + scale_colour_gradient(low = "deeppink4", high = "plum") +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold")) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + scale_y_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) 
+# scatter_noccath <- ggplot(rates_pivot, aes(x = NocCath, y = CathNoc, colour = likelihoods)) + geom_point() + scale_colour_gradient(low = "dodgerblue4", high = "cyan") +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold")) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + scale_y_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) 
 
-scatter_noccath <- ggplot(rates_pivot, aes(x = NocCath, y = CathNoc, colour = likelihoods)) + geom_point() + scale_colour_gradient(low = "dodgerblue4", high = "cyan") +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold")) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + scale_y_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) 
+#Not coloured by likelihood
+scatter_dicath <- ggplot(rates_pivot, aes(x = CathDi, y = DiCath)) + geom_point(color = "deeppink3", alpha = 0.5) +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold")) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + scale_y_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) 
+scatter_noccath <- ggplot(rates_pivot, aes(x = NocCath, y = CathNoc)) + geom_point(color = "dodgerblue3", alpha = 0.5) +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold")) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + scale_y_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) 
 
 #to be continued
-# scatter_1 <- ggplot(rates_pivot, aes(x = NocCath, y = DiCath)) + geom_point(colour = "grey10") +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold"))
-# scatter_2 <- ggplot(rates_pivot, aes(x = NocCath, y = CathDi)) + geom_point(colour = "grey20") +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold"))
-# scatter_3 <- ggplot(rates_pivot, aes(x = CathNoc, y = DiCath)) + geom_point(colour = "grey30") +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold"))
-# scatter_4 <- ggplot(rates_pivot, aes(x = CathNoc, y = CathDi)) + geom_point(colour = "grey40") +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold"))
+scatter_1 <- ggplot(rates_pivot, aes(x = NocCath, y = DiCath)) + geom_point(colour = "purple1", alpha = 0.5) +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold"))
+scatter_2 <- ggplot(rates_pivot, aes(x = NocCath, y = CathDi)) + geom_point(colour = "purple2", alpha = 0.5) +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold"))
+scatter_3 <- ggplot(rates_pivot, aes(x = CathNoc, y = DiCath)) + geom_point(colour = "purple3", alpha = 0.5) +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold"))
+scatter_4 <- ggplot(rates_pivot, aes(x = CathNoc, y = CathDi)) + geom_point(colour = "purple4", alpha = 0.5) +  theme(plot.title = element_text(size = 24), axis.text=element_text(size=24), axis.title=element_text(size=24,face="bold"))
 
 
-#save out as a png
+#save out as a png, remember to change file name
 
-png(filename = "C:/Users/ameli/OneDrive/Documents/R_projects/Rates_scatterplots/artio_max_crep_bridge_only_scatter_dicath.png", units = "cm", height = 20, width = 20, res = 500)
+png(filename = "C:/Users/ameli/OneDrive/Documents/R_projects/Rates_scatterplots/cet_max_crep_bridge_only_scatter_dicath_v_cathdi.png", units = "cm", height = 20, width = 20, res = 500)
 scatter_dicath
 dev.off()
 
-png(filename = "C:/Users/ameli/OneDrive/Documents/R_projects/Rates_scatterplots/artio_max_crep_bridge_only_scatter_noccath.png", units = "cm", height = 20, width = 20, res = 500)
+png(filename = "C:/Users/ameli/OneDrive/Documents/R_projects/Rates_scatterplots/cet_max_crep_bridge_only_scatter_noccath_v_cathnoc.png", units = "cm", height = 20, width = 20, res = 500)
 scatter_noccath
+dev.off()
+
+png(filename = "C:/Users/ameli/OneDrive/Documents/R_projects/Rates_scatterplots/cet_max_crep_bridge_only_scatter_noccath_v_dicath.png", units = "cm", height = 20, width = 20, res = 500)
+scatter_1
+dev.off()
+
+png(filename = "C:/Users/ameli/OneDrive/Documents/R_projects/Rates_scatterplots/cet_max_crep_bridge_only_scatter_noccath_v_cathdi.png", units = "cm", height = 20, width = 20, res = 500)
+scatter_2
+dev.off()
+
+png(filename = "C:/Users/ameli/OneDrive/Documents/R_projects/Rates_scatterplots/cet_max_crep_bridge_only_scatter_cathnoc_v_dicath.png", units = "cm", height = 20, width = 20, res = 500)
+scatter_3
+dev.off()
+
+png(filename = "C:/Users/ameli/OneDrive/Documents/R_projects/Rates_scatterplots/cet_max_crep_bridge_only_scatter_cathnoc_v_cathdi.png", units = "cm", height = 20, width = 20, res = 500)
+scatter_4
 dev.off()
 
 # ### Rates Scatterplot Cetacean Max_dinoc ARD ###----------------------------
@@ -1683,27 +1950,27 @@ dev.off()
 
 
 # #Section 9: Plot max_clade_cred tree results------------------------------------
-model_results <- readRDS(here("artiodactyla_max_clade_cred_six_state_traits_ER_SYM_ARD_models.rds"))
-
-model_results_old <- readRDS(here("old_artiodactyla_max_clade_cred_six_state_traits_ER_SYM_ARD_bridge_only_models.rds"))
+model_results <- readRDS(here("artiodactyla_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_models.rds"))
 
 # ER_results <- model_results$ER_model
 # SYM_results <- model_results$SYM_model
 ARD_results <- model_results$ARD_model
 plotMKmodel(ARD_results)
 
-ARD_results_old <- model_results_old$ARD_model
-plotMKmodel(ARD_results_old)
-# bridge_results <- model_results$bridge_only
-# hidden_rates <- model_results$hidden_rates
+model_results <- readRDS(here("artiodactyla_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_models.rds"))
+
+# create a new plotting window and set the plotting area into a 1*3 array
+par(mfrow = c(2, 2))
+
+# plot a bar chart for max.temp
+plotMKmodel(model_results$ER_model)
+plotMKmodel(model_results$SYM_model)
+plotMKmodel(model_results$ARD_model)
 
 rates_df <- as.data.frame(ARD_results$solution)
 
 #use below to plot rates from 6 state model
-#rates_df <- pivot_longer(rates_df, cols = 1:6, names_to = "rates")
-
-#use below for 5 state model
-rates_df <- pivot_longer(rates_df, cols = 1:5, names_to = "rates")
+rates_df <- pivot_longer(rates_df, cols = 1:ncol(rates_df), names_to = "rates")
 
 #drop rows with no transition rates (ie Di -> Di, Noc -> Noc)
 rates_df <- rates_df[!(is.na(rates_df$value)),]
@@ -1723,14 +1990,28 @@ png("C:/Users/ameli/OneDrive/Documents/R_projects/rates_dump/whippomorpha_five_s
 ggplot(rates_df, aes(x = solution, y = value)) + geom_col(fill = rates_colours_30) + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95, size = 8))
 dev.off()
 
-likelihoods <- unlist(lapply(model_results, function(x) returnLikelihoods(model = x)))
-likelihoods <- as.data.frame(likelihoods)
-likelihoods$model <- rownames(likelihoods)
+model_results <- readRDS(here("artiodactyla_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_models.rds"))
 
-ggplot(likelihoods, aes(x = model, y = likelihoods)) + geom_point()
+log_likelihoods <- unlist(lapply(model_results, function(x) returnLikelihoods(model = x)))
+likelihoods <- as.data.frame(log_likelihoods)
+likelihoods$model <- rownames(likelihoods)
+likelihoods$AICc_scores <-AICc_scores 
+likelihoods$AIC_scores <-AIC_scores 
+
+likelihood_plot <- ggplot(likelihoods, aes(x = model, y = log_likelihoods)) + geom_point()
+AICc_scores <- unlist(lapply(model_results, function(x) returnAICc(model = x)))
+AICc_plot <- ggplot(likelihoods, aes(x = model, y = AICc_scores)) + geom_point()
+AIC_scores <- unlist(lapply(model_results, function(x) returnAIC(model = x)))
+
+likelihoods <- likelihoods %>% pivot_longer(!model, names_to = "model_metric", values_to = "model_value")
+
+ggplot(likelihoods, aes(x = model, y = model_value, color = model)) + geom_point(size = 5) + scale_color_brewer(palette = "Accent")+ facet_wrap(~model_metric, scales = "free")
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/max_clade_cred_likelihoods/likelihood_metrics.png", width = 30, height = 15, units = "cm", res = 600)
+ggplot(likelihoods, aes(x = model, y = model_value, color = model)) + geom_point(size = 5) + scale_color_brewer(palette = "Accent")+ facet_wrap(~model_metric, scales = "free")
+dev.off()
 
 ARD_matrix <- as.matrix(ARD_results$data)
-
 make.simmap(ARD_results$phy, as.matrix(ARD_results$data), model = ARD)
 
 # #Section 10: Statistical significance -----------------------------------
