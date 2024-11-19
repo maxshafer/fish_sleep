@@ -91,6 +91,20 @@ if(args[1] == "max_dinoc"){
   trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("diurnal", "nocturnal", "cathemeral"),]
 }
 
+if(args[1] == "four_state_max_crep"){
+  trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
+  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "nocturnal/crepuscular", "crepuscular")
+  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "diurnal/crepuscular", "crepuscular")
+  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "cathemeral/crepuscular", "crepuscular")
+}
+
+if(args[1] == "four_state_max_dinoc"){
+  trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
+  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "nocturnal/crepuscular", "nocturnal")
+  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "diurnal/crepuscular", "diurnal")
+  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "cathemeral/crepuscular", "crepuscular")
+}
+
 if(args[1] == "six_state"){
   trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
   trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)),]
