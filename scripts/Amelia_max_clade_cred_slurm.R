@@ -166,8 +166,17 @@ if("bridge_only" %in% args & "max_crep" %in% args & "hidden_rate" %in% args){
 # #need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> nocturnal/3 (6)
 # custom_rate_matrix <- dropStateMatPars(generic_ratemat, c(14, 15, 19, 20, 23, 24, 28, 29))
 #        
-if("bridge_only" %in% args & "six_state" %in% args){
-  bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = custom_rate_matrix, node.states = "marginal")
+# if("bridge_only" %in% args & "six_state" %in% args){
+#   bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = custom_rate_matrix, node.states = "marginal")
+# }
+
+#for four state
+if("bridge_only" %in% args & "four_state_max_dinoc" %in% args){
+  bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0, 0,10,11,0,0), ncol = 4, nrow = 4, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"), c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"))), node.states = "marginal")
+}
+
+if("bridge_only" %in% args & "four_state_max_crep" %in% args){
+  bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0, 0,10,11,0,0), ncol = 4, nrow = 4, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"), c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"))), node.states = "marginal")
 }
 
 

@@ -97,7 +97,7 @@ trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
 trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 
 #should fix colours
-custom.colours <- c("#dd8ae7", "pink", "black", "grey80", "#66C2A5", "#A6D854")
+custom.colours <- c("#dd8ae7", "pink", "orange", "black", "grey80", "#66C2A5", "#A6D854")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "Echo")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours)
 diel.plot <- diel.plot +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Echo), inherit.aes = FALSE, colour = "transparent") 
@@ -220,3 +220,77 @@ behav <- read.csv("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_d
 #group size
 #social dynamics
 #longevity
+
+#ancestral reconstruction of echolocation
+trait.data <- read.csv(here("cetaceans_full.csv"))
+trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_4)), c("tips", "Diel_Pattern_4")]
+
+echo <- read_xlsx("C:/Users/ameli/OneDrive/Documents/R_projects/cetacean_discrete_traits/Coombs_et_al_2022.xlsx")
+echo <- echo[!(is.na(echo$Echo)), c("Museum ID", "Echo", "Diet", "Dentition", "FM", "Habitat")]
+echo$tips <- str_replace(echo$`Museum ID`, " ", "_")
+
+echo <- echo %>% filter(echo$tips %in% trait.data$tips)
+
+trait.data <- merge(trait.data, echo, by = "tips")
+
+#add hippo data
+trait.data <- rbind(trait.data, c("Hexaprotodon_liberiensis", "nocturnal","Hexaprotodon liberiensis", "no echo", "Misc", "Unknown", "Biting", "Semi-aquatic"))
+trait.data <- rbind(trait.data, c("Hippopotamus_amphibius",  "nocturnal","Hippopotamus amphibius", "no echo","Misc", "Unknown", "Biting", "Semi-aqautic"))
+
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+#should fix colours
+#custom.colours <- c("#dd8ae7", "pink", "orange", "black", "grey80", "#66C2A5", "#A6D854")
+custom.colours <- c("#dd8ae7", "#FC8D62", "black", "grey80", "#66C2A5")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_4", "Echo")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_4), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours)
+diel.plot <- diel.plot +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Echo), inherit.aes = FALSE, colour = "transparent") 
+diel.plot <- diel.plot + geom_tiplab(size = 3, offset = 3)
+diel.plot
+
+#run the markov models on the echolocation data
+#since 1 = echo and 2 = no echo we can use the following to set the state at the root to no echo
+#"If analyzing a binary or multistate character, the order of root.p is the same order as the traits – e.g., for states 1, 2, 3, a root.p=c(0,1,0) would fix the root to be in state 2"
+ER <- corHMM(phy = trpy_n, data = trait.data[, c("tips", "Echo")], rate.cat = 1, model = "ER", node.states = "marginal", root.p = c(0, 1))
+SYM <- corHMM(phy = trpy_n, data = trait.data[, c("tips", "Echo")], rate.cat = 1, model = "SYM", node.states = "marginal", root.p = c(0, 1))
+ARD <- corHMM(phy = trpy_n, data = trait.data[, c("tips", "Echo")], rate.cat = 1, model = "ARD", node.states = "marginal", root.p = c(0, 1))
+
+echo_model_results <- lapply(c("ER", "SYM", "ARD"), function(x) eval(as.name(x)))
+names(echo_model_results) <- paste(c("ER", "SYM", "ARD"), "_model", sep = "")
+#can now plot the likelihood metrics using the Amelia all model plots new functions
+
+model_results <- ARD
+file_name <- "cetacean_echolocation"
+
+phylo_tree <- model_results$phy
+
+#rename column names for consistency in the next steps
+colnames(model_results$data) <- c("tips", "Echo")
+
+#to make more clear we can colour the tips separately using geom_tipppoint 
+#may have to adjust what trait data column is called in each
+base_tree <- ggtree(phylo_tree, layout = "rectangular") + geom_tiplab(size = 3, hjust = -0.1)
+base_tree <- base_tree %<+% model_results$data[, c("tips", "Echo")]
+base_tree <- base_tree + geom_tippoint(aes(color = Echo), size = 4) 
+base_tree
+
+#make the dataframe of likelihoods at the internal nodes without the tips
+lik.anc <- as.data.frame(model_results$states)
+
+#for cetaceans we have to add 72 because we are skipping the tips (nodes 1-72)
+#the internal nodes start at 73 and end at node 143
+#for artiodactyla we add 300 because we are skipping the tips (nodes 1-300)
+#the internal nodes start at 301 and end at node 599
+lik.anc$node <- c(1:nrow(lik.anc)) + nrow(model_results$data)
+
+#get the pie charts from this database using nodepie
+#the number of columns changes depending on how many trait states
+pie <- nodepie(lik.anc, 1:(length(lik.anc)-1))
+
+pie_tree <- base_tree + geom_inset(pie, width = .03, height = .03) 
+pie_tree
+
+# is the proportion of nocturnal species higher in the echolocating species vs non-echolocating
+table(trait.data$Diel_Pattern_4, trait.data$Echo)

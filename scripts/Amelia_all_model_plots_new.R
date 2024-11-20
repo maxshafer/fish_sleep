@@ -52,7 +52,7 @@ mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 
 #set file name
-filename <- "artiodactyla_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_models.rds"
+filename <- "test3_whippomorpha_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_models.rds"
 
 #returns a dataframe of all three metrics for all models
 likelihood_metrics <- max_clade_metrics(readRDS(here(filename)))
@@ -82,7 +82,7 @@ plotMKmodel(model_results$ARD_model)
 dev.off()
 
 # #Section 3: Plot likelihoods from 1k model results ----------------------
-filename <- "finalized_1k_models/artiodactyla_three_state_max_crep_traits_ER_SYM_ARD_bridge_only_models.rds"
+filename <- "test2_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_models.rds"
 
 #requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, bridge_only)
 #function returns a dataframe of the likelihoods for all 1k trees x number of Mk models
@@ -99,7 +99,7 @@ dev.off()
 
 #requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, bridge_only)
 #returns a df of the AIC scores for all 1k trees x number of Mk models
-plot1kAIC(readRDS(here(filename)), 4)
+df_full <- plot1kAIC(readRDS(here(filename)), 4)
 
 #plot and save out
 png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/likelihoods_", filename, ".png"), width = 30, height = 15, units = "cm", res = 600)
@@ -113,7 +113,7 @@ dev.off()
 
 #requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, bridge_only)
 #returns a df of the AICc scores for all 1k trees x number of Mk models
-plot1kAICc(readRDS(here(filename)), 4)
+df_full <- plot1kAICc(readRDS(here(filename)), 4)
 
 #plot and save out
 png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/1k_trees/likelihoods_", filename, ".png"), width = 30, height = 15, units = "cm", res = 600)
