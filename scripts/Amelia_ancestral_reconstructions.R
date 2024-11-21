@@ -16,6 +16,8 @@ library(gridExtra)
 library(dplyr)
 #reading in excel sheets
 library(readxl)
+#add timescale to ggtree
+library(deeptime)
 
 ## Packages for phylogenetic analysis in R (overlapping uses)
 ## They aren't all used here, but you should have them all
@@ -165,9 +167,9 @@ pie_tree
 
 
 #load in ARD model data
-all_model_results <- readRDS(here("ruminants_max_clade_cred_six_state_traits_ER_SYM_ARD_models.rds"))
+all_model_results <- readRDS(here("whippomorpha_max_clade_cred_max_crep_traits_ER_SYM_ARD_bridge_only_models.rds"))
 model_results <- all_model_results$ARD_model
-file_name <- "ruminant_six_state_ARD_models"
+file_name <- "whippomorpha_max_crep_three_state_ARD_model"
 
 phylo_tree <- model_results$phy
 
@@ -176,9 +178,9 @@ colnames(model_results$data) <- c("tips", "Diel_Pattern")
 
 #to make more clear we can colour the tips separately using geom_tipppoint 
 #may have to adjust what trait data column is called in each
-base_tree <- ggtree(phylo_tree, layout = "rectangular") + geom_tiplab(size = 1, hjust = -0.1)
+base_tree <- ggtree(phylo_tree, layout = "rectangular") + geom_tiplab(size = 4, hjust = -0.1)
 base_tree <- base_tree %<+% model_results$data[, c("tips", "Diel_Pattern")]
-base_tree <- base_tree + geom_tippoint(aes(color = Diel_Pattern), size = 2) 
+base_tree <- base_tree + geom_tippoint(aes(color = Diel_Pattern), size = 3) 
 base_tree
 
 #make the dataframe of likelihoods at the internal nodes without the tips
@@ -194,7 +196,11 @@ lik.anc$node <- c(1:nrow(lik.anc)) + nrow(model_results$data)
 #the number of columns changes depending on how many trait states
 pie <- nodepie(lik.anc, 1:(length(lik.anc)-1))
 
-pie_tree <- base_tree + geom_inset(pie, width = .04, height = .04) 
+pie_tree <- base_tree + geom_inset(pie, width = .03, height = .03) 
+#this adds a the timescale for the entire tree
+pie_tree <- pie_tree + theme_tree2()
+#reverses the timescale so it starts at 0mya at the tips and extends back to 50mya at ancestor
+pie_tree <- revts(pie_tree)
 pie_tree
 
 #save out

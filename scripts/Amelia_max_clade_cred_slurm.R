@@ -25,7 +25,6 @@ setwd(here())
 source("scripts/fish_sleep_functions.R")
 source("scripts/Amelia_functions.R")
 
-args <- c("six_state", "artiodactyla", "ARD", "hidden_rate", "bridge_only")
 # Section 1: Arguments ----------------------------------------------------
 args <- commandArgs(trailingOnly = TRUE)
 if(!(args[1] %in% c("max_crep", "max_dinoc", "six_state", "four_state_max_crep", "four_state_max_dinoc"))) {  
@@ -153,13 +152,13 @@ if("bridge_only" %in% args & "max_crep" %in% args){
 # generic_ratemat <- ARD$index.mat
 # hidden_rate_matrix <- dropStateMatPars(generic_ratemat, c(4, 6, 10, 12))
 
-if("bridge_only" %in% args & "max_dinoc" %in% args & "hidden_rate" %in% args){
-  bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = hidden_rate_matrix, node.states = "marginal")
-}
-
-if("bridge_only" %in% args & "max_crep" %in% args & "hidden_rate" %in% args){
-  bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = hidden_rate_matrix, node.states = "marginal")
-}
+# if("bridge_only" %in% args & "max_dinoc" %in% args & "hidden_rate" %in% args){
+#   bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = hidden_rate_matrix, node.states = "marginal")
+# }
+# 
+# if("bridge_only" %in% args & "max_crep" %in% args & "hidden_rate" %in% args){
+#   bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = hidden_rate_matrix, node.states = "marginal")
+# }
 
 # #don't allow transitions from noc -> di, noc -> di/crep, noc/crep -> di, noc/crep -> di/crep, di -> noc, di -> noc/crep, di/crep -> noc, di/crep -> noc/crep 
 # generic_ratemat <- getStateMat4Dat(ARD$data)$rate.mat
@@ -185,9 +184,9 @@ if("bridge_only" %in% args & "four_state_max_crep" %in% args){
 # #need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> nocturnal/3 (6)
 # custom_rate_matrix <- dropStateMatPars(test_ratemat, c(14, 15, 19, 20, 23, 24, 28, 29, 44, 45, 49, 50, 53, 54, 58, 59))
 
-if("bridge_only" %in% args & "six_state" %in% args & "hidden_rate" %in% args){
-  bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = custom_rate_matrix, node.states = "marginal")
-}
+# if("bridge_only" %in% args & "six_state" %in% args & "hidden_rate" %in% args){
+#   bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = custom_rate_matrix, node.states = "marginal")
+# }
 
 # Section 5: Save the results out and extract likelihoods  --------
 #use paste() to create a filename with all of the arguments
