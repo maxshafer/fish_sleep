@@ -10,7 +10,6 @@ library(dplyr)
 #install.packages("tictoc")
 library(tictoc)
 
-
 ## Packages for phylogenetic analysis in R (overlapping uses)
 ## They aren't all used here, but you should have them all
 library(ape) 
@@ -116,7 +115,7 @@ if(args[1] == "six_state"){
 mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
 
 #subset cetacean trees for now to see if it runs
-mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 2)]
+#mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 2)]
 
 phylo_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_names = trait.data$tips))
    

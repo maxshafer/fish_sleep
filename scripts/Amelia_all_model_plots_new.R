@@ -52,7 +52,7 @@ mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 
 #set file name
-filename <- "test3_whippomorpha_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_models.rds"
+filename <- "testC_whippomorpha_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_models.rds"
 
 #returns a dataframe of all three metrics for all models
 likelihood_metrics <- max_clade_metrics(readRDS(here(filename)))

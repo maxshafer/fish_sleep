@@ -16,6 +16,8 @@ library(dplyr)
 library(readxl)
 #open tree of life
 library(rotl)
+#adds timescale
+library(deeptime)
 
 ## Packages for phylogenetic analysis in R (overlapping uses)
 ## They aren't all used here, but you should have them all
@@ -221,7 +223,8 @@ behav <- read.csv("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_d
 #social dynamics
 #longevity
 
-#ancestral reconstruction of echolocation
+
+# # Ancestral reconstruction of echolocation ------------------------------
 trait.data <- read.csv(here("cetaceans_full.csv"))
 trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_4)), c("tips", "Diel_Pattern_4")]
 
@@ -290,7 +293,18 @@ lik.anc$node <- c(1:nrow(lik.anc)) + nrow(model_results$data)
 pie <- nodepie(lik.anc, 1:(length(lik.anc)-1))
 
 pie_tree <- base_tree + geom_inset(pie, width = .03, height = .03) 
+
+#adds a timescale
+pie_tree <- pie_tree + theme_tree2()
+#reverses the timescale so it starts at 0mya at the tips and extends back to 50mya at ancestor
+pie_tree <- revts(pie_tree)
 pie_tree
 
-# is the proportion of nocturnal species higher in the echolocating species vs non-echolocating
+#save out
+png(paste("C:/Users/ameli/OneDrive/Documents/R_projects/New_ancestral_recon/pie_chart/", "pie_chart_anc_recon_", "echolocation", ".png", sep = ""), width=40,height=20, units="cm",res=600)
+pie_tree
+dev.off()
+
+# is the proportion of nocturnal species higher in the echolocating species vs non-echolocating?
+#no it seems about half are 
 table(trait.data$Diel_Pattern_4, trait.data$Echo)

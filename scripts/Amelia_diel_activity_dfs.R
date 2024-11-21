@@ -14,7 +14,10 @@ library(dplyr)
 library(readxl)
 library(tidyr)
 library(lubridate)
-
+install.packages("deeptime")
+library(deeptime)
+update.packages("ggplot2")
+library(ggplot2)
 setwd(here())
 
 source("scripts/fish_sleep_functions.R")
@@ -705,16 +708,38 @@ test <- ggtree(trpy_n_test, layout = "circular", size = 0.5) + geom_tiplab(size 
 #test$data #29.36 million years ago to the root. Seems correct!
 
 #look at the tree for whippomorpha (hippos + cetacea) and see if time calibrated
-whippomorpha <- cetaceans_full
-whippomorpha <- rbind(cetaceans_full, c("Hexaprotodon liberiensis", "", NA, NA, "nocturnal", "nocturnal/crepuscular", "crepuscular", "", "3, 3, 3", "nocturnal", "Hippopotimiade", "Choeropsis_liberiensis"))
-whippomorpha <- rbind(whippomorpha, c("Hippopotamus amphibius", "", NA, NA, "nocturnal", "nocturnal/crepuscular", "crepuscular", "", "4, 4, 4", "crepuscular","Hippopotimiade", "Hippopotamus_amphibius"))
+whippomorpha <- read.csv(here("cetaceans_full.csv"))
+whippomorpha <- rbind(whippomorpha, c("Hexaprotodon_liberiensis", "Hexaprotodon liberiensis", "", NA, NA, "nocturnal", "nocturnal/crepuscular", "crepuscular", "nocturnal", "NA", "3, 3, 3", "Hippopotimiade", "Choeropsis_liberiensis"))
+whippomorpha <- rbind(whippomorpha, c("Hippopotamus_amphibius", "Hippopotamus amphibius", "", NA, NA, "nocturnal", "nocturnal/crepuscular", "crepuscular", "nocturnal", "NA", "4, 4, 4", "Hippopotimiade", "Hippopotamus_amphibius"))
 rownames(whippomorpha) <- whippomorpha$tips
 write.csv(whippomorpha, file = here("whippomorpha.csv"))
 
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 whippomorpha <- whippomorpha[whippomorpha$tips %in% mam.tree$tip.label,]
 trpy <- keep.tip(mam.tree, tip = whippomorpha$tips)
-whippo <- ggtree(trpy, layout = "circular", size = 0.5) + geom_tiplab(size = 2)
-#whippo$data shows the branch lengths (53.7 my to root). Also seems correct!
+#to add the timescale: geom_timescale() adds a scale for one region
+#theme_tree2() adds a scale to the entire tree
+whippo <- ggtree(trpy, layout = "rectangular", size = 0.5) + theme_tree2()
+whippo <- revts(whippo)
+#add label for epochs
+whippo <- whippo + coord_geo(dat = epochs, xlim = c(-60, 0), ylim = c(-2, Ntip(trpy)), neg = TRUE, size =3, abbrv = FALSE)
+whippo <- whippo + geom_tiplab(size = 2) 
+whippo
+#whippo$data shows the branch lengths (53.7 my to root). Also seems correct! 
+
+#timescale for artiodactyla
+artio <- read.csv(here("sleepy_artiodactyla_full.csv"))
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+artio <- artio[artio$tips %in% mam.tree$tip.label,]
+trpy <- keep.tip(mam.tree, tip = artio$tips)
+#to add the timescale: geom_timescale() adds a scale for one region
+#theme_tree2() adds a scale to the entire tree
+artio <- ggtree(trpy, layout = "rectangular", size = 0.5) + theme_tree2()
+artio <- revts(artio)
+#add label for epochs
+artio <- artio + coord_geo(dat = epochs, xlim = c(-80, 0), ylim = c(-2, Ntip(trpy)), neg = TRUE, size =2, abbrv = FALSE)
+artio <- artio + geom_tiplab(size = 2) 
+artio
 
 
 

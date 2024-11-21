@@ -52,12 +52,12 @@ mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 # #Function 1: max_clade_cred likelihood metrics --------------------------
 
 
-max_clade_metrics <- function(model_results = readRDS(here("artiodactyla_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_models.rds"))) {
+max_clade_metrics <- function(model_results = readRDS(here("test_whippomorpha_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_models.rds"))) {
   # will take take the max clade cred tree result and plot the likelihood, AIC, and AICc score
   log_likelihoods <- unlist(lapply(model_results, function(x) returnLikelihoods(model = x)))
   likelihoods <- as.data.frame(log_likelihoods)
   likelihoods$modelname <- rownames(likelihoods)
-  likelihoods <- separate(likelihoods, col = "modelname", into = c("model", "to_drop"), sep = "_", remove = TRUE)
+  likelihoods <- separate(likelihoods, col = "modelname", into = c("model", "to_drop"), sep = "[.]", remove = TRUE)
   AICc_scores <- unlist(lapply(model_results, function(x) returnAICc(model = x)))
   likelihoods$AICc_scores <-AICc_scores 
   AIC_scores <- unlist(lapply(model_results, function(x) returnAIC(model = x)))
