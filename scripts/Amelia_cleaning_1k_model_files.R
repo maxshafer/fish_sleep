@@ -112,7 +112,17 @@ ER_SYM_ARD<- readRDS(here("whippomorpha_six_state_traits_ER_SYM_ARD_models.rds")
 saveRDS(ER_SYM_ARD, here("finalized_1k_models/whippomorpha_six_state_ER_SYM_ARD_models.rds"))
 
 # Section 3: Four state, cleaning and standardizing the 1k model --------
+#whippomorpha
+ER_SYM <- readRDS(here("whippomorpha_four_state_max_crep_traits_ER_SYM_models.rds"))
+ARD_bridge_only <- readRDS(here("whippomorpha_four_state_max_crep_traits_ARD_bridge_only_models.rds"))
+all_models <- append(ER_SYM, ARD_bridge_only)
+saveRDS(all_models, here("finalized_1k_models/whippomorpha_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"))
 
+#ruminants
+ER_SYM <- readRDS(here("ruminants_four_state_max_crep_traits_ER_SYM_models.rds"))
+ARD_bridge_only <- readRDS(here("ruminants_four_state_max_crep_traits_ARD_bridge_only_models.rds"))
+all_models <- append(ER_SYM, ARD_bridge_only)
+saveRDS(all_models, here("finalized_1k_models/ruminants_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"))
 
 # Section 4: Four state, max clade cred model ---------------------------
 
