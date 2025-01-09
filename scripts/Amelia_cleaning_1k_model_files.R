@@ -124,6 +124,12 @@ ARD_bridge_only <- readRDS(here("ruminants_four_state_max_crep_traits_ARD_bridge
 all_models <- append(ER_SYM, ARD_bridge_only)
 saveRDS(all_models, here("finalized_1k_models/ruminants_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"))
 
+#artiodactyla
+ER_SYM <- readRDS(here("artiodactyla_four_state_max_crep_traits_ER_SYM_models.rds"))
+ARD_bridge_only <- readRDS(here("artiodactyla_four_state_max_crep_traits_ARD_bridge_only_models.rds"))
+all_models <- append(ER_SYM, ARD_bridge_only)
+saveRDS(all_models, here("finalized_1k_models/artiodactyla_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"))
+
 # Section 4: Four state, max clade cred model ---------------------------
 
 

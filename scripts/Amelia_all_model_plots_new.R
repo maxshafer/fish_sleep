@@ -82,16 +82,32 @@ plotMKmodel(model_results$ARD_model)
 dev.off()
 
 # #Section 3: Plot likelihoods from 1k model results ----------------------
-filename <- "whippomorpha_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"
+filename <- "artiodactyla_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"
 
 #requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, bridge_only)
 #function returns a dataframe of the likelihoods for all 1k trees x number of Mk models
 df_full <- plot1kLikelihoods(readRDS(here(paste0("finalized_1k_models/", filename))), 4)
 
+#check if data fits the ANOVA assumptions
+#anovaAssumptions(df_full, df_full$likelihoods)
+
+#determine the number of comparisons
+if(length(unique(df_full$model)) == 4){
+  my_comparisons <- list( c("ER", "SYM"), c("ER", "ARD"), c("ER", "bridge_only"), c("SYM", "ARD"), c("SYM", "bridge_only"), c("ARD", "bridge_only"))
+} 
+
+if(length(unique(df_full$model)) == 3){
+  my_comparisons <- list( c("ER", "SYM"), c("ER", "ARD"), c("SYM", "ARD"))
+}
+
 #plot and save out
-png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/likelihoods_", filename, ".png"), width = 20, height = 20, units = "cm", res = 400)
-ggplot(df_full, aes(x = fct_inorder(model), y = likelihoods)) + geom_jitter(alpha = 0.6, color = "#F8766D") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
-  labs(x = "Model", y = "Log likelihood") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only"))
+png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/", filename, " _likelihoods", ".png"), width = 20, height = 20, units = "cm", res = 400)
+ggplot(df_full, aes(x = fct_inorder(model), y = likelihoods)) + 
+  geom_jitter(alpha = 0.6, color = "#F8766D") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
+  labs(x = "Model", y = "Log likelihood") + 
+  scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only")) + 
+  ggtitle(filename)  
 dev.off()
 
 # #Section 4: Plot AIC scores from 1k model results ----------------------
@@ -102,10 +118,10 @@ dev.off()
 df_full <- plot1kAIC(readRDS(here(paste0("finalized_1k_models/", filename))), 4)
 
 #plot and save out
-png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/AIC_", filename, ".png"), width = 20, height = 20, units = "cm", res = 400)
-ggplot(df_full, aes(x = fct_inorder(model), y = AIC_score)) + geom_jitter(alpha = 0.6, color = "#F8766D") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
-  labs(x = "Model", y = "AIC scores") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only"))
-
+png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/", filename, "_AIC", ".png"), width = 20, height = 20, units = "cm", res = 400)
+ggplot(df_full, aes(x = fct_inorder(model), y = AIC_score)) + geom_jitter(alpha = 0.6, color = "#766df8") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
+  labs(x = "Model", y = "AIC scores") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only")) + 
+  ggtitle(filename) 
 dev.off()
 
 # #Section 5: Plot AICc scores from 1k model results ----------------------
@@ -116,9 +132,10 @@ dev.off()
 df_full <- plot1kAICc(readRDS(here(paste0("finalized_1k_models/", filename))), 4)
 
 #plot and save out
-png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/AICc_", filename, ".png"), width = 20, height = 20, units = "cm", res = 400)
-ggplot(df_full, aes(x = fct_inorder(model), y = AICc_score)) + geom_jitter(alpha = 0.6, color = "#F8766D") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
-  labs(x = "Model", y = "AICc score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only"))
+png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/", filename, "_AICc", ".png"), width = 20, height = 20, units = "cm", res = 400)
+ggplot(df_full, aes(x = fct_inorder(model), y = AICc_score)) + geom_jitter(alpha = 0.6, color = "#6daaf8") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
+  labs(x = "Model", y = "AICc score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Bridge only")) +
+  ggtitle(filename) 
 dev.off()
 
 # #Section 6: Plot transition rates from 1k model results ----------------------
@@ -126,13 +143,14 @@ dev.off()
 
 #requires the filename, the number of states in the model and the number of Mk models 
 #returns a dataframe of the rates from each of the Mk models, for each of the 1k trees
-filename <- "whippomorpha_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"
+#filename <- "ruminants_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"
+#reminder: enter 5 states for the 6 state cetacean/whippomorpha
 rates_df <- plot1kTransitionRates(readRDS(here(paste0("finalized_1k_models/", filename))), 4, 4)
 
 #plot as a violin plot
 #important note: the colours column doesn't line up with the correct solution in the df but if we plot the solutions in alphabetical order and then colouring them with the pallette in the colours column is in the correct order
 png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/", filename, "_violin_rate_plot_all", ".png"), width = 40, height = 20, units = "cm", res = 600)
-ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_df$colours) + geom_violin(color = "black", scale = "width") + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_df$colours) + theme(legend.position = "none") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=2, colour = "red") + ggtitle(filename) + facet_wrap(~fct_inorder(model)) 
+ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_df$colours) + geom_violin(color = "black", scale = "width") + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_df$colours) + theme(legend.position = "none") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=2, colour = "red") + ggtitle(filename) + facet_wrap(~fct_inorder(model), ncol = 2, nrow = 2) 
 dev.off()
 
 #violin plots for each Mk model

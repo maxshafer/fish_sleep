@@ -81,6 +81,22 @@ for(i in 1:nrow(cetaceans_full)){
 }
 
 cetaceans_full <- cetaceans_full %>% relocate(Diel_Pattern_4, .after = Diel_Pattern_3)
+
+#we want to take only the highest confidence level from all the sources
+#create a column with the max confidence level for that species (out of the confidence level for all sources)
+#the confidence values are characters so convert to numerics and then take the maximum value
+cetaceans_full$Confidence <- lapply(cetaceans_full$Confidence, function(x) gsub(",", "\\1 ", x))
+cetaceans_full$Confidence <- lapply(cetaceans_full$Confidence,function(x) strsplit(x, " ")[[1]])
+cetaceans_full$max_conf <- lapply(cetaceans_full$Confidence, as.numeric)
+cetaceans_full$max_conf <- lapply(cetaceans_full$Confidence, max)
+
+#to fit with the artiodactyl dataset, rename max conf and drop the old confidence column
+cetaceans_full$Confidence <- cetaceans_full$max_conf
+cetaceans_full <- cetaceans_full[, -13]
+
+#this allows you to save it out without an error 
+cetaceans_full <- apply(cetaceans_full,2,as.character)
+
 ## Probably should save out a local copy in case google goes bankrupt
 write.csv(cetaceans_full, file = here("cetaceans_full.csv"))
 
@@ -231,6 +247,9 @@ sleepy_artio <- read.csv(text=gsheet2text(sheet, format='csv'), stringsAsFactors
 #save out a full version
 write.csv(sleepy_artio, here("sleepy_artiodactyl_with_sources.csv"))
 
+#subset the dataframe to exclude the columns that only contain source information
+#this subset only takes the first confidence column, which is the highest confidence source
+#when I made the spreadsheet I always put the highest confidence source first
 sleepy_artio <- sleepy_artio[, 1:6]
 sleepy_artio$tips <- sleepy_artio$Species_name
 sleepy_artio$tips <- str_replace(sleepy_artio$tips, pattern = " ", replacement = "_")

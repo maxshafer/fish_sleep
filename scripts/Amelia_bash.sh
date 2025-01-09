@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#above is the shebang statement which tells the shell to execute the script via bash shell
+
 #SBATCH --job-name=Artiodactyla_diel_models           #This is the name of your job
 #SBATCH --cpus-per-task=1                  #This is the number of cores reserved
 #SBATCH --mem-per-cpu=16G              #This is the memory reserved per core.
@@ -42,9 +44,10 @@ export CPATH=~/.local/include:~/.local/include/adolc:$CPATH
 #add your command lines below
 #############################
 
-Rscript Amelia_slurm_script.R max_dinoc artiodactyla ARD bridge_only
+#Rscript Amelia_slurm_script.R max_dinoc artiodactyla ARD bridge_only
+Rscript Amelia_max_clade_slurm.R six_state artiodactyla ARD
 
 # For the corHMM script, requires three arguments
-# arg1 (states in the model) can be "max_crep" or "max_dinoc"
+# arg1 (states in the model) can be "max_crep" or "max_dinoc" or "six_state" or "four"
 # arg2 (phylogenetic tree) can be "cetaceans", "artiodactyla", "artiodactyla_minus_cetaceans"
 # arg3 (model) can be "ER", "SYM", "ARD" or "bridge_only"

@@ -115,7 +115,7 @@ if(args[1] == "six_state"){
 mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
 
 #subset cetacean trees for now to see if it runs
-mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 100)]
+mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 2)]
 
 phylo_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_names = trait.data$tips))
    
@@ -180,7 +180,88 @@ if("CONSYM" %in% args & "four_state_max_crep" %in% args){
 
 # Section 5: Save the results out and extract likelihoods  --------
 #use paste() to create a filename with all of the arguments
-result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x)))
+
+result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x))) 
 names(result_list) <- paste(args[-(1:2)], "_model", sep = "")
 
 saveRDS(result_list, paste(args[2], args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
+
+
+#6 state constrained
+trait.data <- read.csv(here("ruminants_full.csv"))
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
+trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)),]
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+test_ARD <- corHMM(trpy_n, trait.data, rate.cat = 1, rate.mat = NULL, model = "ARD")
+least_con_ARD
+mid_con_ARD
+most_con_ARD
+
+
+matrix <- matrix(c(0, 1, 2, 3, 4, 5,
+                   6, 0, 7, 8, 9, 10,
+                   11, 12, 0, 13, 14, 15,
+                   16, 17, 18, 0, 19, 20, 
+                   21, 22, 23, 24, 0, 25,
+                   26, 27, 28, 29, 30, 0),
+                 ncol = 6, nrow = 6)
+
+#first make a matrix of the least constrained model for 6 state crepuscular bridge
+#same as below but also allows for di/crep <-> noc and noc/crep <-> di
+least_con_matrix <- matrix(c(0, 1, 0, 3, 0, 5,
+                             6, 0, 7, 8, 9, 10,
+                             0, 12, 0, 13, 0, 15,
+                             16, 17, 18, 0, 19, 20, 
+                             0, 22, 0, 24, 0, 25,
+                             26, 27, 0, 29, 30, 0),
+                           ncol = 6, nrow = 6)
+
+#same as below but allows noc/crep <-> di/crep
+mid_con_matrix <- matrix(c(0, 1, 0, 0, 0, 0,
+                           6, 0, 0, 8, 0, 10,
+                           0, 0, 0, 13, 0, 0,
+                           0, 17, 18, 0, 0, 20, 
+                           0, 0, 0, 0, 0, 25,
+                           0, 27, 0, 29, 30, 0),
+                         ncol = 6, nrow = 6)
+
+#only allows gains/losses of crep, and di/crep <-> cath/crep <-> noc/crep transitions
+most_con_matrix <- matrix(c(0, 1, 0, 0, 0, 0,
+                            6, 0, 0, 8, 0, 10,
+                            0, 0, 0, 13, 0, 0,
+                            0, 0, 18, 0, 0, 0, 
+                            0, 0, 0, 0, 0, 25,
+                            0, 27, 0, 0, 30, 0),
+                          ncol = 6, nrow = 6)
+
+#the same but for a 5 state model
+trait.data <- read.csv(here("whippomorpha.csv"))
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
+trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)),]
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+test_ARD <- corHMM(trpy_n, trait.data, rate.cat = 1, rate.mat = NULL, model = "ARD")
+least_con_ARD 
+mid_con_ARD
+most_con_ARD
+
+matrix <- matrix(c(0, 1, 2, 3, 4, 
+                   5, 6, 0, 7, 8, 
+                   9, 10, 0, 11, 12,
+                   0, 13, 14, 15, 16,
+                   17, 18, 0, 19, 20),
+                 ncol = 5, nrow = 5)
+
+least_con_matrix <- matrix(c(0, 0, 2, 3, 4, 
+                   0, 6, 0, 0, 8, 
+                   9, 10, 0, 11, 12,
+                   0, 0, 0, 15, 16,
+                   17, 18, 0, 19, 20),
+                 ncol = 5, nrow = 5)
+
+
