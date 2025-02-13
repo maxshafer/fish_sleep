@@ -35,11 +35,32 @@ source("scripts/fish_sleep_functions.R")
 #Load in the discrete traits 
 
 ##Data from Manger et al  2013, on cetacean body mass, brain mass, and social traits
+#https://doi.org/10.1016/j.neuroscience.2013.07.041
 #MBM – male body mass (g); FBM – female body mass (g); ABM – average body mass (g); BrM – brain mass (g); EQ – encephalization quotient; L – longevity (days); SMF – age at sexual maturity of females (days) 
 #AGS – average group size in number of individuals; RGS – range of group size in number of individuals; GSD – group social dynamics; FS – feeding strategy. 
 #Group Social Dynamics: Sol – mostly solitary lifestyle; SSG – small stable groups of less than 10 individuals; FF? – possible fission–fusion social dynamic; SG - stable groups of more than 10 individuals; FF – fission–fusion social dynamic. 
 #Feeding strategies: SF – skim feeder; OCO – shows occasional co-operation in feeding; LF – lunge feeder; SwF – swallow feeder; CO – shows regular co-operation in feeding; SuF – suction feeder; R – raptorial feeder.
 #Data for this table derived from the following sources: Nowak (1999), Lefebvre et al. (2006a), Manger (2006), Best et al. (2009), Perrin et al. (2009)
+
+#Data from Coombs, 2021 (PhD thesis)
+#https://discovery.ucl.ac.uk/id/eprint/10135933/7/Coombs_10135933_thesis_revised.pdf
+#includes fossil species
+#data on dentition, diet, echolocation, feeding mechanism, habitat
+
+#Data from Churchill & Baltz, 2021
+#https://doi.org/10.1111/joa.13522
+# Includes museum specimens
+# Data on orbit length (proxy for eye size), bizygomatic width (skull width, a proxy for body size)
+#dive depth, dive duration, mass, body length
+#first occurrence data (FAD) and last occurrence data (LAD) for fossil species
+
+#Data from ??? et al, 20??
+#Data on body size, diet, divetype, feeding behaviour, habitat, regime
+
+#Data from Groot et al, 2023
+#Data on lifespan, length, mass, brain mass, encephalization quotient,
+#female and male reproductive age, lifespan, group size, sociality, group foraging,
+#acoustic communication and more 
 
 
 # Prescence of cortistatin ------------------------------------------------
@@ -47,6 +68,7 @@ source("scripts/fish_sleep_functions.R")
 trait.data <- read.csv(here("cetaceans_full.csv"))
 
 #create a phylogeny of just the cetaceans in the cortistatin paper
+#Valente et al, 2021. https://doi.org/10.1016/j.ygeno.2020.11.002 
 trait.data <- trait.data[trait.data$Species_name %in% c("Tursiops truncatus", "Tursiops aduncus", "Sousa chinesis", "Globicephala melas", "Peponocephala electra", "Lagenorhynchus obliquidens","Orcinus orca", 
                                                                    "Neophocaena asiaeorientalis", "Phocoena phocoena", "Phocoena sinus", "Delphinapterus leucas", "Monodon monoceros", "Inia geoffrensis", "Pontoporia blainvillei", "Lipotes vexillifer",
                                                                    "Platanista gangetica", "Mesoplodon bidens", "Ziphius cavirostris", "Kogia breviceps", "Physeter catodon", "Balaenoptera bonaerensis", "Balaenoptera acutorostrata", "Balaenoptera musculus",
@@ -86,7 +108,7 @@ dev.off()
 trait.data <- read.csv(here("cetaceans_full.csv"))
 trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
 
-echo <- read_xlsx("C:/Users/ameli/OneDrive/Documents/R_projects/cetacean_discrete_traits/Coombs_et_al_2022.xlsx")
+echo <- read_xlsx("C:/Users/ameli/OneDrive/Documents/R_projects/cetacean_discrete_traits/Coombs_et_al_2021.xlsx")
 echo <- echo[!(is.na(echo$Echo)), c("Museum ID", "Echo", "Diet", "Dentition", "FM", "Habitat")]
 echo$tips <- str_replace(echo$`Museum ID`, " ", "_")
 

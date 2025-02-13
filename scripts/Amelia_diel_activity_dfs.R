@@ -14,9 +14,9 @@ library(dplyr)
 library(readxl)
 library(tidyr)
 library(lubridate)
-install.packages("deeptime")
+#install.packages("deeptime")
 library(deeptime)
-update.packages("ggplot2")
+#update.packages("ggplot2")
 library(ggplot2)
 setwd(here())
 
@@ -58,7 +58,10 @@ cetaceans_full$tips <- str_replace(cetaceans_full$tips, pattern = " ", replaceme
 row.names(cetaceans_full) <- cetaceans_full$tips
 
 #drop na values
-cetaceans_full <- cetaceans_full[!is.na(cetaceans_full$Diel_Pattern_2),]
+#cetaceans_full <- cetaceans_full[!is.na(cetaceans_full$Diel_Pattern_2),]
+#Alternatively, replace NA values
+cetaceans_full <- cetaceans_full %>% replace_na(list(Diel_Pattern_2 = "unknown", Diel_Pattern_3 = "unknown", Confidence = "unknown"))
+
 
 # transform diel pattern 3 to maximize for crepuscularity (nocturnal, diurnal and crepuscular trait states)
 for(i in 1:nrow(cetaceans_full)){
@@ -258,7 +261,9 @@ sleepy_artio$tips <- str_replace(sleepy_artio$tips, pattern = " ", replacement =
 row.names(sleepy_artio) <- sleepy_artio$tips
 
 #drop na values
-sleepy_artio <- sleepy_artio[!is.na(sleepy_artio$Diel_Pattern_2),]
+#sleepy_artio <- sleepy_artio[!is.na(sleepy_artio$Diel_Pattern_2),]
+sleepy_artio$Confidence <- as.character(sleepy_artio$Confidence)
+sleepy_artio <- sleepy_artio %>% replace_na(list(Diel_Pattern_2 = "unknown", Confidence = "unknown"))
 
 #create binary, max dinoc, max crep and 6-state columns
 
@@ -309,11 +314,11 @@ sleepy_artio <- sleepy_artio %>% relocate(Diel_Pattern_3, .after = Diel_Pattern_
 sleepy_artio <- sleepy_artio %>% relocate(Diel_Pattern_4, .after = Diel_Pattern_3)
 
 #drop na values
-sleepy_artio <- sleepy_artio[!is.na(sleepy_artio$Diel_Pattern_2),]
+#sleepy_artio <- sleepy_artio[!is.na(sleepy_artio$Diel_Pattern_2),]
 
 write.csv(sleepy_artio, here("sleepy_artiodactyla_minus_cetaceans.csv"))
 
-cetaceans_full <- read.csv("cetaceans_full.csv")
+cetaceans_full <- read.csv(here("cetaceans_full.csv"))
 cetaceans_full <- cetaceans_full[, c("Species_name", "Diel_Pattern_1", "Diel_Pattern_2", "Diel_Pattern_3", "Diel_Pattern_4", "Confidence", "Parvorder", "tips")]
 cetaceans_full <- cetaceans_full %>% relocate("Parvorder", .after = "Species_name")
 colnames(cetaceans_full) <- c("Species_name", "Family", "Diel_Pattern_1", "Diel_Pattern_2", "Diel_Pattern_3", "Diel_Pattern_4", "Confidence", "tips")
@@ -338,7 +343,7 @@ for(i in 1:length(sleepy_artiodactyla_full$Species_name)){
 sleepy_artiodactyla_full <- sleepy_artiodactyla_full %>% relocate(Order, .after= Family)
 
 #drop na values
-sleepy_artiodactyla_full <- sleepy_artiodactyla_full[!is.na(sleepy_artiodactyla_full$Diel_Pattern_2),]
+#sleepy_artiodactyla_full <- sleepy_artiodactyla_full[!is.na(sleepy_artiodactyla_full$Diel_Pattern_2),]
 
 write.csv(sleepy_artiodactyla_full, here("sleepy_artiodactyla_full.csv"))
 

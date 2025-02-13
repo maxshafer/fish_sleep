@@ -79,3 +79,32 @@ returnAIC <- function(model = corhmm_model, return = "AIC"){
   
   return(model[return])
 }
+
+#eight function
+#create a function that returns the node label for the mrca of a set of species/taxonomic group
+
+#requires a dataframe with columns for species names and their taxonomic level names
+#returns a dataframe with the clade name and the mrca node number
+
+findMRCANode <- function(phylo = tr, trait.data = trait.data, taxonomic_level_col = 3){
+  nodes_list <- list()
+  for(i in unique(trait.data[,taxonomic_level_col])){
+    #ensure the species are in the tree you're working with
+    trait.data <- trait.data[trait.data$tips %in% phylo$tip.label,]
+    #remove any taxonomic levels with only one species (cannot find MRCA for one species)
+    trait.data <- trait.data %>% group_by_at(taxonomic_level_col) %>% filter(n()>1)
+    #subset the trait data into species belonging to the same taxonomic group
+    trait.data.filtered <- trait.data[trait.data[,taxonomic_level_col] == i, ]
+    #take the vector of these species names
+    tip_vector <- as.vector(trait.data.filtered[, "tips"])
+    #find the node number of the MRCA of these species
+    MRCA_node <- findMRCA(phylo, tip_vector$tips)
+    #create a dataframe
+    loop_df <- data.frame(clade_name = i, node_number = MRCA_node)
+    #add to list, to extract later (out of for loop)
+    nodes_list[[i]] <- loop_df}
+  
+  nodes_df <- do.call(rbind, nodes_list)
+  return(nodes_df)
+}
+  

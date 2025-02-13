@@ -20,6 +20,7 @@ library(ggimage)
 setwd(here())
 
 source("scripts/fish_sleep_functions.R")
+source("scripts/Amelia_functions.R")
 
 
 # Section 1: Load in and clean up cetacean data ---------------------------
@@ -164,6 +165,8 @@ dev.off()
 node_labels <- ggtree(tr, layout = "circular") + geom_text(aes(label=node, colour = "red"), hjust=-.2, size = 1.8) + geom_tiplab(size = 1.8, hjust = -0.1)
 node_labels 
 
+tree$node.label[node_number - Ntip(tree)]
+
 #create a dataframe with each cetacean family and its node
 family_names_right <- data.frame(names = c("Eschrichitiidae", "Neobalaenidae", "Balaenidae", "Balaenopteridae", "Delphinidae", "Platanistidae", "Kogiidae", "Physteridae"), nodes = c(72, 73, 151, 143, 88, 81, 139, 60))
 family_names_left <- data.frame(names = c("Ziphiidae", "Lipotidae", "Phocoenidae", "Iniidae", "Monodontidae"), nodes = c(128, 3, 123, 85, 127))
@@ -254,3 +257,44 @@ diel3_fam_pics
 png("C:/Users/ameli/OneDrive/Documents/R_projects/diel3_with_phylopics.png", width=20,height=15,units="cm",res=1200)
 print(diel3_fam_pics)
 dev.off()
+
+
+# Section Z: Create function to label taxonomic groups --------------------
+
+#simple example, dataframe of cetaceans divided into two parvorders: odontocetes and mysticetes
+#can we find the mrca of odontocetes and of mysticetes to label these two parvorders correctly
+
+#requires a dataframe with columns for species names and their taxonomic level names
+cetaceans_full <- read.csv(here("cetaceans_full.csv"))
+trait.data <- cetaceans_full[, c("Species_name", "Diel_Pattern_2", "Parvorder", "tips")]
+#create tree
+resolved_names <- tnrs_match_names(names = trait.data$Species_name, context_name = "Vertebrates", do_approximate_matching = FALSE)
+resolved_names <- resolved_names[!(is.na(resolved_names$unique_name)),]
+resolved_names <- resolved_names[resolved_names$is_synonym == FALSE,]
+resolved_names <- resolved_names[resolved_names$approximate_match == FALSE,]
+resolved_names <- resolved_names[,c("search_string", "unique_name", "ott_id", "flags")]
+resolved_names$tips <- str_replace(resolved_names$unique_name, " ", "_")
+resolved_names <- resolved_names[!duplicated(resolved_names$tips),]
+tr <- tol_induced_subtree(ott_ids = resolved_names$ott_id[resolved_names$flags %in% c("sibling_higher", "")], label_format = "id") 
+tr <- multi2di(tr)
+tr$tip.label <- resolved_names$tips[match(tr$tip.label, paste("ott", resolved_names$ott_id, sep = ""))]
+
+#simple example, dataframe of cetaceans divided into two parvorders: odontocetes and mysticetes
+#can we find the mrca of odontocetes and of mysticetes to label these two parvorders correctly
+
+#label the tree by the nodes to see how they're assigned
+node_labels <- ggtree(tr, layout = "circular") + geom_text(aes(label=node), colour = "blue", hjust=-.2, size = 3) + geom_tiplab(size = 3, hjust = -0.1)
+node_labels 
+
+#we can see from the labelled tree, the nodes we need are 172 for mysticetes and 95 for odontocetes
+
+#we can use a custom function called findMRCANode
+#this function uses findMRCA to find the MRCA of a set of species based on their species name
+#function requires a dataframe with columns for species and info on their taxonomic levels
+#returns a dataframe of the node number and the specific taxon level name
+nodes_df <- findMRCANode(phylo = tr, trait.data = trait.data, taxonomic_level_col = 3)
+
+#can now easily label all clades within that taxonomic level on the tree using the nodes_df
+test_tree <- ggtree(tr, layout = "rectangular") + geom_tiplab() + geom_cladelab(node = nodes_df$node_number, label = nodes_df$clade_name, offset = 1, barsize = 1, barcolour = "red")
+test_tree
+
