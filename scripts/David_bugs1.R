@@ -154,6 +154,10 @@ trait.data$Order <- str_replace(trait.data, pattern = "Lepidoptera\t", replaceme
 
 #this function will not label any order with one species
 nodes_df <- findMRCANode(phylo = tr, trait.data = trait.data, taxonomic_level_col = 3)
+node_df <- findMRCANode2(phylo = tr, trait.data = trait.data, taxonomic_level_col = 3, taxonomic_level_name = "Coleoptera")
+
+all_nodes <- lapply(unique(trait.data$Order), function(x) findMRCANode2(phylo = tr, trait.data = trait.data, taxonomic_level_col  =3, taxonomic_level_name = x))
+nodes_df <- do.call(rbind, all_nodes)
 
 node_labels <- ggtree(tr, layout = "circular") + geom_text(aes(label=node), colour = "blue", hjust=-.2, size = 3) + geom_tiplab(size = 3, hjust = -0.1)
 node_labels 
@@ -168,7 +172,28 @@ png(here("David_tree_bug_orders_diel_pattern.png"), units = 'cm', height = 25, w
 order_tree
 dev.off()
 
-# Section 4: Time calibrating the tree ---------------
+
+# Section 4: Diel plots for each order ------------------------------------
+
+#filter for families that have 15 or more species (can change this number)
+trait.data.filtered <- trait.data %>% group_by_at(taxonomic_level_col) %>% filter(n()>15)
+
+tree_list <- list()
+
+for(i in trait.data.filtered$Order){
+  to_drop <- trait.data.filtered[!(trait.data.filtered$Order == i), ]
+  #use functions drop tip to remove these species
+  trim_tr <- drop.tip(tr, to_drop$tips)
+  tree_list[[i]] <- trim_tr
+}
+
+order_subtree <- ggtree(tree_list$Coleoptera, layout = "circular") %<+% trait.data[, c("tips", "Diel_Pattern")]
+order_subtree <- order_subtree + geom_tile(data = order_subtree$data[1:length(tr$tip.label),], aes(y=y, x=x, fill = Diel_Pattern), inherit.aes = FALSE, color = "transparent") + scale_fill_manual(values = custom.colours)
+order_subtree <- order_subtree + geom_tiplab(color = "black", size = 1.5)
+order_subtree
+
+
+# Section 5: Time calibrating the tree ---------------
 # Time calibrate it using geiger and timetree.org 
 
 #Retrieve the taxonomic info from GBIF

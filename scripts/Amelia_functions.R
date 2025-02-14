@@ -88,7 +88,8 @@ returnAIC <- function(model = corhmm_model, return = "AIC"){
 
 findMRCANode <- function(phylo = tr, trait.data = trait.data, taxonomic_level_col = 3){
   nodes_list <- list()
-  for(i in unique(trait.data[,taxonomic_level_col])){
+  for(x in 1:nrow(unique(trait.data[,taxonomic_level_col]))){
+    i <- unique(trait.data[x,taxonomic_level_col])
     #ensure the species are in the tree you're working with
     trait.data <- trait.data[trait.data$tips %in% phylo$tip.label,]
     #remove any taxonomic levels with only one species (cannot find MRCA for one species)
@@ -108,3 +109,13 @@ findMRCANode <- function(phylo = tr, trait.data = trait.data, taxonomic_level_co
   return(nodes_df)
 }
   
+
+findMRCANode2 <- function(phylo = tr, trait.data = trait.data, taxonomic_level_col = 3, taxonomic_level_name = "Araneae"){
+  nodes_list <- list()
+  trait.data.filtered <- trait.data[trait.data[,taxonomic_level_col] == taxonomic_level_name, ]
+  tip_vector <- as.vector(trait.data.filtered[, "tips"])
+  #find the node number of the MRCA of these species
+  MRCA_node <- findMRCA(phylo, tip_vector$tips)
+  node_df <- data.frame(clade_name = taxonomic_level_name, node_number = MRCA_node)
+  return(node_df)
+}
