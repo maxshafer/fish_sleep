@@ -18,6 +18,10 @@ library(readxl)
 library(rotl)
 #adds timescale
 library(deeptime)
+#colours
+library(RColorBrewer)
+#install.packages("ggnewscale")
+library(ggnewscale)
 
 ## Packages for phylogenetic analysis in R (overlapping uses)
 ## They aren't all used here, but you should have them all
@@ -96,7 +100,7 @@ trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 cort_diel_tree <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "cort_219bp")]
 cort_diel_tree <- cort_diel_tree + geom_tile(data = cort_diel_tree$data[1:length(trpy_n$tip.label),], aes(y=y, x=x, fill = Diel_Pattern_2),  inherit.aes = FALSE, color = "transparent")# + scale_fill_manual(values = custom.colours)
 cort_diel_tree <- cort_diel_tree + geom_tiplab(color = "black", size = 2.5, offset = 3)
-cort_diel_tree <- cort_diel_tree + geom_tile(data = cort_diel_tree$data[1:length(trpy_n$tip.label),], aes(y=y, x = x + 1.5, fill = cort_219bp), inherit.aes = FALSE, color = "transparent") + scale_fill_manual(values = c('steelblue1', 'lightskyblue', "#dd8ae7", "#FC8D62", "grey","#66C2A5", "#A6D854", "royalblue"))
+cort_diel_tree <- cort_diel_tree + geom_tile(data = cort_diel_tree$data[1:length(trpy_n$tip.label),], aes(y=y, x = x + 1.5, fill = cort_219bp), inherit.aes = FALSE, color = "transparent") + scale_fill_manual(values = c('steelblue1', 'lightskyblue', "#dd8ae7", "pink", "#FC8D62", "grey","#66C2A5", "#A6D854", "royalblue"))
 cort_diel_tree
 
 png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/cortistatin_cetaceans.png", width=18,height=15,units="cm",res=1200)
@@ -104,12 +108,15 @@ cort_diel_tree
 dev.off()
 
 
-# # Prescence of echolocation ---------------------------------------------
+# Coombs et al traits (echo, habitat, feeding mechanism) ---------------------------------------------
 trait.data <- read.csv(here("cetaceans_full.csv"))
 trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
 
+#filer out species with an unknown activity pattern
+trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), c("tips", "Diel_Pattern_2")]
+
 echo <- read_xlsx("C:/Users/ameli/OneDrive/Documents/R_projects/cetacean_discrete_traits/Coombs_et_al_2021.xlsx")
-echo <- echo[!(is.na(echo$Echo)), c("Museum ID", "Echo", "Diet", "Dentition", "FM", "Habitat")]
+echo <- echo[!(is.na(echo$Echo)), c("Museum ID", "Age", "Echo", "Diet", "Dentition", "FM", "Habitat")]
 echo$tips <- str_replace(echo$`Museum ID`, " ", "_")
 
 echo <- echo %>% filter(echo$tips %in% trait.data$tips)
@@ -121,10 +128,11 @@ trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
 trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 
 #should fix colours
-custom.colours <- c("#dd8ae7", "pink", "orange", "black", "grey80", "#66C2A5", "#A6D854")
+custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
+custom.colours.2 <- c("grey35", "grey66")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "Echo")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours)
-diel.plot <- diel.plot +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Echo), inherit.aes = FALSE, colour = "transparent") 
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot +  new_scale_fill() +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Echo), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.2, name = "Prescence of echolocation")
 diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
 diel.plot
 
@@ -133,10 +141,11 @@ diel.plot
 dev.off()
 
 #do the same for other discrete traits, like habitat
-custom.colours <- c("#dd8ae7", "black", "grey70", "pink", "#66C2A5", "#A6D854", "grey30", "grey90")
+custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
+custom.colours.2 <- c( "grey90", "grey40", "grey66", "black")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "Habitat")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours)
-diel.plot <- diel.plot +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Habitat), inherit.aes = FALSE, colour = "transparent") 
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot +  new_scale_fill() +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Habitat), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.2, name = "Habitat")
 diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
 diel.plot
 
@@ -145,10 +154,11 @@ diel.plot
 dev.off()
 
 #feeding mechanism
-custom.colours <- c( "black","#dd8ae7","pink", "grey40",  "#66C2A5", "#A6D854", "grey80")
+custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
+custom.colours.2 <- c("black", "grey40", "grey75")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "FM")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours)
-diel.plot <- diel.plot +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = FM), inherit.aes = FALSE, colour = "transparent")
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot +  new_scale_fill() +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = FM), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.2, name = "Feeding mechanism")
 diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
 diel.plot
 
@@ -156,22 +166,7 @@ png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/feeding
 diel.plot
 dev.off()
 
-#feeding mechanism
-custom.colours <- c( "black","#dd8ae7","pink", "grey40",  "#66C2A5", "#A6D854", "grey80")
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "FM")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours)
-diel.plot <- diel.plot +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = FM), inherit.aes = FALSE, colour = "transparent")
-diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
-diel.plot
-
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/feeding_vs_diel.png", width=20,height=15,units="cm",res=1200)
-diel.plot
-dev.off()
-
-#especially want to look at body size (see if it associates with cathemerality)
-
-# Cetacean discrete traits  -----------------------------------------------
-###other cetacean dataframes of discrete traits to model with
+# Unknown (dive depth, body size)  -----------------------------------------------
 trait.data <- read.csv(here("cetaceans_full.csv"))
 trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
 
@@ -214,6 +209,7 @@ for(i in 1:length(trait.data$Body.size)){
   }
 }
 
+#especially want to look at body size (see if it associates with cathemerality)
 #body size
 custom.colours <- c("#dd8ae7", "#FC8D62", "grey30", "grey70",  "#66C2A5", "#A6D854", "grey90", "black")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "body_size")]
@@ -237,14 +233,82 @@ png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/family_
 diel.plot
 dev.off()
 
-behav <- read.csv("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Manger_2013_discrete_cet.csv")
 
-#body mass
-#encephalization quotient 
-#group size
-#social dynamics
-#longevity
+# Manger et al traits  -------------------------------------------------
+Manger <- read.csv("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Manger_2013_discrete_cet.csv")
+#body mass, encephalization quotient, group size, social dynamics, longevity, feeding strategy
+#of these, body mass is probably the most relevant to activity patterns (ie are whales with large body size cathemeral)
+trait.data <- read.csv(here("cetaceans_full.csv"))
+trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
+#filer out species with an unknown activity pattern
+trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), c("tips", "Diel_Pattern_2")]
 
+Manger$tips <- str_replace(Manger$Genus_species, " ", "_")
+Manger <- Manger %>% filter(Manger$tips %in% trait.data$tips)
+
+trait.data <- merge(trait.data, Manger, by = "tips")
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "Orbit_ratio")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Orbit_ratio), inherit.aes = FALSE, colour = "transparent") + scale_fill_gradient(low = "#ceecff", high = "#07507e", name = "Orbit Ratio")
+diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
+diel.plot
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/orbit_ratio_vs_diel.png", width=20,height=15,units="cm",res=1200)
+diel.plot
+dev.off()
+# Groot et al traits () ---------------------------------------------
+
+groot <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Groot_et_al_2023.xlsx")
+
+
+# Churchill et al, traits (orbit ratio) ---------------------------------------
+#orbit information
+church_pt1 <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Churchill_Baltz_2021_pt1.xlsx")
+#dive depth, dive duration, body length, mass
+church_pt2 <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Churchill_Baltz_2021_pt2.xlsx")
+#first and last occurrence data (fossil species)
+church_pt3 <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Churchill_Baltz_2021_pt3.xlsx")
+
+#we are interested in orbit ratio, length of orbit relative to the bigozymatic width (proxy for body size)
+#this is a continuous trait
+
+trait.data <- read.csv(here("cetaceans_full.csv"))
+trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
+#filer out species with an unknown activity pattern
+trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), c("tips", "Diel_Pattern_2")]
+
+colnames(church_pt1) <- c("Species", "Family", "Specimen_number", "Left_orbit_length", "Right_orbit_length", "Bizygomatic_width", "Average_orbit_length", "Orbit_ratio")
+
+church_pt1 <- church_pt1[!(is.na(church_pt1$Orbit_ratio)), c("Species", "Family", "Bizygomatic_width", "Average_orbit_length", "Orbit_ratio")]
+church_pt1$tips <- str_replace(church_pt1$Species, " ", "_")
+
+#filter the orbit size data by the species in our trait data 
+church_pt1 <- church_pt1 %>% filter(church_pt1$tips %in% trait.data$tips)
+#remove duplicates, leaves 46 species
+church_pt1 <- church_pt1[!duplicated(church_pt1$Species),]
+
+#could also average values for each species duplicates
+
+trait.data <- merge(trait.data, church_pt1, by = "tips")
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "Orbit_ratio")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Orbit_ratio), inherit.aes = FALSE, colour = "transparent") + scale_fill_gradient(low = "#ceecff", high = "#07507e", name = "Orbit Ratio")
+diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
+diel.plot
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/orbit_ratio_vs_diel.png", width=20,height=15,units="cm",res=1200)
+diel.plot
+dev.off()
 
 # # Ancestral reconstruction of echolocation ------------------------------
 trait.data <- read.csv(here("cetaceans_full.csv"))

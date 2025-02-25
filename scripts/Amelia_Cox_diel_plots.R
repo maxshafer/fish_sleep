@@ -48,6 +48,9 @@ clade_name <- "cetcaeans"
 # trait.data <- read.csv(here("sleepy_mammals.csv"))
 # clade_name <- "mammals"
 
+#remove species with unknown diel patterns, optional
+trait.data <- trait.data[!(trait.data$Diel_Pattern_2 %in% c("unknown")), ]
+
 trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
 trpy_n_mam <- keep.tip(mam.tree, tip = trait.data$tips)
 
@@ -65,6 +68,7 @@ trait.data.all <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Die
 trpy_n_all <- keep.tip(mam.tree, tip = trait.data.all$tips)
 
 custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
+#custom.colours <- c("#dd8ae7", "pink", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
 
 #plot the tree
 diel.plot.all <- ggtree(trpy_n_all, layout = "circular") %<+% trait.data.all[,c("tips", "Diel_Pattern_2")]
@@ -73,6 +77,25 @@ diel.plot.all <- diel.plot.all + geom_tiplab(size = 1)
 diel.plot.all 
 
 png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/", clade_name, "diel_plot_all_state.png"), width=24,height=18,units="cm",res=1200)
+print(diel.plot.all)
+dev.off()
+
+trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+#trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, pattern = "cathemeral/crepuscular", replacement = "crepusuclar")
+
+custom.colours <- c("#dd8ae7", "peachpuff2", "#FC8D62", "#66C2A5")
+#custom.colours <- c("#dd8ae7", "pink", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
+
+#plot the tree
+diel.plot.all <- ggtree(trpy_n_all, layout = "circular") %<+% trait.data.all[,c("tips", "Diel_Pattern_2")]
+diel.plot.all <- diel.plot.all +
+  geom_tile(data = diel.plot.all$data[1:length(trpy_n_all$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent", width = 3) + 
+  scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot.all <- diel.plot.all + geom_tiplab(size = 3, offset = 1.5) 
+diel.plot.all 
+
+png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/", clade_name, "diel_plot_4_state_max_crep.png"), width=36,height=28,units="cm",res=1200)
 print(diel.plot.all)
 dev.off()
 
@@ -270,3 +293,83 @@ diel.plot.all <- ggtree(trpy_n_all, layout = "circular") %<+% trait.data.all[,c(
 diel.plot.all <- diel.plot.all + geom_tile(data = diel.plot.all$data[1:length(trpy_n_all$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent", width = 4) + scale_fill_manual(values = custom.colours)
 diel.plot.all <- diel.plot.all + geom_tiplab(size = 1, offset = 4)
 diel.plot.all 
+
+
+# Section 10: Phylogenetic signal ----------------------------
+
+#tutorial from http://blog.phytools.org/2012/11/testing-for-pagels-10.html
+
+#First, let's simulate a tree & data for the demo, using the λ=0.854. We will use geiger::lambdaTree 
+# simulate tree
+tree <-pbtree(n=50)
+# simulate data with lambda=0.854
+x<-fastBM(lambdaTree(tree,0.854))
+
+# fit lambda model
+lambda <- phylosig(tree, x, method = "lambda")
+lambda
+
+#function phylosig tests for phylogenetic signal using two methods, K or lambda
+
+#phylosig(tree = phylogenetic_tree, x = vector containing metrics for continuous trait, test = "K" or "lambda")
+#tests to see if there is a strong phylogenetic signal
+#null hypothesis that the trait is evolving purely through brownian motion under pagels lambda
+#alternative hypothesis is that more closely related species tend to have more similar traits
+#pagel's lambda is the scaling factor you have to adjust the phylogenetic tree by to get the evolution under brownian motion
+#lambda can be 0 (no correlation btw species) or up to 1.00 (correlation between species equal to Brownian expectation)
+
+#bloomberg's k is slightly different in that it is the scaled ratio of the variance among species 
+#as determined by the variance between all the contrasts
+
+#can we do this for discrete traits as well? 
+# some people use delta statistic https://github.com/mrborges23/delta_statistic 
+source("scripts/Amelia_delta_code.R")
+
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+trait.data <- read.csv(here("cetaceans_full.csv"))
+
+#keep only necessary columns
+trait.data <- trait.data[, c("Species_name", "Diel_Pattern_2", "tips")]
+trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("cathemeral", "nocturnal", "diurnal", "crepuscular"), ]
+
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+mam.tree <- keep.tip(mam.tree, tip = trait.data$tips)
+
+#all branches need to have a positive length
+#replace branches with length 0 with 1% of the 1% quantile (replace it with a number very close to zero)
+#this doesn't replace anything in the cetacean tree
+mam.tree$edge.length[tree$edge.length == 0] <- quantile(tree$edge.length, 0.1)*0.1
+
+#vector of trait data, with species in same order as in tree (tree$tip.label)
+sps_order <- as.data.frame(mam.tree$tip.label)
+colnames(sps_order) <- "tips"
+sps_order$id <- 1:nrow(sps_order)
+trait.data <- merge(trait.data, sps_order, by = "tips")
+trait.data <- trait.data[order(trait.data$id), ]
+trait <- trait.data$Diel_Pattern_2
+
+#now we calculate delta using their custom function
+delta_diel <- delta(trait, mam.tree, 0.1, 0.0589, 1000, 10, 100)
+#returns a value of 0.7779191, I don't know how to interpret this lol
+
+#calculate the p-values
+#works by randomly shuffling the order of the trait data and finding the delta of this new randomly ordered trait data
+#repeats this 100 times to find a null distribution
+#in this null distribution the traits don't associate by phylogeny any more than chance
+#we can then see if there is a sufficiently small probability of getting our actual delta given the null distribution
+
+random_delta <- rep(NA,100)
+for (i in 1:100){
+  rtrait <- sample(trait)
+  random_delta[i] <- delta(rtrait,mam.tree,0.1,0.0589,10000,10,100)
+}
+p_value <- sum(random_delta>delta_diel)/length(random_delta)
+boxplot(random_delta)
+abline(h=delta_diel,col="red")
+
+#if p-value less than 0.05 there is evidence of phylogenetic signal between the trait and character
+#if its more than 0.05 there is not evidence for phylogenetic signal
+#p value is 0.04, so there is a phylogenetic signal for diel activity patterns in cetaceans
+

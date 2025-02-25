@@ -134,11 +134,14 @@ png(here("David_tree.png"), units = 'cm', height = 10, width = 10, res = 900)   
 bug_tree
 dev.off()
 
+resolved_names <- resolved_names[resolved_names$tips %in% tr$tip.label,]
+tr <- keep.tip(tr, tip = resolved_names$tips)
+
 #add diel pattern data
 ##add the diel pattern data as a geom tile
 custom.colours <- c("aquamarine1", "khaki1", "goldenrod")
-diel.plot <- ggtree(tr, layout = "circular") %<+% trait.data[, c("tips", "Diel_Pattern")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(tr$tip.label),], aes(y=y, x=x, fill = Diel_Pattern), inherit.aes = FALSE, color = "transparent") + scale_fill_manual(values = custom.colours)
+diel.plot <- ggtree(tr, layout = "circular") %<+% resolved_names[, c("tips", "diel")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(tr$tip.label),], aes(y=y, x=x, fill = diel), inherit.aes = FALSE, color = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
 diel.plot.labelled <- diel.plot + geom_tiplab(color = "black", size = 1.5)
 diel.plot.labelled
 
@@ -149,14 +152,14 @@ dev.off()
 # # Section 3: Plotting the diel patterns labelled by major orders ---------------
 
 #we want to create a tree labelled by order (column 3)
-table(trait.data$Order)
-trait.data$Order <- str_replace(trait.data, pattern = "Lepidoptera\t", replacement = "Lepidoptera")
+resolved_names$order <- trait.data$Order[match(resolved_names$tips, trait.data$tips)]
+resolved_names <- resolved_names[!is.na(resolved_names$order), ]
+table(resolved_names$order)
 
 #this function will not label any order with one species
-nodes_df <- findMRCANode(phylo = tr, trait.data = trait.data, taxonomic_level_col = 3)
-node_df <- findMRCANode2(phylo = tr, trait.data = trait.data, taxonomic_level_col = 3, taxonomic_level_name = "Coleoptera")
+findMRCANode2(phylo = tr, trait.data = resolved_names, taxonomic_level_col = 7, taxonomic_level_name = "Araneae")
 
-all_nodes <- lapply(unique(trait.data$Order), function(x) findMRCANode2(phylo = tr, trait.data = trait.data, taxonomic_level_col  =3, taxonomic_level_name = x))
+all_nodes <- lapply(unique(resolved_names$order), function(x) findMRCANode2(phylo = tr, trait.data = resolved_names, taxonomic_level_col = 7, taxonomic_level_name = x))
 nodes_df <- do.call(rbind, all_nodes)
 
 node_labels <- ggtree(tr, layout = "circular") + geom_text(aes(label=node), colour = "blue", hjust=-.2, size = 3) + geom_tiplab(size = 3, hjust = -0.1)
