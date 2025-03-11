@@ -20,8 +20,10 @@ library(rotl)
 library(deeptime)
 #colours
 library(RColorBrewer)
-#install.packages("ggnewscale")
+#apply two separate colour palettes
 library(ggnewscale)
+#more colours
+library(pals)
 
 ## Packages for phylogenetic analysis in R (overlapping uses)
 ## They aren't all used here, but you should have them all
@@ -66,6 +68,63 @@ source("scripts/fish_sleep_functions.R")
 #female and male reproductive age, lifespan, group size, sociality, group foraging,
 #acoustic communication and more 
 
+
+# Phylogenetic ANOVA tutorial ---------------------------------------------
+#from http://blog.phytools.org/2017/11/print-method-for-phylanova-phylogenetic.html praise Levell
+
+#simulate tree and data
+tree<-pbtree(n=100)
+Q<-matrix(c(-2,1,1,
+            1,-2,1,
+            1,1,-2),3,3)
+rownames(Q)<-colnames(Q)<-letters[1:3]
+# x is a discrete trait that can have one of three states (A, B, C)
+x<-as.factor(sim.history(tree,Q)$states)
+# y is a continuous trait, we generate values for it under fast brownian motion (y1)
+#and under brownian motion with half the variance plus the value of x (creates a stronger phylogenetic signal between x and y)
+y1<-fastBM(tree)
+y2<-fastBM(tree,sig2=0.5)+as.numeric(x)
+
+# case one we're looking at the effect of the discrete trait on continuous trait y1
+#the nodes are labelled by the x state (A, B or C) and their y trait is shown on the y axis
+#we can see that for case 1, trait x doesn't appear to associate with trait y (there seem to be As spread across all y values etc)
+phenogram(tree,y1,ftype="off",col=make.transparent("blue",0.5))
+tiplabels(pie=to.matrix(x,letters[1:3]),
+          piecol=colorRampPalette(c("blue", "yellow"))(3),
+          cex=0.4)
+
+#we confirm this lack of association with the phylogenetic ANOVA
+#F-value is 0.55 and Pr(>F) is 0.687, paired p-values are high (above 0.05) for all comparisons
+#meaning none of the categories for x have an effect on y
+phylANOVA(tree,x,y1)
+
+#we can plot this as well
+#even without phylogenetically correcting we can see the means and distributions are similar between groups
+example_trait <- as.data.frame(y1 = y1, x = x)
+ggplot(example_trait, aes(x = x, y = y1)) + geom_boxplot() + geom_point()
+
+#case two, we're looking at continuous trait y1
+#we can see more of an association in this phenogram
+#species with a yellow trait x tend to have a higher trait y, blues have lower y and grey are intermediate
+phenogram(tree,y2,ftype="off",col=make.transparent("blue",0.5))
+tiplabels(pie=to.matrix(x,letters[1:3]),
+          piecol=colorRampPalette(c("blue", "yellow"))(3),
+          cex=0.4) 
+
+#the phylogenetic ANOVA supports this
+#the corrected p-values are low between all comparisons
+phylANOVA(tree,x,y2)
+#we can plot this as well
+#even without phylogenetically correcting we can see the means and distributions are dissimilar between groups
+example_trait <- as.data.frame(y1 = y2, x = x)
+ggplot(example_trait, aes(x = x, y = y2)) + geom_boxplot() + geom_point()
+
+
+phylANOVA(tree, x, y, nsim=1000, posthoc=TRUE, p.adj="holm")
+#where tree is a phylo object, x is a vector containing the groups. y is a vector containing the response variable (continuously valued).
+#nsim = an integer specifying the number of simulations (including the observed data).
+#posthoc = a logical value indicating whether or not to conduct posthoc tests to compare the mean among groups.
+#p.adj = method to adjust P-values for the posthoc tests to account for multiple testing. Options same as p.adjust.
 
 # Prescence of cortistatin ------------------------------------------------
 
@@ -166,6 +225,93 @@ png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/feeding
 diel.plot
 dev.off()
 
+# Coombs et al, echolocation ----------------------------------------------
+trait.data <- read.csv(here("cetaceans_full.csv"))
+trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_4)), c("tips", "Diel_Pattern_4")]
+
+echo <- read_xlsx("C:/Users/ameli/OneDrive/Documents/R_projects/cetacean_discrete_traits/Coombs_et_al_2022.xlsx")
+echo <- echo[!(is.na(echo$Echo)), c("Museum ID", "Echo", "Diet", "Dentition", "FM", "Habitat")]
+echo$tips <- str_replace(echo$`Museum ID`, " ", "_")
+
+echo <- echo %>% filter(echo$tips %in% trait.data$tips)
+
+trait.data <- merge(trait.data, echo, by = "tips")
+
+#add hippo data
+trait.data <- rbind(trait.data, c("Hexaprotodon_liberiensis", "nocturnal","Hexaprotodon liberiensis", "no echo", "Misc", "Unknown", "Biting", "Semi-aquatic"))
+trait.data <- rbind(trait.data, c("Hippopotamus_amphibius",  "nocturnal","Hippopotamus amphibius", "no echo","Misc", "Unknown", "Biting", "Semi-aqautic"))
+
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+#should fix colours
+#custom.colours <- c("#dd8ae7", "pink", "orange", "black", "grey80", "#66C2A5", "#A6D854")
+custom.colours <- c("#dd8ae7", "#FC8D62", "black", "grey80", "#66C2A5")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_4", "Echo")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_4), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours)
+diel.plot <- diel.plot +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Echo), inherit.aes = FALSE, colour = "transparent") 
+diel.plot <- diel.plot + geom_tiplab(size = 3, offset = 3)
+diel.plot
+
+
+# Ancestral reconstruction of echolocation ------------------------------
+#run the markov models on the echolocation data
+#since 1 = echo and 2 = no echo we can use the following to set the state at the root to no echo
+#"If analyzing a binary or multistate character, the order of root.p is the same order as the traits – e.g., for states 1, 2, 3, a root.p=c(0,1,0) would fix the root to be in state 2"
+ER <- corHMM(phy = trpy_n, data = trait.data[, c("tips", "Echo")], rate.cat = 1, model = "ER", node.states = "marginal", root.p = c(0, 1))
+SYM <- corHMM(phy = trpy_n, data = trait.data[, c("tips", "Echo")], rate.cat = 1, model = "SYM", node.states = "marginal", root.p = c(0, 1))
+ARD <- corHMM(phy = trpy_n, data = trait.data[, c("tips", "Echo")], rate.cat = 1, model = "ARD", node.states = "marginal", root.p = c(0, 1))
+
+echo_model_results <- lapply(c("ER", "SYM", "ARD"), function(x) eval(as.name(x)))
+names(echo_model_results) <- paste(c("ER", "SYM", "ARD"), "_model", sep = "")
+#can now plot the likelihood metrics using the Amelia all model plots new functions
+
+model_results <- ARD
+file_name <- "cetacean_echolocation"
+
+phylo_tree <- model_results$phy
+
+#rename column names for consistency in the next steps
+colnames(model_results$data) <- c("tips", "Echo")
+
+#to make more clear we can colour the tips separately using geom_tipppoint 
+#may have to adjust what trait data column is called in each
+base_tree <- ggtree(phylo_tree, layout = "rectangular") + geom_tiplab(size = 3, hjust = -0.1)
+base_tree <- base_tree %<+% model_results$data[, c("tips", "Echo")]
+base_tree <- base_tree + geom_tippoint(aes(color = Echo), size = 4) 
+base_tree
+
+#make the dataframe of likelihoods at the internal nodes without the tips
+lik.anc <- as.data.frame(model_results$states)
+
+#for cetaceans we have to add 72 because we are skipping the tips (nodes 1-72)
+#the internal nodes start at 73 and end at node 143
+#for artiodactyla we add 300 because we are skipping the tips (nodes 1-300)
+#the internal nodes start at 301 and end at node 599
+lik.anc$node <- c(1:nrow(lik.anc)) + nrow(model_results$data)
+
+#get the pie charts from this database using nodepie
+#the number of columns changes depending on how many trait states
+pie <- nodepie(lik.anc, 1:(length(lik.anc)-1))
+
+pie_tree <- base_tree + geom_inset(pie, width = .03, height = .03) 
+
+#adds a timescale
+pie_tree <- pie_tree + theme_tree2()
+#reverses the timescale so it starts at 0mya at the tips and extends back to 50mya at ancestor
+pie_tree <- revts(pie_tree)
+pie_tree
+
+#save out
+png(paste("C:/Users/ameli/OneDrive/Documents/R_projects/New_ancestral_recon/pie_chart/", "pie_chart_anc_recon_", "echolocation", ".png", sep = ""), width=40,height=20, units="cm",res=600)
+pie_tree
+dev.off()
+
+# is the proportion of nocturnal species higher in the echolocating species vs non-echolocating?
+#no it seems about half are 
+table(trait.data$Diel_Pattern_4, trait.data$Echo)
+
 # Unknown (dive depth, body size)  -----------------------------------------------
 trait.data <- read.csv(here("cetaceans_full.csv"))
 trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
@@ -243,18 +389,25 @@ trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pa
 #filer out species with an unknown activity pattern
 trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), c("tips", "Diel_Pattern_2")]
 
+colnames(Manger) <- c("Genus_species", "Male_mass", "Female_mass", "Average_body_mass", "Brain_mass", "Encephalization_quotient", "Longevity_days", "Sexual_maturity_days", "Group_size", "Group_size_range", "Group_social_dynamics", "Feeding_strategy")
 Manger$tips <- str_replace(Manger$Genus_species, " ", "_")
 Manger <- Manger %>% filter(Manger$tips %in% trait.data$tips)
 
 trait.data <- merge(trait.data, Manger, by = "tips")
 trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
 
+#remove commas and convert to numbers
+trait.data$Average_body_mass <- str_replace_all(trait.data$Average_body_mass, pattern = ",", replacement = "")
+trait.data$Average_body_mass <- as.integer(trait.data$Average_body_mass)
+#remove empty rows
+trait.data <- trait.data[!apply(trait.data == "", 1, all),]
+trait.data <- trait.data[!is.na(trait.data$Average_body_mass),]
 trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 
 custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "Orbit_ratio")]
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "Average_body_mass")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Orbit_ratio), inherit.aes = FALSE, colour = "transparent") + scale_fill_gradient(low = "#ceecff", high = "#07507e", name = "Orbit Ratio")
+diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label), ], aes(x=x +2, y=y, fill = Average_body_mass), inherit.aes = FALSE, colour = "transparent") + scale_fill_gradient(low = "#ceecff", high = "#07507e", name = "Average body mass")
 diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
 diel.plot
 
@@ -266,21 +419,40 @@ dev.off()
 groot <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Groot_et_al_2023.xlsx")
 
 
-# Churchill et al, traits (orbit ratio) ---------------------------------------
+# Fisher's exact test (not phylogenetically corrected) -----------------------------------------------------
+#requires dataframe with both discrete traits of interest
+#habitat vs diel pattern (Church data)
+test_df <- trait.data[trait.data$Diel_Pattern_2 %in% c("cathemeral", "diurnal", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), c("Diel_Pattern_2", "Habitat1")]
+test <- fisher.test(table(test_df))
+
+mosaicplot(table(test_df), color = TRUE, main = paste0("Fischer's exact test: ", "p-value = ", round(test$p.value, 3))) 
+
+#echo vs diel pattern (Coombs data)
+test_df <- trait.data[trait.data$Diel_Pattern_2 %in% c("cathemeral", "diurnal", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), c("Diel_Pattern_2", "Echo")]
+test <- fisher.test(table(test_df))
+#this has slight more than 10 entries per unique combination (cathemeral echo has 15 entires, noc echo has 11 etc)
+mosaicplot(table(test_df), color = TRUE, main = paste0("Fischer's exact test: ", "p-value = ", round(test$p.value, 3))) 
+
+#feeding mechanism vs diel pattern (Coombs data)
+test_df <- trait.data[trait.data$Diel_Pattern_2 %in% c("cathemeral", "diurnal", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), c("Diel_Pattern_2", "FM")]
+test <- fisher.test(table(test_df))
+#this has slight more than 10 entries per unique combination (cathemeral echo has 15 entires, noc echo has 11 etc)
+mosaicplot(table(test_df), color = TRUE, main = paste0("Fischer's exact test: ", "p-value = ", round(test$p.value, 3))) 
+
+# Churchill et al, traits: orbit ratio ---------------------------------------
 #orbit information
 church_pt1 <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Churchill_Baltz_2021_pt1.xlsx")
-#dive depth, dive duration, body length, mass
-church_pt2 <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Churchill_Baltz_2021_pt2.xlsx")
-#first and last occurrence data (fossil species)
-church_pt3 <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Churchill_Baltz_2021_pt3.xlsx")
-
 #we are interested in orbit ratio, length of orbit relative to the bigozymatic width (proxy for body size)
 #this is a continuous trait
 
 trait.data <- read.csv(here("cetaceans_full.csv"))
-trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2")]
+trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2", "Parvorder")]
 #filer out species with an unknown activity pattern
-trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), c("tips", "Diel_Pattern_2")]
+trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), ]
+
+#use below to rerun with max-crep four state model
+# trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+# trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
 
 colnames(church_pt1) <- c("Species", "Family", "Specimen_number", "Left_orbit_length", "Right_orbit_length", "Bizygomatic_width", "Average_orbit_length", "Orbit_ratio")
 
@@ -294,103 +466,273 @@ church_pt1 <- church_pt1[!duplicated(church_pt1$Species),]
 
 #could also average values for each species duplicates
 
+
 trait.data <- merge(trait.data, church_pt1, by = "tips")
 trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
 
 trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 
 custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
+# custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "Orbit_ratio")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
 diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Orbit_ratio), inherit.aes = FALSE, colour = "transparent") + scale_fill_gradient(low = "#ceecff", high = "#07507e", name = "Orbit Ratio")
 diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
 diel.plot
 
-png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/orbit_ratio_vs_diel.png", width=20,height=15,units="cm",res=1200)
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/orbit_ratio_vs_diel_.png", width=20,height=15,units="cm",res=1200)
 diel.plot
 dev.off()
 
-# # Ancestral reconstruction of echolocation ------------------------------
-trait.data <- read.csv(here("cetaceans_full.csv"))
-trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_4)), c("tips", "Diel_Pattern_4")]
+#plot out  orbit ratio vs activity pattern (NOT phylogenetically collected)
+ggplot(trait.data, aes(x = Diel_Pattern, y = Axial_length)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Axial length") + scale_fill_manual(values=as.vector(polychrome(26))) #+ facet_wrap(~ Parvorder)
 
-echo <- read_xlsx("C:/Users/ameli/OneDrive/Documents/R_projects/cetacean_discrete_traits/Coombs_et_al_2022.xlsx")
-echo <- echo[!(is.na(echo$Echo)), c("Museum ID", "Echo", "Diet", "Dentition", "FM", "Habitat")]
-echo$tips <- str_replace(echo$`Museum ID`, " ", "_")
+ggplot(trait.data, aes(x = Diel_Pattern, y = Corneal_diameter)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Corneal diameter") + scale_fill_manual(values=as.vector(polychrome(26))) #+ facet_wrap(~ Parvorder)
 
-echo <- echo %>% filter(echo$tips %in% trait.data$tips)
+ggplot(trait.data, aes(x = Diel_Pattern, y = Orbit_ratio)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Orbit ratio") + scale_fill_manual(values=as.vector(polychrome(26))) #+ facet_wrap(~ Parvorder)
 
-trait.data <- merge(trait.data, echo, by = "tips")
+# Baker et al artiodactyla axial length -----------------------------------
+artio_eyes <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Baker_2019.xlsx")
+artio_eyes <- artio_eyes[2: nrow(artio_eyes),]
+colnames(artio_eyes) <- c("tips", "Order", "Corneal_diameter", "Axial_length", "Activity_pattern", "Source")
+artio_eyes <- filter(artio_eyes, Order == "Artiodactyla")
+artio_eyes <- artio_eyes[artio_eyes$Corneal_diameter != "n/a", c("tips", "Corneal_diameter", "Axial_length", "Activity_pattern") ]
+sleepy_artio <- read.csv(here("sleepy_artiodactyla_full.csv"))
+artio_eyes <- artio_eyes %>% filter(artio_eyes$tips %in% sleepy_artio$tips)
+artio_eyes$Transverse_diameter <- "NA"
+artio_eyes <- artio_eyes %>% relocate(Transverse_diameter, .before= Activity_pattern)
 
-#add hippo data
-trait.data <- rbind(trait.data, c("Hexaprotodon_liberiensis", "nocturnal","Hexaprotodon liberiensis", "no echo", "Misc", "Unknown", "Biting", "Semi-aquatic"))
-trait.data <- rbind(trait.data, c("Hippopotamus_amphibius",  "nocturnal","Hippopotamus amphibius", "no echo","Misc", "Unknown", "Biting", "Semi-aqautic"))
+artio_eyes <- merge(sleepy_artio, artio_eyes, by = "tips")
+artio_eyes$Axial_length <- as.numeric(artio_eyes$Axial_length)
+artio_eyes$Corneal_diameter <- as.numeric(artio_eyes$Corneal_diameter)
+artio_eyes <- artio_eyes[, c("tips", "Species_name", "Family", "Order", "Diel_Pattern_2", "Corneal_diameter", "Axial_length", "Activity_pattern")]
 
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+#we can look at the ratio of corneal diameter to axial length
+#From Hall et al: https://doi.org/10.1098/rspb.2012.2258
+#The ratio of corneal diameter to axial length of the eye is a useful measure of relative sensitivity 
+#and relative visual acuity that has been used in previous studies as a way to compare animals of disparate size
+artio_eyes$Orbit_ratio <- artio_eyes$Corneal_diameter/artio_eyes$Axial_length
+                        
+#use below to rerun with max-crep four state model
+artio_eyes$Diel_Pattern <- str_replace_all(artio_eyes$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+artio_eyes$Diel_Pattern <- str_replace_all(artio_eyes$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+artio_eyes$Diel_Pattern <- str_replace_all(artio_eyes$Diel_Pattern, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
 
+#plot out  orbit ratio vs activity pattern (NOT phylogenetically collected)
+ggplot(artio_eyes, aes(x = Diel_Pattern, y = Axial_length)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Axial length") + scale_fill_manual(values=as.vector(polychrome(26))) 
+
+ggplot(artio_eyes, aes(x = Diel_Pattern, y = Corneal_diameter)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Corneal diameter") + scale_fill_manual(values=as.vector(polychrome(26))) 
+
+ggplot(artio_eyes, aes(x = Diel_Pattern, y = Orbit_ratio)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Corneal diameter: axial length ratio") + scale_fill_manual(values=as.vector(polychrome(26))) 
+
+
+trait.data <- artio_eyes[artio_eyes$tips %in% mam.tree$tip.label,]
+#two artio species dropped from the tree Camelus bactrianus and Lama glama
 trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 
-#should fix colours
-#custom.colours <- c("#dd8ae7", "pink", "orange", "black", "grey80", "#66C2A5", "#A6D854")
-custom.colours <- c("#dd8ae7", "#FC8D62", "black", "grey80", "#66C2A5")
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_4", "Echo")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_4), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours)
-diel.plot <- diel.plot +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Echo), inherit.aes = FALSE, colour = "transparent") 
-diel.plot <- diel.plot + geom_tiplab(size = 3, offset = 3)
+custom.colours <- c("#dd8ae7", "peachpuff2", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
+# custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "Orbit_ratio")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent", width = 2) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2.5, y=y, fill = Orbit_ratio), inherit.aes = FALSE, colour = "transparent", width = 2) + scale_fill_gradient(low = "#ceecff", high = "#07507e", name = "Orbit Ratio")
+diel.plot <- diel.plot + geom_tiplab(size = 3, offset = 3.5)
 diel.plot
 
-#run the markov models on the echolocation data
-#since 1 = echo and 2 = no echo we can use the following to set the state at the root to no echo
-#"If analyzing a binary or multistate character, the order of root.p is the same order as the traits – e.g., for states 1, 2, 3, a root.p=c(0,1,0) would fix the root to be in state 2"
-ER <- corHMM(phy = trpy_n, data = trait.data[, c("tips", "Echo")], rate.cat = 1, model = "ER", node.states = "marginal", root.p = c(0, 1))
-SYM <- corHMM(phy = trpy_n, data = trait.data[, c("tips", "Echo")], rate.cat = 1, model = "SYM", node.states = "marginal", root.p = c(0, 1))
-ARD <- corHMM(phy = trpy_n, data = trait.data[, c("tips", "Echo")], rate.cat = 1, model = "ARD", node.states = "marginal", root.p = c(0, 1))
-
-echo_model_results <- lapply(c("ER", "SYM", "ARD"), function(x) eval(as.name(x)))
-names(echo_model_results) <- paste(c("ER", "SYM", "ARD"), "_model", sep = "")
-#can now plot the likelihood metrics using the Amelia all model plots new functions
-
-model_results <- ARD
-file_name <- "cetacean_echolocation"
-
-phylo_tree <- model_results$phy
-
-#rename column names for consistency in the next steps
-colnames(model_results$data) <- c("tips", "Echo")
-
-#to make more clear we can colour the tips separately using geom_tipppoint 
-#may have to adjust what trait data column is called in each
-base_tree <- ggtree(phylo_tree, layout = "rectangular") + geom_tiplab(size = 3, hjust = -0.1)
-base_tree <- base_tree %<+% model_results$data[, c("tips", "Echo")]
-base_tree <- base_tree + geom_tippoint(aes(color = Echo), size = 4) 
-base_tree
-
-#make the dataframe of likelihoods at the internal nodes without the tips
-lik.anc <- as.data.frame(model_results$states)
-
-#for cetaceans we have to add 72 because we are skipping the tips (nodes 1-72)
-#the internal nodes start at 73 and end at node 143
-#for artiodactyla we add 300 because we are skipping the tips (nodes 1-300)
-#the internal nodes start at 301 and end at node 599
-lik.anc$node <- c(1:nrow(lik.anc)) + nrow(model_results$data)
-
-#get the pie charts from this database using nodepie
-#the number of columns changes depending on how many trait states
-pie <- nodepie(lik.anc, 1:(length(lik.anc)-1))
-
-pie_tree <- base_tree + geom_inset(pie, width = .03, height = .03) 
-
-#adds a timescale
-pie_tree <- pie_tree + theme_tree2()
-#reverses the timescale so it starts at 0mya at the tips and extends back to 50mya at ancestor
-pie_tree <- revts(pie_tree)
-pie_tree
-
-#save out
-png(paste("C:/Users/ameli/OneDrive/Documents/R_projects/New_ancestral_recon/pie_chart/", "pie_chart_anc_recon_", "echolocation", ".png", sep = ""), width=40,height=20, units="cm",res=600)
-pie_tree
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/artio_orbit_ratio_vs_diel_.png", width=20,height=15,units="cm",res=1200)
+diel.plot
 dev.off()
 
-# is the proportion of nocturnal species higher in the echolocating species vs non-echolocating?
-#no it seems about half are 
-table(trait.data$Diel_Pattern_4, trait.data$Echo)
+# Phylogenetic signal of orbit size ---------------------------------------
+
+#calculate pagels lambda and bloombergs k for cetacean orbit ratio using phylosig function
+#not sure if the vector has to be in the same species order as the tr structure
+#will order it this way just in case
+sps_order <- as.data.frame(trpy_n$tip.label)
+colnames(sps_order) <- "tips"
+sps_order$id <- 1:nrow(sps_order)
+test <- merge(trait.data, sps_order, by = "tips")
+test <- test[order(test$id), ]
+trait.vector <- test$Orbit_ratio
+names(trait.vector) <- test$tips
+
+orbit_K <- phylosig(trpy_n, trait.vector, method="K", test=TRUE, nsim=1000, se=NULL, start=NULL,
+         control=list(), niter=10)
+#k = 1.8925 for cetaceans
+#p-value = 0.001 for cetaceans
+
+#k = 0.348275 for non-cetacean artiodactyls
+#p-value = 0.038
+orbit_lambda <- phylosig(trpy_n, trait.vector, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
+                         control=list(), niter=10)
+#lambda = 0.993593 for cetaceans
+#p-value = 1.18 e-11 for cetaceans
+
+#lambda = 0.964172
+# p-value = 0.00269743
+
+#phylosig gives the same result whether it is ordered or not but no harm in ordering it 
+
+
+# Phylogenetic ANOVA for orbit size vs activity pattern ---------------------------------
+
+#plot out  orbit ratio vs activity pattern (NOT phylogenetically collected)
+ggplot(trait.data, aes(x = Diel_Pattern_2, y = Orbit_ratio)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Orbit ratio") + scale_fill_manual(values=as.vector(polychrome(26))) #+ facet_wrap(~ Parvorder)
+
+#we can make a phenogram of eye size evolution
+#requires the trait data to be a named vector in the same species order as appears in trpy_n$tip.labels
+sps_order <- as.data.frame(trpy_n$tip.label)
+colnames(sps_order) <- "tips"
+sps_order$id <- 1:nrow(sps_order)
+test <- merge(trait.data, sps_order, by = "tips")
+test <- test[order(test$id), ]
+#y trait is the continuous (response) variable 
+trait.y <- test$Orbit_ratio
+names(trait.y) <- test$tips
+#x trait is the categorical variable 
+trait.x <- test$Diel_Pattern
+names(trait.x) <- test$tips
+
+#use function phenogram from phytools
+phenogram(trpy_n, trait.y,ftype="reg", spread.labels = TRUE, spread.cost=c(1,0))
+
+#colour the tips by the activity pattern
+tiplabels(pie = to.matrix(trait.x, unique(trait.data$Diel_Pattern)), piecol = c("peachpuff2", "#dd8ae7", "#66C2A5", "#FC8D62"), cex = 0.25)
+
+#check for association between response variable y (orbit size) and categorical variable x (diel pattern)
+#regular one way ANOVA
+orbit_ANOVA <- aov(Orbit_ratio ~ Diel_Pattern, data = trait.data)
+summary(orbit_ANOVA) #not statistically significant for cetaceans, p value of F statistic = 0.297
+#statistically significant for non-cetacean artiodactyls, p value of F statistic = 0.00213
+
+#phylogenetically corrected ANOVA
+orbit_phylANOVA <- phylANOVA(trpy_n, trait.x, trait.y, nsim=1000, posthoc=TRUE, p.adj="holm")
+#not statistically significant for cetaceans, p value of F statistic = 0.441
+#statistically significant for non-cetacean artiodactyls, p value of F statistic = 0.002
+
+#plot by families (more than one species)
+trait.data %>% group_by(Family) %>% filter(n()>2) %>% ggplot(., aes(x = Diel_Pattern_2, y = Orbit_ratio))+ geom_boxplot() + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + facet_wrap(~ Family) + 
+  labs(x = "Temporal activity pattern", y = "Orbit ratio") + scale_fill_manual(values=as.vector(polychrome(26)))
+#plot by families with only one species
+trait.data %>% group_by(Family) %>% filter(n()<2) %>% ggplot(., aes(x = Diel_Pattern_2, y = Orbit_ratio))+ geom_boxplot() + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + facet_wrap(~ Family) + 
+  labs(x = "Temporal activity pattern", y = "Orbit ratio") + scale_fill_manual(values=as.vector(polychrome(26)))
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/orbit_ratio_vs_diel_boxplot.png", width=20,height=15,units="cm",res=1200)
+ggplot(trait.data, aes(x = Diel_Pattern_2, y = Orbit_ratio)) + geom_boxplot() + geom_point()
+dev.off()
+
+# # Churchill et al: dive depth -------------------------------------------
+#dive depth, dive duration, body length, mass
+church_pt2 <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Churchill_Baltz_2021_pt2.xlsx")
+#first and last occurrence data (fossil species)
+church_pt3 <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Churchill_Baltz_2021_pt3.xlsx")
+
+trait.data <- read.csv(here("cetaceans_full.csv"))
+trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pattern_2", "Parvorder")]
+#filer out species with an unknown activity pattern
+trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), ]
+
+#use below to rerun with max-crep four state model
+trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+
+colnames(church_pt2) <- c("Species", "Dive_depth", "Log_dive_depth", "Dive_duration", "Log_dive_duration", "Mass", "Log_mass", "Total_body_length", "Log_body_length", "Assymetry_index", "Peak_frequency", "Log_frequency")
+
+#filter for species with dive data, leaves 28 species
+church_pt2 <- church_pt2[!(is.na(church_pt2$Dive_depth)), c("Species", "Dive_depth", "Dive_duration", "Mass", "Total_body_length", "Assymetry_index", "Peak_frequency")]
+
+#correct species spelling to match
+church_pt2[8, "Species" ] = "Berardius bairdii"
+church_pt2[17, "Species" ] = "Lagenorhynchus obliquidens"
+
+church_pt2$tips <- str_replace(church_pt2$Species, " ", "_")
+
+
+#filter the orbit size data by the species in our trait data 
+church_pt2 <- church_pt2 %>% filter(church_pt2$tips %in% trait.data$tips)
+
+trait.data <- merge(trait.data, church_pt2, by = "tips")
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+
+#all 28 species with dive data are in the tree
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
+# custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern", "Dive_depth")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Dive_depth), inherit.aes = FALSE, colour = "transparent") + scale_fill_gradient(low = "#ceecff", high = "#07507e", name = "Dive depth")
+diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
+diel.plot
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/dive_depth_vs_diel_.png", width=20,height=15,units="cm",res=1200)
+diel.plot
+dev.off()
+
+#plot out dive depth vs activity pattern (NOT phylogenetically corrected)
+ggplot(trait.data, aes(x = Diel_Pattern, y = Dive_depth)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = Parvorder), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Dive depth") + scale_fill_manual(values=as.vector(polychrome(26))) 
+
+#identify the phylogenetic signal of dive depth
+trait.vector <- trait.data$Dive_depth
+names(trait.vector) <- trait.data$tips
+
+orbit_K <- phylosig(trpy_n, trait.vector, method="K", test=TRUE, nsim=1000, se=NULL, start=NULL,
+                    control=list(), niter=10)
+#K: 1.3837
+#p-value = 0.001
+
+orbit_lambda <- phylosig(trpy_n, trait.vector, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
+                         control=list(), niter=10)
+#lambda: 0.999692
+#p-value = 3.2622 e-6
+
+#optional: remove sperm whales because it skews everything
+# trait.data <- trait.data[-(20),]
+# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+#we can make a phenogram of eye size evolution
+#requires the trait data to be a named vector in the same species order as appears in trpy_n$tip.labels
+sps_order <- as.data.frame(trpy_n$tip.label)
+colnames(sps_order) <- "tips"
+sps_order$id <- 1:nrow(sps_order)
+test <- merge(trait.data, sps_order, by = "tips")
+test <- test[order(test$id), ]
+#y trait is the continuous (response) variable 
+trait.y <- test$Dive_depth
+names(trait.y) <- test$tips
+#x trait is the categorical variable 
+trait.x <- test$Diel_Pattern
+names(trait.x) <- test$tips
+
+#use function phenogram from phytools
+phenogram(trpy_n, trait.y, ftype="reg", spread.labels = TRUE, spread.cost=c(1,0))
+
+#colour the tips by the activity pattern
+tiplabels(pie = to.matrix(trait.x, unique(trait.data$Diel_Pattern)), piecol = c("#dd8ae7", "#FC8D62", "#66C2A5","peachpuff2"), cex = 0.25)
+
+#check for association between response variable y (orbit size) and categorical variable x (diel pattern)
+#regular one way ANOVA
+orbit_ANOVA <- aov(Dive_depth ~ Diel_Pattern, data = trait.data)
+summary(orbit_ANOVA) #statistically significant, p value of F statistic = 0.0003
+
+#phylogenetically corrected ANOVA
+dive_phylANOVA <- phylANOVA(trpy_n, trait.x, trait.y, nsim=1000, posthoc=TRUE, p.adj="holm")
+#statistically significant, p value of F statistic = 0.01
+
