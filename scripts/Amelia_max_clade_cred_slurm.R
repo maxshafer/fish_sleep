@@ -109,6 +109,9 @@ phylo_trees <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 #subset trait data to only include species that are in the tree
 trait.data <- trait.data[trait.data$tips %in% phylo_trees$tip.label,]
 
+#remove any unwanted trait states (removes any species with diel pattern as unknown)
+trait.data <- trait.data %>% filter(Diel_Pattern_2 != "unknown")
+
 # this selects a tree that is only the subset with data (mutual exclusive)
 phylo_trees <- keep.tip(phylo_trees, tip = trait.data$tips)
 

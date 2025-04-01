@@ -112,10 +112,41 @@ findMRCANode <- function(phylo = tr, trait.data = trait.data, taxonomic_level_co
 
 findMRCANode2 <- function(phylo = tr, trait.data = trait.data, taxonomic_level_col = 3, taxonomic_level_name = "Araneae"){
   nodes_list <- list()
+  trait.data <- trait.data %>% group_by_at(taxonomic_level_col) %>% filter(n()>1)
   trait.data.filtered <- trait.data[trait.data[,taxonomic_level_col] == taxonomic_level_name, ]
   tip_vector <- as.vector(trait.data.filtered[, "tips"])
   #find the node number of the MRCA of these species
   MRCA_node <- findMRCA(phylo, tip_vector$tips)
   node_df <- data.frame(clade_name = taxonomic_level_name, node_number = MRCA_node)
   return(node_df)
+}
+
+#delta statistic function
+#a function that given a df with species names and diel activity data returns the delta statistic for that group
+
+calculateDelta <- function(trait.data = trait.data, taxonomic_group_name = "Cetacea"){
+  mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+  trait.data <- filter(trait.data, trait.data$Order == taxonomic_group_name)
+  trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+  mam.tree <- keep.tip(mam.tree, tip = trait.data$tips)
+  mam.tree$edge.length[mam.tree$edge.length == 0] <- quantile(tree$edge.length, 0.1)*0.1
+  
+  sps_order <- as.data.frame(mam.tree$tip.label)
+  colnames(sps_order) <- "tips"
+  sps_order$id <- 1:nrow(sps_order)
+  trait.data <- merge(trait.data, sps_order, by = "tips")
+  trait.data <- trait.data[order(trait.data$id), ]
+  trait <- trait.data$Diel_Pattern
+  
+  delta_diel <- delta(trait, mam.tree, 0.1, 0.0589, 1000, 10, 100)
+  
+  random_delta <- rep(NA,100)
+  for (i in 1:100){
+    rtrait <- sample(trait)
+    random_delta[i] <- delta(rtrait,mam.tree,0.1,0.0589,10000,10,100)
+  }
+  p_value <- sum(random_delta>delta_diel)/length(random_delta)
+  
+  result <- data.frame(delta_diel, taxonomic_group_name, p_value)
+  return(result)
 }

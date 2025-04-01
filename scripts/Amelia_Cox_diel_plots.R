@@ -339,8 +339,8 @@ mam.tree <- keep.tip(mam.tree, tip = trait.data$tips)
 
 #all branches need to have a positive length
 #replace branches with length 0 with 1% of the 1% quantile (replace it with a number very close to zero)
-#this doesn't replace anything in the cetacean tree
-mam.tree$edge.length[tree$edge.length == 0] <- quantile(tree$edge.length, 0.1)*0.1
+#this doesn't replace anything in the cetacean tree so comment it out for now
+mam.tree$edge.length[mam.tree$edge.length == 0] <- quantile(tree$edge.length, 0.1)*0.1
 
 #vector of trait data, with species in same order as in tree (tree$tip.label)
 sps_order <- as.data.frame(mam.tree$tip.label)
@@ -352,7 +352,8 @@ trait <- trait.data$Diel_Pattern_2
 
 #now we calculate delta using their custom function
 delta_diel <- delta(trait, mam.tree, 0.1, 0.0589, 1000, 10, 100)
-#returns a value of 0.7779191, I don't know how to interpret this lol
+#returns a value of 0.7779191, will change slightly every time its calculated
+#significance is only determined relative to a random simulation of the trait data
 
 #calculate the p-values
 #works by randomly shuffling the order of the trait data and finding the delta of this new randomly ordered trait data
@@ -372,4 +373,42 @@ abline(h=delta_diel,col="red")
 #if p-value less than 0.05 there is evidence of phylogenetic signal between the trait and character
 #if its more than 0.05 there is not evidence for phylogenetic signal
 #p value is 0.04, so there is a phylogenetic signal for diel activity patterns in cetaceans
+
+
+# Comparing delta statistics  ---------------------------------------------
+
+#use a custom function that given a dataframe with species names and diel activity data returns the delta statistic for that group
+#requires diel activity data to be in a column called Diel_Pattern
+#requires species names to be in a column called tips with the format Genus_species
+
+mammals_df <- read.csv(here("sleepy_mammals.csv"))
+#start with species with activity patterns that agree based on both Maor and Bennie databases
+mammals_df <- filter(mammals_df, match == "Yes") #leaves 1794 species
+mammals_df <- mammals_df[, c("tips", "Bennie_diel", "Order", "Family")]
+#mammals_df <- mammals_df[, c("tips", "Maor_diel", "Order", "Family")]
+colnames(mammals_df) <- c("tips", "Diel_Pattern", "Order", "Family")
+mammals_df <- relocate(mammals_df, "tips", .after = "Diel_Pattern")
+
+#test run
+source("scripts/Amelia_functions.R")
+mammals_df_filtered <- filter(mammals_df, Order == test)
+
+test <- calculateDelta(trait.data = mammals_df_filtered, taxonomic_group_name = "Afrosoricida")
+
+#remove orders with less than 20 species
+mammals_df <- mammals_df %>% group_by(Order) %>% filter(n()>20)
+
+all_delta <- lapply(unique(mammals_df$Order), function(x) calculateDelta(trait.data = mammals_df, taxonomic_group_name = x))
+delta_df <- do.call(rbind, all_delta)
+
+cetaceans_full <- read.csv(here("cetaceans_full.csv"))
+cetaceans_full <- cetaceans_full[, c("Diel_Pattern_2", "tips")]
+cetaceans_full$Diel_Pattern_2 <- str_replace_all(cetaceans_full$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+cetaceans_full$Diel_Pattern_2 <- str_replace_all(cetaceans_full$Diel_Pattern_2, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+cetaceans_full <- cetaceans_full[cetaceans_full$Diel_Pattern_2 %in% c("cathemeral", "nocturnal", "diurnal", "crepuscular"), ]
+colnames(cetaceans_full) <- c("Diel_Pattern", "tips")
+#not technically an order but just to see
+cetaceans_full$Order <- "Cetacea"
+
+
 

@@ -157,7 +157,9 @@ resolved_names <- resolved_names[!is.na(resolved_names$order), ]
 table(resolved_names$order)
 
 #this function will not label any order with one species
-findMRCANode2(phylo = tr, trait.data = resolved_names, taxonomic_level_col = 7, taxonomic_level_name = "Araneae")
+#findMRCANode2(phylo = tr, trait.data = resolved_names, taxonomic_level_col = 7, taxonomic_level_name = "Araneae")
+
+resolved_names <- resolved_names %>% group_by(order) %>% filter(n()>1)
 
 all_nodes <- lapply(unique(resolved_names$order), function(x) findMRCANode2(phylo = tr, trait.data = resolved_names, taxonomic_level_col = 7, taxonomic_level_name = x))
 nodes_df <- do.call(rbind, all_nodes)
@@ -165,10 +167,9 @@ nodes_df <- do.call(rbind, all_nodes)
 node_labels <- ggtree(tr, layout = "circular") + geom_text(aes(label=node), colour = "blue", hjust=-.2, size = 3) + geom_tiplab(size = 3, hjust = -0.1)
 node_labels 
 
-bug_nodes <- nodes_df
 #can now easily label all clades within that taxonomic level on the tree using the nodes_df
-nodes_df$colour <- c("navy", "slateblue", "mediumpurple", "dodgerblue", "darkorchid1", "royalblue", "lightslateblue", "purple3", "steelblue")
-order_tree <- diel.plot + geom_cladelab(node = nodes_df$node_number, label = nodes_df$clade_name, offset = 1.8, offset.text = 3, align = TRUE, fontsize = 2.5, barsize = 2.5, barcolour = nodes_df$colour)
+#nodes_df$colour <- c("navy", "slateblue", "mediumpurple", "dodgerblue", "darkorchid1", "royalblue", "lightslateblue", "purple3", "steelblue", "red", "green")
+order_tree <- diel.plot + geom_cladelab(node = nodes_df$node_number, label = nodes_df$clade_name, offset = 1, offset.text = 3, hjust = 0.3, align = TRUE, fontsize = 1.8, barsize = 1.5, barcolour = "grey45") #nodes_df$colour
 order_tree
 
 png(here("David_tree_bug_orders_diel_pattern.png"), units = 'cm', height = 25, width = 25, res = 900)   #OG setting: 30x30, res = 900

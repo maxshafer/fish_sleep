@@ -45,9 +45,9 @@ source("scripts/Amelia_functions.R")
 
 #currently I have max_clade_crep data for: artio max_crep, artio max_dinoc
 #to do: cetacean max_crep, cetacean max_dinoc, artio w/out cetaceans max_crep, artio w/out cetaceans max_dinoc
-all_model_results <- readRDS(here("artiodactyla_max_clade_cred_max_crep_traits_ER_SYM_ARD_bridge_only_models.rds"))
+all_model_results <- readRDS(here("artiodactyla_max_clade_cred_four_state_max_crep_traits_ARD_models.rds"))
 #copy and paste first half of filename here (leave out the models)
-file_name <- "artiodactyla_max_clade_cred_max_crep_traits"
+file_name <- "artiodactyla_max_clade_cred_four_state_max_crep_traits_ARD_models"
 
 #separate the results by the model types we want to use (ER, SYM, ARD, bridge_only)
 #uncomment the model you want to plot
@@ -58,29 +58,33 @@ file_name <- "artiodactyla_max_clade_cred_max_crep_traits"
 #model_results <- all_model_results$SYM_model
 #model_name <- "SYM"
 
-#model_results <- all_model_results$ARD_model
-#model_name <- "ARD"
+model_results <- all_model_results$ARD_model
+model_name <- "ARD"
 
-model_results <- all_model_results$bridge_only
-model_name <- "bridge_only"
+# model_results <- all_model_results$bridge_only
+# model_name <- "bridge_only"
 
 # Section 1: Plotting ancestral reconstruction from corHMM model  --------
 
 #from the model results file, tip states describes the trait states at the tips, states describes the trait states at the nodes
 lik.anc <- as.data.frame(rbind(model_results$tip.states, model_results$states))
 #for max_crep cath/crep makes more sense, for max_dinoc cathemeral makes more sense
-colnames(lik.anc) <- c("cathemeral", "diurnal", "nocturnal")
+colnames(lik.anc) <- c("cathemeral", "crepuscular", "diurnal", "nocturnal")
+#colnames(lik.anc) <- c("cathemeral", "diurnal", "nocturnal")
 phylo_tree <- model_results$phy
 #associate each of these species and their trait states with its node
 lik.anc$node <- c(1:length(phylo_tree$tip.label), (length(phylo_tree$tip.label) + 1):(phylo_tree$Nnode + length(phylo_tree$tip.label)))
 
 #plot the ancestral reconstruction, displaying each of the three trait states (cathemeral, diurnal, nocturnal)
-ancestral_plot_di <- ggtree(phylo_tree, layout = "circular") %<+% lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1)  + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
+ancestral_plot_di <- ggtree(phylo_tree, layout = "circular") %<+% lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_color_distiller(palette = "OrRd", direction = 1)  + geom_tiplab(color = "black", size = 3, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
 ancestral_plot_di
 ancestral_plot_noc <- ggtree(phylo_tree, layout = "circular") %<+% lik.anc + aes(color = nocturnal) + geom_tippoint(aes(color = nocturnal), shape = 16, size = 1.5)+ scale_color_distiller(palette = "GnBu", direction = 1) + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = nocturnal), shape = 16, size = 1.5)
 ancestral_plot_noc
 ancestral_plot_cath <- ggtree(phylo_tree, layout = "circular") %<+% lik.anc + aes(color = cathemeral) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5) + scale_color_distiller(palette = "RdPu", direction = 1) + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5)
 ancestral_plot_cath
+
+ancestral_plot_crep <- ggtree(phylo_tree, layout = "circular") %<+% lik.anc + aes(color = crepuscular) + geom_tippoint(aes(color = crepuscular), shape = 16, size = 1.5) + scale_color_distiller(palette = "Greens", direction = 1) + geom_tiplab(color = "black", size = 1.5, offset = 0.5) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5)
+ancestral_plot_crep
 
 #create the name of the file by pasting together ancestral recon, the diel state and the file_name 
 png(paste("C:/Users/ameli/OneDrive/Documents/R_projects/New_ancestral_recon/", "ancestral_recon_diurnal_", file_name, "_", model_name, ".png", sep = ""), width=17,height=16, units="cm",res=1200)
@@ -165,11 +169,10 @@ pie_tree
 
 # # Pie chart ancestral reconstruction ------------------------------------
 
-
 #load in ARD model data
-all_model_results <- readRDS(here("whippomorpha_max_clade_cred_max_crep_traits_ER_SYM_ARD_bridge_only_models.rds"))
+all_model_results <- readRDS(here("artiodactyla_max_clade_cred_four_state_max_crep_traits_ARD_models.rds"))
 model_results <- all_model_results$ARD_model
-file_name <- "whippomorpha_max_crep_three_state_ARD_model"
+file_name <- "artiodactyla_max_clade_cred_four_state_max_crep_traits_ARD"
 
 phylo_tree <- model_results$phy
 
@@ -178,7 +181,7 @@ colnames(model_results$data) <- c("tips", "Diel_Pattern")
 
 #to make more clear we can colour the tips separately using geom_tipppoint 
 #may have to adjust what trait data column is called in each
-base_tree <- ggtree(phylo_tree, layout = "rectangular") + geom_tiplab(size = 4, hjust = -0.1)
+base_tree <- ggtree(phylo_tree, layout = "rectangular") + geom_tiplab(size = 2, hjust = -0.1)
 base_tree <- base_tree %<+% model_results$data[, c("tips", "Diel_Pattern")]
 base_tree <- base_tree + geom_tippoint(aes(color = Diel_Pattern), size = 3) 
 base_tree

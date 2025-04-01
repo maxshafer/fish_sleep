@@ -116,18 +116,54 @@ ggtree(trpy_n_mam, layout = "circular") + geom_tiplab(size = 3)
 
 #seem to be distributed throughout the tree
 
+#get taxonomic information from Maor et al
+maor_mam_data <- read_excel(here("Maor_diel_activity_data.xlsx"))
+maor_mam_data <- maor_mam_data[17:nrow(maor_mam_data), 1:3]
+colnames(maor_mam_data) <- c("Order", "Family", "tips")
+maor_mam_data$tips <- str_replace(maor_mam_data$tips, pattern = " ", replacement = "_")
+
+#diel_merge currently has 2,199 species
+diel_merge <- merge(diel_merge, maor_mam_data, by = "tips") #now is 3,129 species
+diel_merge <- diel_merge[!duplicated(diel_merge$tips),] #remove duplicates, back to 2,199
+
 #save out the final 
-colnames(diel_merge) <- c("tips", "Bennie_diel", "Bennie_source", "Maor_diel", "Maor_source", "match")
+colnames(diel_merge) <- c("tips", "Bennie_diel", "Bennie_source", "Maor_diel", "Maor_source", "match", "Order", "Family")
 write.csv(diel_merge, here("sleepy_mammals.csv"))
 
 # Section 3: Visualizing the mammal data -------------------------------
-trait.data <- diel_merge
+trait.data <- read.csv(here("sleepy_mammals.csv"))
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
-trait.data <- trait.data[trait.data$Species %in% mam.tree$tip.label,]
-trpy_n_mam <- keep.tip(mam.tree, tip = trait.data$Species)
+trait.data <- filter(trait.data, match == "Yes") 
+trait.data <- trait.data[, c("tips", "Bennie_diel", "Order", "Family")]
+#mammals_df <- mammals_df[, c("tips", "Maor_diel", "Order", "Family")]
+colnames(trait.data) <- c("tips", "Diel_Pattern", "Order", "Family")
+#trait.data <- relocate(trait.data, "tips", .after = "Diel_Pattern")
+ 
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+trpy_n_mam <- keep.tip(mam.tree, tip = trait.data$tips)
 
-diel.plot.all <- ggtree(trpy_n_mam, layout = "circular") %<+% trait.data[,c("Species", "Bennie_diel")]
-diel.plot.all <- diel.plot.all + geom_tile(data = diel.plot.all$data[1:length(trpy_n_mam$tip.label),], aes(x=x, y=y, fill = Bennie_diel), inherit.aes = FALSE, colour = "black", width = 5)
-diel.plot.all <- diel.plot.all + geom_tiplab(size = 1, offset = 3)
+diel.plot.all <- ggtree(trpy_n_mam, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern")]
+diel.plot.all <- diel.plot.all + geom_tile(data = diel.plot.all$data[1:length(trpy_n_mam$tip.label),], aes(x=x, y=y, fill = Diel_Pattern), inherit.aes = FALSE, width = 5)
+diel.plot.all <- diel.plot.all #+ geom_tiplab(size = 1, offset = 3)
 diel.plot.all
+
+png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/", "mammals_bennie_maor_agree_unlabelled", "diel_plot.png"), width=24,height=18,units="cm",res=1200)
+diel.plot.all
+dev.off()
+
+#label by major orders
+source("scripts/Amelia_functions.R")
+trait.data <- trait.data %>% group_by(Order) %>% filter(n()>1)
+all_nodes <- lapply(unique(trait.data$Order), function(x) findMRCANode2(phylo = trpy_n_mam, trait.data = trait.data, taxonomic_level_col = 3, taxonomic_level_name = x))
+nodes_df <- do.call(rbind, all_nodes)
+
+#needs some tweaking still
+#nodes_df$colour <- c("navy", "slateblue", "mediumpurple", "dodgerblue", "darkorchid1", "royalblue", "lightslateblue", "purple3", "steelblue",)
+#nodes_df$colour <- c("white", "grey95", "grey90", "grey85", "grey80", "grey75", "grey70", "grey65", "grey60", "grey55", "grey50", "grey45", "grey40", "grey35", "grey30", "grey25", "grey20", "grey15", "grey10", "grey5", "black")
+order_tree <- diel.plot.all + geom_cladelab(node = nodes_df$node_number, label = nodes_df$clade_name, offset = 1.8, offset.text = 1, hjust = 0, vjust = 0, align = FALSE, fontsize = 2.5, barsize = 2.5, barcolour = "grey")
+order_tree
+
+png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/", "mammals_bennie_maor_agree_order_labelled", "diel_plot.png"), width=24,height=18,units="cm",res=1200)
+order_tree
+dev.off()
