@@ -391,24 +391,44 @@ mammals_df <- relocate(mammals_df, "tips", .after = "Diel_Pattern")
 
 #test run
 source("scripts/Amelia_functions.R")
-mammals_df_filtered <- filter(mammals_df, Order == test)
 
-test <- calculateDelta(trait.data = mammals_df_filtered, taxonomic_group_name = "Afrosoricida")
+test <- calculateDelta(trait.data = mammals_df, taxonomic_group_name = "Afrosoricida")
 
 #remove orders with less than 20 species
-mammals_df <- mammals_df %>% group_by(Order) %>% filter(n()>20)
+mammals_df_filtered <- mammals_df %>% group_by(Order) %>% filter(n()>20)
+mammals_df_filtered <- mammals_df_filtered %>% group_by(Order) %>% filter(n()<50)
 
-all_delta <- lapply(unique(mammals_df$Order), function(x) calculateDelta(trait.data = mammals_df, taxonomic_group_name = x))
+
+all_delta <- lapply(unique(mammals_df_filtered$Order), function(X) calculateDelta(trait.data = mammals_df_filtered, taxonomic_group_name = X))
 delta_df <- do.call(rbind, all_delta)
 
-cetaceans_full <- read.csv(here("cetaceans_full.csv"))
-cetaceans_full <- cetaceans_full[, c("Diel_Pattern_2", "tips")]
-cetaceans_full$Diel_Pattern_2 <- str_replace_all(cetaceans_full$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
-cetaceans_full$Diel_Pattern_2 <- str_replace_all(cetaceans_full$Diel_Pattern_2, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
-cetaceans_full <- cetaceans_full[cetaceans_full$Diel_Pattern_2 %in% c("cathemeral", "nocturnal", "diurnal", "crepuscular"), ]
-colnames(cetaceans_full) <- c("Diel_Pattern", "tips")
-#not technically an order but just to see
-cetaceans_full$Order <- "Cetacea"
+ggplot(delta_df, aes(x= delta_diel, y= taxonomic_group_name)) + geom_bar(stat = "identity")
+
+#add in my primary source data 
+artio_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
+artio_full <- artio_full[, c("Diel_Pattern_2", "tips", "Family", "Order")]
+artio_full$Diel_Pattern <- artio_full$Diel_Pattern_2
+artio_full$Diel_Pattern <- str_replace_all(artio_full$Diel_Pattern, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
+artio_full$Diel_Pattern <- str_replace_all(artio_full$Diel_Pattern, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+artio_full$Diel_Pattern <- str_replace_all(artio_full$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+artio_full <- artio_full[artio_full$Diel_Pattern %in% c("cathemeral", "nocturnal", "diurnal", "crepuscular"), c("tips", "Family", "Order", "Diel_Pattern")]
+colnames(artio_full) <- c("tips", "Family", "Suborder", "Diel_Pattern")
+artio_full$Order <- "Artiodactyla"
+ggplot(artio_full, aes(x = Suborder, fill = Diel_Pattern)) + geom_bar(position = "fill")
 
 
+artio_full$Order <- "Amelia_Artiodactyla"
+artio_full <- relocate(artio_full, "Family", .after = "Order")
+artio_full <- relocate(artio_full, "Diel_Pattern", .before = "tips")
+artio_full <- artio_full[,c("Diel_Pattern", "tips", "Order", "Family")]
+
+new_mammals <- rbind(artio_full, mammals_df_filtered)
+
+#plot the proportion of species in each diel category for each order
+#filter to orders with at least ??? 5 species?
+mammals_df_filtered <- mammals_df %>% group_by(Order) %>% filter(n()>=5)
+
+ggplot(mammals_df_filtered, aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
+
+ggplot(new_mammals, aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
 

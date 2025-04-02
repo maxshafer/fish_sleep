@@ -126,7 +126,7 @@ findMRCANode2 <- function(phylo = tr, trait.data = trait.data, taxonomic_level_c
 
 calculateDelta <- function(trait.data = trait.data, taxonomic_group_name = "Cetacea"){
   mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-  trait.data <- filter(trait.data, trait.data$Order == taxonomic_group_name)
+  trait.data <- filter(trait.data, Order == taxonomic_group_name)
   trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
   mam.tree <- keep.tip(mam.tree, tip = trait.data$tips)
   mam.tree$edge.length[mam.tree$edge.length == 0] <- quantile(tree$edge.length, 0.1)*0.1
@@ -138,6 +138,7 @@ calculateDelta <- function(trait.data = trait.data, taxonomic_group_name = "Ceta
   trait.data <- trait.data[order(trait.data$id), ]
   trait <- trait.data$Diel_Pattern
   
+  source("scripts/Amelia_delta_code.R")
   delta_diel <- delta(trait, mam.tree, 0.1, 0.0589, 1000, 10, 100)
   
   random_delta <- rep(NA,100)
