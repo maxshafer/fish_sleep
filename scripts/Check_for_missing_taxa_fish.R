@@ -26,8 +26,8 @@ fishbase_df <- as.data.frame(fishbase_df)
 
 ### LOAD IN GOOGLE SHEET DATA FROM LOCAL ### 
 
-sleepy_fish <- read.csv(file = here("sleepy_fish_database_local_biorxiv_20230519.csv"))
-
+# sleepy_fish <- read.csv(file = here("sleepy_fish_database_local_biorxiv_20230519.csv"))
+sleepy_fish <- read.csv(file = here("sleepy_fish_database_local_2025-02-19.csv"))
 
 ###############################################################################################################################################
 ### FETCH DATA FROM TREE OF LIFE ### 
@@ -86,9 +86,17 @@ eco$species <- str_split_fixed(eco$X, "%22",4)[,c(2)]
 url <- 'https://docs.google.com/spreadsheets/d/1ACisO47K3LoMXJP6xCOcaKQvKWyUxcsNEDKB7sWlxKE/edit?gid=1842590696#gid=1842590696'
 fam <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
 
+url <- 'https://docs.google.com/spreadsheets/d/14xH_APCHq6XNS_QRuTqK9ghYRhhavIvD3fY-YOIZQo0/edit?gid=0#gid=0'
+genus_search <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
+genus_search <- sapply(strsplit(genus_search$url, "%22"), `[`, 2)
+genus_search <- str_replace(genus_search, pattern = " ", replacement = "")
+
+searched <- fishbase_df[fishbase_df$Species %in% random1500$species | fishbase_df$Species %in% eco$species | fishbase_df$Genus %in% genus_search,]
+
 not_searched <- fishbase_df[fishbase_df$Species %out% random1500$species,]
 not_searched <- not_searched[not_searched$Species %out% eco$species,]
-not_searched <- not_searched[not_searched$Genus %out% fam$genus,]
+# not_searched <- not_searched[not_searched$Genus %out% fam$genus,]
+not_searched <- not_searched[not_searched$Genus %out% genus_search,]
 
 not_searched_not_found <- not_searched[not_searched$Species %out% resolved_names$unique_name,]
 
@@ -101,10 +109,55 @@ genus <- unique(not_searched$Genus)[unique(not_searched$Genus) %out% unique(reso
 family <- unique(not_searched$Family)[unique(not_searched$Family) %out% unique(resolved_names$family)]
 order <- unique(not_searched$Order)[unique(not_searched$Order) %out% unique(resolved_names$order)]
 
+# This is ~ 1k, which are the genuses I haven't searched for, not including those where I have all the species already (I think?)
+genuses_to_search <- unique(fishbase_df$Genus[match(species, fishbase_df$Species)])
+
 scholar_genus <- paste("https://scholar.google.com/scholar?start=0&q=%22", genus, " ", "%22+AND+(%22circadian%22+OR+%22diel%22+OR+%22diurnal%22+OR+%22nocturnal%22+OR+%22crepuscular%22)&hl=en&as_sdt=0,5", sep = "")
 
 library(clipr)
 write_clip(scholar_genus)
+
+
+
+### I think what I really might want, is those genus names I haven't directly searched before (genus_search above), minus any genus names where I have data for all of their species
+single_species_genus <- table(fishbase_df$Genus)
+single_species_genus <- names(single_species_genus[single_species_genus == 1])
+
+all_info_genuses <- single_species_genus[single_species_genus %in% fishbase_df$Genus[match(sleepy_fish$Species_name, fishbase_df$Species)]]
+
+searched_genuses <- c(all_info_genuses, genus_search)
+
+## 2257 genus names
+new_genus_to_search <- unique(fishbase_df$Genus)[unique(fishbase_df$Genus) %out% searched_genuses]
+
+## Would be good to have more info on search sheet, # of species in genus, # of species in genus in database already, names of species in database already
+
+new_search_df <- fishbase_df[fishbase_df$Genus %in% new_genus_to_search,]
+
+library(dplyr)
+
+df <- new_search_df %>% group_by(Genus) %>% summarise(Species_list = paste0(Species, collapse = ", "), Species_n = n())
+df2 <- sleepy_fish %>% group_by(Genus) %>% summarise(Species_list_db = paste0(Species_name, collapse = ", "), Species_db = n())
+
+final_df <- df
+final_df$Species_list_db <- df2$Species_list_db[match(final_df$Genus, df2$Genus)]
+final_df$Species_db <- df2$Species_db[match(final_df$Genus, df2$Genus)]
+final_df$prop <- final_df$Species_db/final_df$Species_n
+
+final_df$prop[is.na(final_df$prop)] <- 0
+
+final_df <- final_df[final_df$prop < 1,]
+
+
+final_df$scholar_genus <- paste("https://scholar.google.com/scholar?start=0&q=%22", final_df$Genus, " ", "%22+AND+(%22circadian%22+OR+%22diel%22+OR+%22diurnal%22+OR+%22nocturnal%22+OR+%22crepuscular%22)&hl=en&as_sdt=0,5", sep = "")
+write_clip(final_df)
+
+### OK, so I have 1k new searches I could perform, which are likely to be better than the 2.5k I did before (which gave me 1.4 new species?)
+### But, my browser history is caput
+### I found this extension which allows me to add URLs to my browser history (without visiting the pages), and which should work for a lot of the pages
+### However, dois get resolved into urls, which is what google uses
+### I could use a python package to convert the DOIs in sleepy_fishes to URLs, then add them using the extension
+### This should hopefully save me some time?
 
 ### This was to generate the random1500 above (already searched as of 19.07.2024)
 # ## I think I should just take a reproducible subset of the missing species (500-1000), and generate searches for these

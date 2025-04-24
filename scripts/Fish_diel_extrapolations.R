@@ -32,7 +32,11 @@ trait.data_n$genus <- fishbase_df$Genus[match(str_replace(trait.data_n$species, 
 
 ## Maybe make some figures of the distribution of species by confidence and by order?
 trait.data_n$diel2 <- factor(trait.data_n$diel2, levels = c("nocturnal", "diurnal", "crepuscular", "unclear"))
-diel_conf_plot <- ggplot(trait.data_n, aes(x = diel_continuous, fill = factor(diel_continuous)), color = "black") + geom_bar(stat = "count") + theme_classic() + scale_fill_brewer(palette = "RdBu", direction = -1) + theme(legend.position = "none") + xlab("Nocturanl vs diurnal confidence") + ylab("# of species")
+
+trait.data_n$diel_continuous <- paste(trait.data_n$confidence, trait.data_n$diel1, sep = "_")
+trait.data_n$diel_continuous <- factor(trait.data_n$diel_continuous, levels = c("E_nocturnal", "D_nocturnal", "C_nocturnal", "B_nocturnal", "A_nocturnal", "A_diurnal", "B_diurnal", "C_diurnal", "D_diurnal", "E_diurnal"))
+
+diel_conf_plot <- ggplot(trait.data_n[trait.data_n$diel1 %in% c("diurnal", "nocturnal"),], aes(x = diel_continuous, fill = factor(diel_continuous)), color = "black") + geom_bar(stat = "count") + theme_classic() + scale_fill_brewer(palette = "RdBu", direction = -1) + theme(legend.position = "none") + xlab("Nocturanl vs diurnal confidence") + ylab("# of species")
 conf_by_diel_plot <- ggplot(trait.data_n, aes(x = confidence, fill = factor(diel2)), color = "black") + geom_bar(stat = "count") + theme_classic() + scale_fill_viridis_d(option = "H") + xlab("Diel pattern confidence") + ylab("# of species") + theme(legend.title = element_blank())
 
 df <- data.frame(level = factor(c("Species", "Genus", "Family", "Order"), levels = c("Order", "Family", "Genus", "Species")), percent = c((length(unique(resolved_names$tips))/length(unique(fishbase_df$Species)))*100, (length(unique(resolved_names$genus))/length(unique(fishbase_df$Genus)))*100, (length(unique(resolved_names$family))/length(unique(fishbase_df$Family)))*100, (length(unique(resolved_names$order))/length(unique(fishbase_df$Order)))*100))

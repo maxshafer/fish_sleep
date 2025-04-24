@@ -6,26 +6,26 @@ library(tidyr)
 library(ggbiplot)
 library(dplyr)
 
-species1 <- read.csv("~/Downloads/GBIF_iNat_Amblyglyphidodon_curacao.csv", sep = "\t")
-species2 <- read.csv("~/Downloads/GBIF_iNat_Porichthys_notatus.csv", sep = "\t")
-species3 <- read.csv("~/Downloads/GBIF_iNat_Chaetodon_auriga.csv", sep = "\t")
-species4 <- read.csv("~/Downloads/GBIF_iNat_Lepomis_gibbosus.csv", sep = "\t")
-
-species <- rbind(species1, species2, species3, species4)
-
-species$datetime <- str_replace(species$dateIdentified, "T", " ")
-
-species <- species[species$datetime != "",]
-
-head(as.POSIXct(species$datetime, format = "%Y-%m-%d %H:%M:%S"))
-
-species$datetime <- as.POSIXct(species$datetime, format = "%Y-%m-%d %H:%M:%S")
-
-day(species$datetime) <- 01
-month(species$datetime) <- 01
-year(species$datetime) <- 2024
-
-ggplot(species, aes(x = datetime, fill = species)) + geom_density(alpha = 0.25)
+# species1 <- read.csv("~/Downloads/GBIF_iNat_Amblyglyphidodon_curacao.csv", sep = "\t")
+# species2 <- read.csv("~/Downloads/GBIF_iNat_Porichthys_notatus.csv", sep = "\t")
+# species3 <- read.csv("~/Downloads/GBIF_iNat_Chaetodon_auriga.csv", sep = "\t")
+# species4 <- read.csv("~/Downloads/GBIF_iNat_Lepomis_gibbosus.csv", sep = "\t")
+# 
+# species <- rbind(species1, species2, species3, species4)
+# 
+# species$datetime <- str_replace(species$dateIdentified, "T", " ")
+# 
+# species <- species[species$datetime != "",]
+# 
+# head(as.POSIXct(species$datetime, format = "%Y-%m-%d %H:%M:%S"))
+# 
+# species$datetime <- as.POSIXct(species$datetime, format = "%Y-%m-%d %H:%M:%S")
+# 
+# day(species$datetime) <- 01
+# month(species$datetime) <- 01
+# year(species$datetime) <- 2024
+# 
+# ggplot(species, aes(x = datetime, fill = species)) + geom_density(alpha = 0.25)
 
 
 ## Load in partial full database?
@@ -40,11 +40,13 @@ fishbase_df <- as.data.frame(fishbase_df)
 ## Take only fish
 full_db <- full_db[full_db$species %in% fishbase_df$Species,]
 
+saveRDS(full_db, file = "iNat_database_fish.rds")
+
 full_db <- full_db[grepl("T", full_db$eventDate),]
 
 iNat_fish <- table(full_db$species)
 
-good_species <- names(iNat_fish)[iNat_fish > 50]
+good_species <- names(iNat_fish)[iNat_fish > 25]
 
 ## This ends up being ~11k species
 
@@ -66,6 +68,14 @@ day(fish_db$datetime) <- 01
 month(fish_db$datetime) <- 01
 year(fish_db$datetime) <- 2024
 
+
+
+## Pick a random set of Nocturnal/Diurnal/Crepuscular/Cathemeral that overlap and plot to test
+
+nocturnal_species <- good_species[good_species %in% sleepy_fish$Species_name[sleepy_fish$Diel_Pattern == "nocturnal" & sleepy_fish$Confidence > 2]]
+diurnal_species <- good_species[good_species %in% sleepy_fish$Species_name[sleepy_fish$Diel_Pattern == "diurnal" & sleepy_fish$Confidence > 2]]
+crepuscular_species <- good_species[good_species %in% sleepy_fish$Species_name[sleepy_fish$Diel_Pattern == "crepuscular" & sleepy_fish$Confidence > 2]]
+cathemeral_species <- good_species[good_species %in% sleepy_fish$Species_name[sleepy_fish$Diel_Pattern == "unclear" & sleepy_fish$Confidence > 2]]
 
 # ggplot(fish_db[fish_db$species == "Mola mola",], aes(x = datetime, fill = species)) + stat_bin()
 
@@ -100,42 +110,72 @@ summarised <- summarised[!(is.na(summarised$half_hour)),]
 
 row_names <- summarised$half_hour
 summarised <- summarised[,-1]
-summarised <- (summarised/rowSums(summarised,na.rm = T))*10000
+
+# Normalize, or don't
+summarised2 <- (summarised/rowSums(summarised,na.rm = T))*10000
+
+summarised <- as.data.frame(summarised)
 rownames(summarised) <- row_names
 summarised[is.na(summarised)] <- 0
+
+rownames(summarised2) <- row_names
+summarised2[is.na(summarised2)] <- 0
 
 ## The above seems to work, and so does the below:
 ## PC2 is day vs night, and PC1 seems to be first half of day vs second (I suppose when people are awake and cataloging)
 
-diel.pca <- prcomp(summarised, center = TRUE, scale. = TRUE)
-biplot <- ggbiplot(diel.pca, choices = c(1,2), labels = row_names, var.axes = F) + theme_classic() 
+# diel.pca <- prcomp(summarised2, center = TRUE, scale. = TRUE)
+# biplot <- ggbiplot(diel.pca, choices = c(1,2), labels = row_names, var.axes = F) + theme_classic() 
 
 
 
 ### Can I convert back to long format? To plot and compare to before normalization?
 summarised$time <- rownames(summarised)
-summarised2 <- summarised %>% pivot_longer(!time, names_to = "species", values_to = "n")
+summarised2$time <- rownames(summarised2)
 
-summarised2$time <- as.POSIXct(summarised2$time, format = "%Y-%m-%d %H:%M:%S")
+summarised_long <- summarised %>% pivot_longer(!time, names_to = "species", values_to = "n")
+summarised_long$time <- as.POSIXct(summarised_long$time, format = "%Y-%m-%d %H:%M:%S")
 
-ggplot(summarised2[summarised2$species == "Acipenser fulvescens",], aes(x = time, fill = species, y = n)) + geom_point()
-
-ggplot(summarised2[summarised2$species %in% unique(summarised2$species)[21:30],], aes(x = time, colour = species, y = n)) + geom_point() + facet_wrap(~species, scales = "free") + theme(legend.position = "none")
+summarised_long2 <- summarised2 %>% pivot_longer(!time, names_to = "species", values_to = "n")
+summarised_long2$time <- as.POSIXct(summarised_long2$time, format = "%Y-%m-%d %H:%M:%S")
 
 ## Add column for day vs night vs dawn vs dusk (if only one of these is higher, it's crepuscular)
-summarised2$diel_period <- NA
-summarised2$diel_period <- ifelse(between(summarised2$time, as.POSIXct("2024-01-01 00:00:00 EST"), as.POSIXct("2024-01-01 06:00:00 EST")), "night", summarised2$diel_period)
-summarised2$diel_period <- ifelse(between(summarised2$time, as.POSIXct("2024-01-01 06:00:00 EST"), as.POSIXct("2024-01-01 08:00:00 EST")), "dawn", summarised2$diel_period)
-summarised2$diel_period <- ifelse(between(summarised2$time, as.POSIXct("2024-01-01 08:00:00 EST"), as.POSIXct("2024-01-01 18:00:00 EST")), "day", summarised2$diel_period)
-summarised2$diel_period <- ifelse(between(summarised2$time, as.POSIXct("2024-01-01 18:00:00 EST"), as.POSIXct("2024-01-01 20:00:00 EST")), "dusk", summarised2$diel_period)
-summarised2$diel_period <- ifelse(between(summarised2$time, as.POSIXct("2024-01-01 20:00:00 EST"), as.POSIXct("2024-01-01 24:00:00 EST")), "night", summarised2$diel_period)
+summarised_long$diel_period <- NA
+summarised_long$diel_period <- ifelse(between(summarised_long$time, as.POSIXct("2024-01-01 00:00:00 EST"), as.POSIXct("2024-01-01 06:00:00 EST")), "night", summarised_long$diel_period)
+summarised_long$diel_period <- ifelse(between(summarised_long$time, as.POSIXct("2024-01-01 06:00:00 EST"), as.POSIXct("2024-01-01 08:00:00 EST")), "dawn", summarised_long$diel_period)
+summarised_long$diel_period <- ifelse(between(summarised_long$time, as.POSIXct("2024-01-01 08:00:00 EST"), as.POSIXct("2024-01-01 18:00:00 EST")), "day", summarised_long$diel_period)
+summarised_long$diel_period <- ifelse(between(summarised_long$time, as.POSIXct("2024-01-01 18:00:00 EST"), as.POSIXct("2024-01-01 20:00:00 EST")), "dusk", summarised_long$diel_period)
+summarised_long$diel_period <- ifelse(between(summarised_long$time, as.POSIXct("2024-01-01 20:00:00 EST"), as.POSIXct("2024-01-01 24:00:00 EST")), "night", summarised_long$diel_period)
 
-ggplot(summarised2[summarised2$species == "Lepomis gibbosus",], aes(x = diel_period, fill = species, y = n)) + geom_boxplot()
-ggplot(summarised2[summarised2$species %in% unique(summarised2$species)[21:30],], aes(x = diel_period, colour = species, y = n)) + geom_boxplot() + facet_wrap(~species, scales = "free") + theme(legend.position = "none")
+summarised_long2$diel_period <- NA
+summarised_long2$diel_period <- ifelse(between(summarised_long2$time, as.POSIXct("2024-01-01 00:00:00 EST"), as.POSIXct("2024-01-01 06:00:00 EST")), "night", summarised_long2$diel_period)
+summarised_long2$diel_period <- ifelse(between(summarised_long2$time, as.POSIXct("2024-01-01 06:00:00 EST"), as.POSIXct("2024-01-01 08:00:00 EST")), "dawn", summarised_long2$diel_period)
+summarised_long2$diel_period <- ifelse(between(summarised_long2$time, as.POSIXct("2024-01-01 08:00:00 EST"), as.POSIXct("2024-01-01 18:00:00 EST")), "day", summarised_long2$diel_period)
+summarised_long2$diel_period <- ifelse(between(summarised_long2$time, as.POSIXct("2024-01-01 18:00:00 EST"), as.POSIXct("2024-01-01 20:00:00 EST")), "dusk", summarised_long2$diel_period)
+summarised_long2$diel_period <- ifelse(between(summarised_long2$time, as.POSIXct("2024-01-01 20:00:00 EST"), as.POSIXct("2024-01-01 24:00:00 EST")), "night", summarised_long2$diel_period)
 
 
-fit = aov(n ~ diel_period, data = summarised2[summarised2$species == "Lepomis gibbosus",])
-summary(fit)
+ggplot(summarised_long[summarised_long$species == "Lepomis gibbosus",], aes(x = diel_period, fill = species, y = n)) + geom_boxplot()
+ggplot(summarised_long2[summarised_long2$species == "Lepomis gibbosus",], aes(x = diel_period, fill = species, y = n)) + geom_boxplot()
 
-library(ggfortify)
-autoplot(fit)
+ggplot(summarised_long[summarised_long$species == "Mola mola",], aes(x = diel_period, fill = species, y = n)) + geom_boxplot()
+ggplot(summarised_long2[summarised_long2$species == "Mola mola",], aes(x = diel_period, fill = species, y = n)) + geom_boxplot()
+
+ggplot(summarised_long[summarised_long$species %in% crepuscular_species[sample(1:length(crepuscular_species), 12, replace = FALSE)],], aes(x = time, colour = species, y = n)) + geom_point() + facet_wrap(~species, scales = "free") + theme(legend.position = "none")
+ggplot(summarised_long2[summarised_long2$species %in% crepuscular_species[sample(1:length(crepuscular_species), 12, replace = FALSE)],], aes(x = time, colour = species, y = n)) + geom_point() + facet_wrap(~species, scales = "free") + theme(legend.position = "none")
+
+
+ggplot(summarised_long[summarised_long$species %in% nocturnal_species[1:5],], aes(x = time, colour = species, y = n)) + geom_point() + facet_wrap(~species, scales = "free") + theme(legend.position = "none")
+
+ggplot(summarised_long2[summarised_long2$species %in% diurnal_species,], aes(x = diel_period, y = log(n))) + geom_boxplot() + theme(legend.position = "none")
+
+
+
+fit = aov(n ~ diel_period, data = summarised_long2[summarised_long2$species == "Lepomis gibbosus",])
+summary.aov(fit)
+
+ndp <- summarised2[summarised2$species == "Lepomis gibbosus",] %>% tukey_hsd(n ~ diel_period)
+
+## Seems like I would probably run Anova's, and if it's significant, then run tukey_hsd or something similar to test pairwise, then use some kind of logic to determine diurnal vs nocturnal, and crepuscular (if dawn and/or dusk is significantly higher)
+## E.g. the structure should be same, but can use the sign of 'estimate' and the p.adj value to determime what is highest
+## If either dawn or dusk is higher than day or night == crepuscular

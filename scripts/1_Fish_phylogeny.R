@@ -33,7 +33,7 @@ url <- 'https://docs.google.com/spreadsheets/d/18aNqHT73hX06cGRlf6oj7Y4TVKf6jd_Q
 sleepy_fish <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
 sleepy_fish$Diel_Pattern <- tolower(sleepy_fish$Diel_Pattern)
 
-write.csv(sleepy_fish, file = here("sleepy_fish_database_local_2024-09-07.csv"))
+# write.csv(sleepy_fish, file = here("sleepy_fish_database_local_2025-02-19.csv"))
 
 # ################################################################################################################################################
 # ### OUTPUT DATA FOR ZUZANNA ###
@@ -53,7 +53,10 @@ write.csv(sleepy_fish, file = here("sleepy_fish_database_local_2024-09-07.csv"))
 ## Remove fish without diel data, or real species names (necessary?)
 sleepy_fish <- sleepy_fish[sleepy_fish$Diel_Pattern != "",]
 sleepy_fish <- sleepy_fish[!(grepl("sp\\.|spp\\.|unidentified", sleepy_fish$Species)),]
-# sleepy_fish <- sleepy_fish[sleepy_fish$NEW == "NEW_SPECIES",]
+
+## To check for spelling errors and other mistakes, subset to only new entries
+# sleepy_fish <- sleepy_fish[sleepy_fish$NEW %in% c("NEW_SPECIES"),]
+# sleepy_fish <- sleepy_fish[sleepy_fish$NEW %in% c("CHECK_PLS", "julia", "Amelia"),]
 
 ## Fetch species from tree of life using rotl package
 resolved_names <- tnrs_match_names(sleepy_fish$Species_name, context_name = "Vertebrates", do_approximate_matching = FALSE)
@@ -81,12 +84,14 @@ resolved_names$order <- fishbase_df$Order[match(resolved_names$unique_name, fish
 
 ## Add data on traits (from sleepy_fish, and/or from fishbase)
 
-resolved_names$diel <- sleepy_fish$Diel_Pattern[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
+# resolved_names$diel <- sleepy_fish$Diel_Pattern[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
+resolved_names$diel <- sleepy_fish$new_diel_tabulated[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
 resolved_names$diel <- factor(resolved_names$diel, levels = c("diurnal", "nocturnal", "unclear", "crepuscular", "crepuscular/diurnal", "crepuscular/nocturnal", "crepuscular/unclear", "unclear/diurnal", "unclear/nocturnal"))
 resolved_names$diel2 <- ifelse(resolved_names$diel == "diurnal", "diurnal", ifelse(resolved_names$diel == "nocturnal", "nocturnal", ifelse(resolved_names$diel == "crepuscular", "crepuscular", ifelse(resolved_names$diel == "crepuscular/diurnal", "crepuscular", ifelse(resolved_names$diel == "crepuscular/nocturnal", "crepuscular", ifelse(resolved_names$diel == "crepuscular/unclear", "crepuscular", ifelse(resolved_names$diel == "unclear/diurnal", "unclear", ifelse(resolved_names$diel == "unclear/nocturnal", "nocturnal", "unknown"))))))))
-resolved_names$diel_confidence <- sleepy_fish$Confidence[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
-resolved_names$genome <- sleepy_fish$Genome[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
-resolved_names$NEW <- sleepy_fish$NEW[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
+# resolved_names$diel_confidence <- sleepy_fish$Confidence[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
+resolved_names$diel_confidence <- sleepy_fish$new_confidence[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
+# resolved_names$genome <- sleepy_fish$Genome[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
+# resolved_names$NEW <- sleepy_fish$NEW[match(resolved_names$search_string, tolower(sleepy_fish$Species_name))]
 
 # These break tol_induced_subtree
 # c("incertae_sedis_inherited", "unplaced_inherited","incertae_sedis", "not_otu, incertae_sedis")
