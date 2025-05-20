@@ -259,7 +259,7 @@ print(diel3_fam_pics)
 dev.off()
 
 
-# Section Z: Create function to label taxonomic groups --------------------
+# Section 4: Create function to label taxonomic groups --------------------
 
 #simple example, dataframe of cetaceans divided into two parvorders: odontocetes and mysticetes
 #can we find the mrca of odontocetes and of mysticetes to label these two parvorders correctly
@@ -297,4 +297,8 @@ nodes_df <- findMRCANode(phylo = tr, trait.data = trait.data, taxonomic_level_co
 #can now easily label all clades within that taxonomic level on the tree using the nodes_df
 test_tree <- ggtree(tr, layout = "rectangular") + geom_tiplab() + geom_cladelab(node = nodes_df$node_number, label = nodes_df$clade_name, offset = 1, barsize = 1, barcolour = "red")
 test_tree
+
+test_tree <- ggtree(tree, layout = "rectangular") + geom_tiplab() + geom_cladelab(node = nodes_df$node_number, label = nodes_df$clade_name, offset = 1, barsize = 1, barcolour = "red")
+
+test_tree <- ggtree(tree, layout = "rectangular") + geom_tiplab() + geom_cladelab(node = nodes_df$node_number, label = nodes_df$clade_name, offset = 1, barsize = 1, barcolour = "red")
 
