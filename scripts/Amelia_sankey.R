@@ -107,14 +107,21 @@ ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill 
   scale_fill_viridis_d(option = "D", alpha = 0.95) + theme_sankey(base_size = 16) + guides(fill = guide_legend(title = "Temporal activity pattern")) +
   theme(legend.position = "none") + labs(x = NULL)
 
-#try with three data categories  
+#move my data to centre so its easier to compare my data to both existing datasets
+mammals_df <- mammals_df %>% relocate(Maor_diel, .after = last_col())
+
+#try with three data sources  
 mammals_df$Amelia_diel <- str_replace(mammals_df$Amelia_diel, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
-df <- mammals_df %>% make_long(Bennie_diel, Maor_diel, Amelia_diel)
-ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node))) + geom_sankey() + theme_sankey(base_size = 16)
-ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+df <- mammals_df %>% make_long(Bennie_diel, Amelia_diel, Maor_diel,)
+test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
   geom_sankey(flow.alpha= 0.5, node.color = 1) + geom_sankey_label(size = 3.5, color = 1, fill = "white") +
   scale_fill_viridis_d(option = "D", alpha = 0.95) + theme_sankey(base_size = 16) + guides(fill = guide_legend(title = "Temporal activity pattern")) +
   theme(legend.position = "none") + labs(x = NULL)
+
+#save out to figure folder
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "sankey_all.pdf"))
+test
+dev.off()
 
 #max crep
 mammals_df$max_crep <- mammals_df$Amelia_diel
@@ -122,12 +129,17 @@ mammals_df$max_crep <- str_replace(mammals_df$max_crep, pattern = "cathemeral/cr
 mammals_df$max_crep <- str_replace(mammals_df$max_crep, pattern = "diurnal/crepuscular", replacement = "crepuscular")
 mammals_df$max_crep <- str_replace(mammals_df$max_crep, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
 
-df <- mammals_df %>% make_long(Bennie_diel, Maor_diel, max_crep)
-ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node))) + geom_sankey() + theme_sankey(base_size = 16)
-test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+
+df <- mammals_df %>% make_long(Bennie_diel, max_crep, Maor_diel)
+max_crep <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
   geom_sankey(flow.alpha= 0.5, node.color = 1) + geom_sankey_label(size = 3.5, color = 1, fill = "white") +
   scale_fill_viridis_d(option = "D", alpha = 0.95) + theme_sankey(base_size = 16) + guides(fill = guide_legend(title = "Temporal activity pattern")) +
   theme(legend.position = "none") + labs(x = NULL)
+
+#save out to figure folder
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "sankey_max_crep.pdf"))
+max_crep
+dev.off()
 
 #max dinoc
 mammals_df$max_dinoc <- mammals_df$Amelia_diel
@@ -135,13 +147,13 @@ mammals_df$max_dinoc <- str_replace(mammals_df$max_dinoc, pattern = "cathemeral/
 mammals_df$max_dinoc <- str_replace(mammals_df$max_dinoc, pattern = "diurnal/crepuscular", replacement = "diurnal")
 mammals_df$max_dinoc <- str_replace(mammals_df$max_dinoc, pattern = "nocturnal/crepuscular", replacement = "nocturnal")
 
-df <- mammals_df %>% make_long(Bennie_diel, Maor_diel, max_dinoc)
-ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+df <- mammals_df %>% make_long(Bennie_diel, max_dinoc, Maor_diel)
+max_dinoc <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
   geom_sankey(flow.alpha= 0.5, node.color = 1) + geom_sankey_label(size = 3.5, color = 1, fill = "white") +
   scale_fill_viridis_d(option = "D", alpha = 0.95) + theme_sankey(base_size = 16) + guides(fill = guide_legend(title = "Temporal activity pattern")) +
   theme(legend.position = "none") + labs(x = NULL)
 
 #save out to figure folder
-png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "sankey.png"), width=24,height=18,units="cm",res=1200)
-test
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "sankey_max_dinoc.pdf"))
+max_dinoc
 dev.off()

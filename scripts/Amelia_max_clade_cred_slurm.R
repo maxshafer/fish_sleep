@@ -127,7 +127,7 @@ if("hidden_rate" %in% args){
 # Section 4: Use returnCorModels to run corHMM models (ER, SYM, ARD, and/or bridge_only) on 1k possible trees --------
 
 for(i in args[-(1:2)]){
-  if(!(i %in% c("ER", "SYM", "ARD", "bridge_only", "hidden_rate"))){
+  if(!(i %in% c("ER", "SYM", "ARD", "bridge_only", "hidden_rate", "CONSYM"))){
     stop("model not recognized")
   }
 }
@@ -140,6 +140,11 @@ if("SYM" %in% args){
   SYM <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, model = "SYM", node.states = "marginal")
 
 }
+
+#try running a constrained bridge only model based on a symmetrical model, designed for four state only rn
+if("CONSYM" %in% args){
+  CONSYM <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"), c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"))), model = "SYM", node.states = "marginal")
+  }
 
 if("ARD" %in% args){
   ARD <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, model = "ARD", node.states = "marginal")

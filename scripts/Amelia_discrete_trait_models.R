@@ -454,8 +454,8 @@ trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pa
 trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), ]
 
 #use below to rerun with max-crep four state model
-# trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
-# trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
 
 colnames(church_pt1) <- c("Species", "Family", "Specimen_number", "Left_orbit_length", "Right_orbit_length", "Bizygomatic_width", "Average_orbit_length", "Orbit_ratio")
 
@@ -488,7 +488,7 @@ diel.plot
 dev.off()
 
 #plot out  orbit ratio vs activity pattern (NOT phylogenetically collected)
-ggplot(trait.data, aes(x = Diel_Pattern, y = Axial_length)) + geom_boxplot(outlier.shape = NA) + 
+ggplot(trait.data, aes(x = Diel_Pattern_2, y = Axial_length)) + geom_boxplot(outlier.shape = NA) + 
   geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
   labs(x = "Temporal activity pattern", y = "Axial length") + scale_fill_manual(values=as.vector(polychrome(26))) #+ facet_wrap(~ Parvorder)
 
@@ -496,7 +496,7 @@ ggplot(trait.data, aes(x = Diel_Pattern, y = Corneal_diameter)) + geom_boxplot(o
   geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
   labs(x = "Temporal activity pattern", y = "Corneal diameter") + scale_fill_manual(values=as.vector(polychrome(26))) #+ facet_wrap(~ Parvorder)
 
-ggplot(trait.data, aes(x = Diel_Pattern, y = Orbit_ratio)) + geom_boxplot(outlier.shape = NA) + 
+ggplot(trait.data, aes(x = Diel_Pattern_2, y = Orbit_ratio)) + geom_boxplot(outlier.shape = NA) + 
   geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
   labs(x = "Temporal activity pattern", y = "Orbit ratio") + scale_fill_manual(values=as.vector(polychrome(26))) #+ facet_wrap(~ Parvorder)
 
@@ -649,8 +649,8 @@ trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)), c("tips", "Diel_Pa
 trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), ]
 
 #use below to rerun with max-crep four state model
-trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
-trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+# trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+# trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
 
 colnames(church_pt2) <- c("Species", "Dive_depth", "Log_dive_depth", "Dive_duration", "Log_dive_duration", "Mass", "Log_mass", "Total_body_length", "Log_body_length", "Assymetry_index", "Peak_frequency", "Log_frequency")
 
@@ -700,7 +700,7 @@ trait.data$Dive_depth <- as.numeric(trait.data$Dive_depth)
 
 #use below to look just at odontocetes or mysticetes
 #trait.data <- trait.data %>% filter(Parvorder == "Odontoceti")
-trait.data <- trait.data %>% filter(Parvorder == "Mysticeti")
+#trait.data <- trait.data %>% filter(Parvorder == "Mysticeti")
 
 #all 28 species with dive data are in the tree
 trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
@@ -719,7 +719,7 @@ diel.plot
 dev.off()
 
 #plot out dive depth vs activity pattern (NOT phylogenetically corrected)
-ggplot(trait.data, aes(x = Diel_Pattern, y = Dive_depth)) + geom_boxplot(outlier.shape = NA) + 
+ggplot(trait.data, aes(x = Diel_Pattern_2, y = Dive_depth)) + geom_boxplot(outlier.shape = NA) + 
   geom_jitter(aes(fill = Parvorder), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
   labs(x = "Temporal activity pattern", y = "Dive depth") + scale_fill_manual(values=as.vector(polychrome(26))) 
 
@@ -760,7 +760,7 @@ test <- test[order(test$id), ]
 trait.y <- test$Dive_depth
 names(trait.y) <- test$tips
 #x trait is the categorical variable 
-trait.x <- test$Diel_Pattern
+trait.x <- test$Diel_Pattern_2
 names(trait.x) <- test$tips
 
 #use function phenogram from phytools
@@ -771,9 +771,13 @@ tiplabels(pie = to.matrix(trait.x, unique(trait.data$Diel_Pattern)), piecol = c(
 
 #check for association between response variable y (orbit size) and categorical variable x (diel pattern)
 #regular one way ANOVA
-dive_ANOVA <- aov(Dive_depth ~ Diel_Pattern, data = trait.data)
+dive_ANOVA <- aov(Dive_depth ~ Diel_Pattern_2, data = trait.data)
 summary(dive_ANOVA) #statistically significant, p value of F statistic = 0.0003
 #statistically significant, p value of F statistic = 0.02
+
+#pairwise t test
+tapply(X = trait.data$Dive_depth, INDEX = list(trait.data$Diel_Pattern_2), FUN = mean)
+pairwise.t.test(trait.data$Dive_depth, trait.data$Diel_Pattern_2,  p.adj = "none")
 
 #phylogenetically corrected ANOVA
 dive_phylANOVA <- phylANOVA(trpy_n, trait.x, trait.y, nsim=1000, posthoc=TRUE, p.adj="holm")

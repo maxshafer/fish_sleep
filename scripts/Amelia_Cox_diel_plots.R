@@ -84,7 +84,7 @@ trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, 
 trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
 #trait.data.all$Diel_Pattern_2 <- str_replace_all(trait.data.all$Diel_Pattern_2, pattern = "cathemeral/crepuscular", replacement = "crepusuclar")
 
-custom.colours <- c("#dd8ae7", "peachpuff2", "#FC8D62", "#66C2A5")
+custom.colours <- c("#dd8ae7", "peachpuff2", "#FC8D62", "#66C2A5", "red")
 #custom.colours <- c("#dd8ae7", "pink", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
 
 #plot the tree
@@ -92,11 +92,11 @@ diel.plot.all <- ggtree(trpy_n_all, layout = "circular") %<+% trait.data.all[,c(
 diel.plot.all <- diel.plot.all +
   geom_tile(data = diel.plot.all$data[1:length(trpy_n_all$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent", width = 3) + 
   scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot.all <- diel.plot.all + geom_tiplab(size = 3, offset = 1.5) 
-diel.plot.all 
+diel.plot.all <- diel.plot.all + geom_tiplab(size = 2, offset = 1.5) + theme(legend.position="none")
+diel.plot.all
 
-png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/", clade_name, "diel_plot_4_state_max_crep.png"), width=36,height=28,units="cm",res=1200)
-print(diel.plot.all)
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", clade_name, "diel_plot_4_state_max_crep_no_label.pdf"))
+diel.plot.all
 dev.off()
 
 #plot tree with confidence data
