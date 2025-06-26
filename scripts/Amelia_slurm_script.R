@@ -115,7 +115,10 @@ if(args[1] == "six_state"){
 mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
 
 #subset cetacean trees for now to see if it runs
-#mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 3)]
+#mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 2)]
+#take the first 2 trees specifically, easier to split and run in batches this way
+mammal_trees <- mammal_trees[1:2]
+
 
 phylo_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_names = trait.data$tips))
    
@@ -175,7 +178,7 @@ if("bridge_only" %in% args & "four_state_max_crep" %in% args){
 
 #try running a constrained bridge only model based on a symmetrical model
 if("CONSYM" %in% args & "four_state_max_crep" %in% args){
-  CONSYM <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1, custom.rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"), c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"))), model = "SYM", node.states = "marginal"))
+  CONSYM <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1, custom.rate.mat = matrix(c(0,1,2,3,1,0,5,6,2,5,0,0,3,6,0,0), ncol = 4, nrow = 4, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"), c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"))), model = "SYM", node.states = "marginal"))
 }
 
 # Section 5: Save the results out and extract likelihoods  --------
@@ -184,7 +187,7 @@ if("CONSYM" %in% args & "four_state_max_crep" %in% args){
 result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x))) 
 names(result_list) <- paste(args[-(1:2)], "_model", sep = "")
 
-saveRDS(result_list, paste(args[2], args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
+saveRDS(result_list, paste("fixed", args[2], args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
 
 
 #6 state constrained

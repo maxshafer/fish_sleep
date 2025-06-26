@@ -45,9 +45,9 @@ source("scripts/Amelia_functions.R")
 
 #currently I have max_clade_crep data for: artio max_crep, artio max_dinoc
 #to do: cetacean max_crep, cetacean max_dinoc, artio w/out cetaceans max_crep, artio w/out cetaceans max_dinoc
-all_model_results <- readRDS(here("artiodactyla_max_clade_cred_four_state_max_crep_traits_ARD_models.rds"))
+all_model_results <- readRDS(here("whippomorpha_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_models.rds"))
 #copy and paste first half of filename here (leave out the models)
-file_name <- "artiodactyla_max_clade_cred_four_state_max_crep_traits_ARD_models"
+file_name <- "whippomorpha_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_models"
 
 #separate the results by the model types we want to use (ER, SYM, ARD, bridge_only)
 #uncomment the model you want to plot
@@ -97,6 +97,10 @@ dev.off()
 
 png(paste("C:/Users/ameli/OneDrive/Documents/R_projects/New_ancestral_recon/", "ancestral_recon_cathemeral_", file_name, "_", model_name,  ".png", sep = ""), width=17,height=16,units="cm",res=1200)
 ancestral_plot_cath
+dev.off()
+
+png(paste("C:/Users/ameli/OneDrive/Documents/R_projects/New_ancestral_recon/", "ancestral_recon_crepuscular_", file_name, "_", model_name,  ".png", sep = ""), width=17,height=16,units="cm",res=1200)
+ancestral_plot_crep
 dev.off()
 
 
@@ -170,9 +174,9 @@ pie_tree
 # # Pie chart ancestral reconstruction ------------------------------------
 
 #load in ARD model data
-all_model_results <- readRDS(here("artiodactyla_max_clade_cred_four_state_max_crep_traits_ARD_models.rds"))
+all_model_results <- readRDS(here("whippomorpha_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_models.rds"))
 model_results <- all_model_results$ARD_model
-file_name <- "artiodactyla_max_clade_cred_four_state_max_crep_traits_ARD"
+file_name <- "whippomorpha_max_clade_cred_four_state_max_crep_traits_ARD"
 
 phylo_tree <- model_results$phy
 

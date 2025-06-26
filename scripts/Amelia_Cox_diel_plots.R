@@ -329,10 +329,10 @@ mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 trait.data <- read.csv(here("cetaceans_full.csv"))
 
 #keep only necessary columns
-trait.data <- trait.data[, c("Species_name", "Diel_Pattern_2", "tips")]
-trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, pattern = "diurnal/crepuscular", replacement = "crepuscular")
-trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
-trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("cathemeral", "nocturnal", "diurnal", "crepuscular"), ]
+trait.data <- trait.data[, c("Species_name", "Diel_Pattern", "tips")]
+trait.data$Diel_Pattern <- str_replace_all(trait.data$Diel_Pattern, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+trait.data$Diel_Pattern <- str_replace_all(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+trait.data <- trait.data[trait.data$Diel_Pattern %in% c("cathemeral", "nocturnal", "diurnal", "crepuscular"), ]
 
 trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
 mam.tree <- keep.tip(mam.tree, tip = trait.data$tips)
@@ -340,7 +340,7 @@ mam.tree <- keep.tip(mam.tree, tip = trait.data$tips)
 #all branches need to have a positive length
 #replace branches with length 0 with 1% of the 1% quantile (replace it with a number very close to zero)
 #this doesn't replace anything in the cetacean tree so comment it out for now
-mam.tree$edge.length[mam.tree$edge.length == 0] <- quantile(tree$edge.length, 0.1)*0.1
+mam.tree$edge.length[mam.tree$edge.length == 0] <- quantile(mam.tree$edge.length, 0.1)*0.1
 
 #vector of trait data, with species in same order as in tree (tree$tip.label)
 sps_order <- as.data.frame(mam.tree$tip.label)
@@ -348,7 +348,7 @@ colnames(sps_order) <- "tips"
 sps_order$id <- 1:nrow(sps_order)
 trait.data <- merge(trait.data, sps_order, by = "tips")
 trait.data <- trait.data[order(trait.data$id), ]
-trait <- trait.data$Diel_Pattern_2
+trait <- trait.data$Diel_Pattern
 
 #now we calculate delta using their custom function
 delta_diel <- delta(trait, mam.tree, 0.1, 0.0589, 1000, 10, 100)
@@ -432,3 +432,18 @@ ggplot(mammals_df_filtered, aes(x = Order, fill = Diel_Pattern)) + geom_bar(posi
 
 ggplot(new_mammals, aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
 
+#for just my artiodactyla data
+new_mammals %>% filter(Order == "Amelia_Artiodactyla") %>% ggplot(., aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
+
+#for just my cetacean data
+artio_full %>% filter(Suborder == "Whippomorpha") %>% ggplot(., aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
+
+new_mammals %>% filter(Family == "Odontoceti") %>% ggplot(., aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
+new_mammals %>% filter(Family == "Mysticeti") %>% ggplot(., aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
+
+
+#for just my ruminant data
+
+#for all mammals (data from bennie and maor?)
+new_mammals$mammal <- "mammal"
+ggplot(new_mammals, aes(x = mammal, fill = Diel_Pattern)) + geom_bar(position = "fill")

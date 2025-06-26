@@ -101,7 +101,14 @@ cetaceans_full <- cetaceans_full[, -13]
 cetaceans_full <- apply(cetaceans_full,2,as.character)
 
 ## Probably should save out a local copy in case google goes bankrupt
-write.csv(cetaceans_full, file = here("cetaceans_full.csv"))
+write.csv(cetaceans_full, file = here("cetaceans_full.csv"), row.names = FALSE)
+
+#save out a version with hippos
+whippomorpha <- read.csv(here("cetaceans_full.csv"))
+whippomorpha <- rbind(whippomorpha, c("Hexaprotodon liberiensis", "", NA, NA, "nocturnal", "nocturnal/crepuscular", "crepuscular", "nocturnal", "NA", "3, 3, 3", "Hippopotimiade", "Choeropsis_liberiensis"))
+whippomorpha <- rbind(whippomorpha, c("Hippopotamus amphibius", "", NA, NA, "nocturnal", "nocturnal/crepuscular", "crepuscular", "nocturnal", "NA", "4, 4, 4", "Hippopotimiade", "Hippopotamus_amphibius"))
+rownames(whippomorpha) <- whippomorpha$tips
+write.csv(whippomorpha, file = here("whippomorpha.csv"), row.names = FALSE)
 
 
 # Section 1.5 High confidence cetacean data -------------------------------
@@ -124,7 +131,7 @@ cetaceans_full$max_conf <- lapply(cetaceans_full$Confidence, max)
 #from 83 species to 75
 cetaceans_full <- cetaceans_full %>% filter(!(Alt_name.notes %in% c("Not in mam tree", "Not in mam tree, Limited data", "Not in mam tree, Likely not a valid subspecies")))
 
-#subet for the higher confidence levels (3-5)
+#subset for the higher confidence levels (3-5)
 #from 75 species to 70, may be worth dropping them
 #for artiodactyla there's more, 50 level 1 only, 30 level 2
 cetaceans_full <- cetaceans_full %>% filter(max_conf >= 3)
@@ -701,7 +708,7 @@ table(diel_merge$match, diel_merge$Confidence)
 table(diel_merge$match, diel_merge$Amelia_diel)
 
 
-# Section 10: Load in and examine the mam tree, check time calibration, plus whippo df -----------------------------------------
+# Section 10: Load in and examine the mam tree, check time calibration -----------------------------------------
 
 ## Read in the mammalian phylogeny
 #mammal_trees <- read.nexus("Cox_mammal_data/Complete_phylogeny.nex")
@@ -732,12 +739,7 @@ test <- ggtree(trpy_n_test, layout = "circular", size = 0.5) + geom_tiplab(size 
 #test$data #29.36 million years ago to the root. Seems correct!
 
 #look at the tree for whippomorpha (hippos + cetacea) and see if time calibrated
-whippomorpha <- read.csv(here("cetaceans_full.csv"))
-whippomorpha <- rbind(whippomorpha, c("Hexaprotodon_liberiensis", "Hexaprotodon liberiensis", "", NA, NA, "nocturnal", "nocturnal/crepuscular", "crepuscular", "nocturnal", "NA", "3, 3, 3", "Hippopotimiade", "Choeropsis_liberiensis"))
-whippomorpha <- rbind(whippomorpha, c("Hippopotamus_amphibius", "Hippopotamus amphibius", "", NA, NA, "nocturnal", "nocturnal/crepuscular", "crepuscular", "nocturnal", "NA", "4, 4, 4", "Hippopotimiade", "Hippopotamus_amphibius"))
-rownames(whippomorpha) <- whippomorpha$tips
-write.csv(whippomorpha, file = here("whippomorpha.csv"))
-
+whippomorpha <- read.csv(here("whippomorpha.csv"))
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 whippomorpha <- whippomorpha[whippomorpha$tips %in% mam.tree$tip.label,]
 trpy <- keep.tip(mam.tree, tip = whippomorpha$tips)

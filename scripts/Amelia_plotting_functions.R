@@ -59,6 +59,21 @@ plot1kLikelihoods <- function(model_results = readRDS(here("finalized_1k_models/
     df_full <- rbind(df1, df2, df3, df4)
   }
   
+  if(number_of_models == 5){
+    ER_likelihoods <- unlist(lapply(model_results$ER_model, function(x) returnLikelihoods(model = x)))
+    SYM_likelihoods  <- unlist(lapply(model_results$SYM_model, function(x) returnLikelihoods(model = x)))
+    ARD_likelihoods  <- unlist(lapply(model_results$ARD_model, function(x) returnLikelihoods(model = x)))
+    bridge_only_likelihoods  <- unlist(lapply(model_results$bridge_only_model, function(x) returnLikelihoods(model = x)))
+    CONSYM_likelihoods  <- unlist(lapply(model_results$CONSYM, function(x) returnLikelihoods(model = x)))
+    
+    df1 <- data.frame(model = "ER", likelihoods = ER_likelihoods)
+    df2 <- data.frame(model = "SYM", likelihoods = SYM_likelihoods)
+    df3 <- data.frame(model = "ARD", likelihoods = ARD_likelihoods)
+    df4 <- data.frame(model = "bridge_only", likelihoods = bridge_only_likelihoods)
+    df5 <- data.frame(model = "CONSYM", likelihoods = CONSYM_likelihoods)
+    df_full <- rbind(df1, df2, df3, df4, df5)
+  }
+  
   return(df_full)
 }
 
@@ -89,6 +104,21 @@ plot1kAIC <- function(model_results = readRDS(here("finalized_1k_models/artiodac
     df_full <- rbind(df1, df2, df3, df4)
   }
   
+  if(number_of_models == 5){
+    ER_likelihoods <- unlist(lapply(model_results$ER_model, function(x) returnAIC(model = x)))
+    SYM_likelihoods  <- unlist(lapply(model_results$SYM_model, function(x) returnAIC(model = x)))
+    ARD_likelihoods  <- unlist(lapply(model_results$ARD_model, function(x) returnAIC(model = x)))
+    bridge_only_likelihoods  <- unlist(lapply(model_results$bridge_only_model, function(x) returnAIC(model = x)))
+    CONSYM_likelihoods  <- unlist(lapply(model_results$CONSYM_model, function(x) returnAIC(model = x)))
+    
+    df1 <- data.frame(model = "ER", AIC_score = ER_likelihoods)
+    df2 <- data.frame(model = "SYM", AIC_score = SYM_likelihoods)
+    df3 <- data.frame(model = "ARD", AIC_score = ARD_likelihoods)
+    df4 <- data.frame(model = "bridge_only", AIC_score = bridge_only_likelihoods)
+    df5 <- data.frame(model = "CONSYM", AIC_score = CONSYM_likelihoods)
+    df_full <- rbind(df1, df2, df3, df4, df5)
+  }
+  
   return(df_full)
 }
 
@@ -117,6 +147,21 @@ plot1kAICc <- function(model_results = readRDS(here("finalized_1k_models/artioda
     df3 <- data.frame(model = "ARD", AICc_score = ARD_likelihoods)
     df4 <- data.frame(model = "bridge_only", AICc_score = bridge_only_likelihoods)
     df_full <- rbind(df1, df2, df3, df4)
+  }
+  
+  if(number_of_models == 5){
+    ER_likelihoods <- unlist(lapply(model_results$ER_model, function(x) returnAICc(model = x)))
+    SYM_likelihoods  <- unlist(lapply(model_results$SYM_model, function(x) returnAICc(model = x)))
+    ARD_likelihoods  <- unlist(lapply(model_results$ARD_model, function(x) returnAICc(model = x)))
+    bridge_only_likelihoods  <- unlist(lapply(model_results$bridge_only_model, function(x) returnAICc(model = x)))
+    CONSYM_likelihoods  <- unlist(lapply(model_results$CONSYM_model, function(x) returnAICc(model = x)))
+    
+    df1 <- data.frame(model = "ER", AICc_score = ER_likelihoods)
+    df2 <- data.frame(model = "SYM", AICc_score = SYM_likelihoods)
+    df3 <- data.frame(model = "ARD", AICc_score = ARD_likelihoods)
+    df4 <- data.frame(model = "bridge_only", AICc_score = bridge_only_likelihoods)
+    df5 <- data.frame(model = "CONSYM", AICc_score = CONSYM_likelihoods)
+    df_full <- rbind(df1, df2, df3, df4, df5)
   }
   
   return(df_full)
