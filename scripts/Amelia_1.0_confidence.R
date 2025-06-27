@@ -103,7 +103,8 @@ diel_full_long <- diel_full %>% pivot_longer(cols = Conf1.1:Conf5.4, names_to = 
 #remove whitespace
 diel_full_long$value <- str_trim(diel_full_long$value)
 
-#optional: remove unclear as an option since it gives no new information
+#remove unclear as an option since it gives no new information
+#this removes 46 entries all from confidence level 1 and 2 from 25 species. Most of level 1 and 2 data isn't informative
 diel_full_long[diel_full_long == "unclear"] <- NA
 
 #remove rows with empty values
@@ -129,15 +130,13 @@ test_diel_long$column <- str_replace(test_diel_long$column, pattern = "Conf2N", 
 
 #deal with x/cathemeral species first, makes no difference in final call whether you call them dinoc or cathemeral
 unique(test_diel_long$value)
-test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "nocturnal/cathemeral", replacement = "nocturnal")
-test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "diurnal/cathemeral", replacement = "diurnal")
-# test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "nocturnal/cathemeral", replacement = "cathemeral")
-# test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "diurnal/cathemeral", replacement = "cathemeral")
+# test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "nocturnal/cathemeral", replacement = "nocturnal")
+# test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "diurnal/cathemeral", replacement = "diurnal")
+test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "nocturnal/cathemeral", replacement = "cathemeral")
+test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "diurnal/cathemeral", replacement = "cathemeral")
 
 #deal with unclear values which are all in confidence level 2
-#tested with including these as unclear or not and is does change the call on any activity pattern
-#when we include di/noc/cath calls instead of unclear, Balaenoptera borealis becomes unclear instead of cathemeral-variable
-#no other changes occur
+#tested with including these as unclear or not and is does change the call on any activity pattern, it does not
 test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "unclear/diurnal", replacement = "diurnal")
 test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "unclear/cathemeral", replacement = "cathemeral")
 test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "unclear/nocturnal", replacement = "nocturnal")
@@ -154,7 +153,7 @@ test_diel_long[test_diel_long == "unclear"] <- NA
 which.max.simple=function(x,na.rm=TRUE,tie_value="NA"){
   if(na.rm)
   {
-    x=x[!is.na(x)] #check that there aren't any NA values
+    x=x[!is.na(x)] #removes NA values
   }
   if(length(x)==0) #if there is no activity pattern data return NA
   {
@@ -195,46 +194,77 @@ which.max.simple=function(x,na.rm=TRUE,tie_value="NA"){
 # my method: take mode of Conf3 and Conf4, if unclear add in Conf5 data, if unclear include Conf1 data, if still unclear add Conf2 data
 
 #example
-#x <- filter(test_diel_long, Species_name == "Balaenoptera acutorostrata")
+#x <- filter(test_diel_long, Species_name == "Balaenoptera borealis")
 
 #this function takes the all the entries for a given species in the specified confidence levels (ie for first pass its conf3 and conf4)
 #takes the diel patterns in each entry for that species and assigns it a number based by matching it to a position the list of unique values
-#example 1 = diurnal, 2 = nocturnal, 3 = cathemeral
-#tabulate counts the number of times each of these numbers appears in the input
+#example 1 = diurnal, 2 = nocturnal, 3 = cathemeral, tabulate counts the number of times each of these numbers appears in the input
 #example, diurnal appears twice, nocturnal appears once and cathemeral appears three times
-#checks if the result of which.max.simple is NA or not
-#if one activity pattern occurs more often than the others then which.max.simple will return than value
-#if there is no maximum value it will return an NA (ie there's no clear activity pattern from the given evidence)
-#if it is FALSE 
-#if it is TRUE
-tabulateFunc2 <- function(x) {
-  
-  if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf3", "Conf4")], unique(x$new_diel))), tie_value = "NA"))) {
-    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
-      if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf1")], unique(x$new_diel))), tie_value = "NA"))) {
-        if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf1", "Conf2")], unique(x$new_diel))), tie_value = "NA"))) {
-          activity_pattern <- "cathemeral-variable" 
-        } else { activity_pattern <- "unclear"} 
+
+#first check: if the result of which.max.simple for conf level 3 and 4 sources is not NA, then return the value as the activity pattern
+#if it is NA then include conf level 5 and check if there is a clear activity pattern
+#repeat this process until all confidence levels have been included. If none produce a clear result call the species cathemeral-variable
+#if conf level 1-5 are all included to make a call, call it cathemeral variable still since it clearly varies 
+#this only changes the call for B borealis from diurnal to cathemeral-variable, which is fine. We shouldn't use level 1 or 2 to make calls at all
+
+
+x <- filter(test_diel_long, Species_name == "Stenella clymene")
+
+tabulateFunc4 <- function(x) {
+  #first check if there is multiple level 4 confidence entries
+  if(x %>% filter(column == "Conf4") %>% nrow() > 1){
+    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA"))) {
+    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
+      if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
+        if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf2", "Conf1")], unique(x$new_diel))), tie_value = "NA"))) {
+          activity_pattern <- "cathemeral-variable" #result if there is a tie between all confidence levels 
+        } else { 
+          activity_pattern <- "cathemeral-variable"
+          #we need to include this to make calls on species with only level 1 and 2 evidence 
+          activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf2", "Conf1")], unique(x$new_diel))), tie_value = "NA")]
+          } 
       } else {
-        activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf1")], unique(x$new_diel))), tie_value = "NA")]
+        activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
+        #result if level 4 and level 4+3 are inconclusive
       }
     } else {
+      activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
+      #result if level 4 alone is inconclusive
+    }
+  } else {
+    activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
+    #result if there is multiple level 4 evidence and it is not inconclusive
+  }
+    } else {
+      if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
+    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
+      if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf2", "Conf1")], unique(x$new_diel))), tie_value = "NA"))) {
+        activity_pattern <- "cathemeral-variable" #result if there is a tie between all confidence levels
+      } else { 
+        activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")] #result if there is not a tie (use the single level 4 entry to make the call)
+        #activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf2", "Conf1")], unique(x$new_diel))), tie_value = "NA")]
+      } 
+    } else {
       activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
+      #result if level 4 and level 4+3 are inconclusive
     }
   } else {
     activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
+    #result if level 4 alone is inconclusive
   }
+      }
   
   return(activity_pattern)  
 }
 
 #run each species through this function, 78 species with activity pattern data (di, noc or cath)
 activity_pattern_df <- test_diel_long[!is.na(test_diel_long$new_diel),] %>% group_by(Species_name) %>% do(tabulated_diel_pattern = tabulateFunc2(.)) %>% unnest()
-# activity_pattern_df2 <- test_diel_long[!is.na(test_diel_long$new_diel),] %>% group_by(Species_name) %>% do(tabulated_diel_pattern = tabulateFunc2(.)) %>% unnest()
-# 
-# test <- merge(activity_pattern_df, activity_pattern_df2, by = "Species_name")
-# colnames(test1) <- c("Species_name", "1", "2")
 
+activity_pattern_df2 <- test_diel_long[!is.na(test_diel_long$new_diel),] %>% group_by(Species_name) %>% do(tabulated_diel_pattern = tabulateFunc4(.)) %>% unnest()
+
+test <- merge(activity_pattern_df, activity_pattern_df2, by = "Species_name")
+# colnames(test1) <- c("Species_name", "1", "2")
+#source 1 and 2 are only used to make calls on K breviceps, B borealis and E glacialis
 unique(activity_pattern_df$tabulated_diel_pattern)
 
 #what species are cathemeral-variable?
@@ -348,86 +378,6 @@ diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.lab
 diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = tabulated_diel), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.2, name = "Tabulated activity pattern")
 diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
 diel.plot
-
-# Section 4: Concordance within confidence levels ------------------------
-diel_full_long <- read.csv(here("cetacean_confidence_long_df.csv"))
-diel_full_long[diel_full_long == "unclear"] <- NA
-diel_full_long <- diel_full_long[!is.na(diel_full_long$value),]
-
-#filter for confidence level we're interested in 
-# diel_full_long <- diel_full_long %>% filter(substr(diel_full_long$column, 1,5) == "Conf1")
-# diel_full_long <- diel_full_long %>% filter(substr(diel_full_long$column, 1,5) == "Conf2")
-diel_full_long <- diel_full_long %>% filter(substr(diel_full_long$column, 1,5) == "Conf3")
-# diel_full_long <- diel_full_long %>% filter(substr(diel_full_long$column, 1,5) == "Conf4")
-# diel_full_long <- diel_full_long %>% filter(substr(diel_full_long$column, 1,5) == "Conf5")
-
-#get a list of all the species with more than one source 
-species_list <- table(diel_full_long$Species_name)
-#conf1 = 3 species, conf2 = 13 species, conf3 = 45 species, conf4 = 24 species, conf5 = 3 species
-species_list <- names(species_list[species_list > 1])
-
-#function Max wrote for comparing entries
-compTwo <- function(comp1 = "comp1", comp2 = "comp2") {
-  
-  if(any(is.na(c(comp1, comp2)))) {
-    return(NA)
-  } else {
-    #splits any entries with a backslash into two components (ie nocturnal/crepuscular into nocturnal and crepuscular)
-    comp1 <- str_split(comp1, "/")[[1]]
-    comp2 <- str_split(comp2, "/")[[1]]
-    #then compares if any of the components match
-    if(any(comp1 %in% comp2)) {
-      return(TRUE)
-    } else {
-      return(FALSE)
-    }
-  }
-  
-}
-
-#apply this function across all species with multiple entries
-output <- lapply(species_list, function(species) {
-  
-  #filter for one species at a time
-  df <- diel_full_long[diel_full_long$Species_name == species,]
-  #rename the column names to be unique for every entry for this species (ie for multiple column 2 entries column 2.1, 2.2 etc)
-  df$column <- make.unique(df$column)
-  
-  #converts the dataframe so it compares every entry with each other (ie for A,B,C A-A, A-B, A-C, B-A, B-B, B-C, etc)
-  df_lists_comb <- expand(df, nesting(var = column, vector = value), nesting(var2 = column, vector2 = value), .name_repair = "universal")
-  
-  #??? idk
-  df_lists_comb <- df_lists_comb %>% filter(var != var2) %>% arrange(var, var2) %>% mutate(vars = paste0(var, ".", var2)) %>% select(contains("var"), everything())
-  
-  #evaluates the activity patterns for each of these sources and returns if they agree or not (TRUE or FALSE)
-  comparisons <- df_lists_comb %>% group_by(vars) %>% mutate(comp = compTwo(comp1 = vector, comp2 = vector2))
-  #to compare within a confidence level, keep the full strings (ie conf3.1 and conf3.2), no need to subset
-  # comparisons$var <- str_sub(comparisons$var, start = 1, end = 5)
-  # comparisons$var2 <- str_sub(comparisons$var2, start = 1, end = 5)
-  
-  #create a column returning the comparison being made (ie col2-col2, col1-col2, etc)
-  comparisons$var_final <- paste(comparisons$var, comparisons$var2, sep = "_")
-  
-  #return just the comparison result column (TRUE or FALSE match) and the comparison being made (ie col1 vs col1)
-  return(comparisons[,c("comp","var_final")])
-})
-
-#combine this list of results 
-output <- Reduce(rbind, output)
-
-table <- table(output$var_final)
-# prop.table(table, margin = 1)
-table2 <- as.data.frame(prop.table(table(output$var_final, output$comp), margin = 1))
-table2$Comp1 <- sapply(str_split(table2$Var1, "_"), `[`, 1)
-table2$Comp2 <- sapply(str_split(table2$Var1, "_"), `[`, 2)
-table2 <- table2[table2$Var2 == TRUE,]
-table2$count <- table
-plot_freq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = round(Freq, digits = 2))) + geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1))
-plot_freq
-plot_count <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = count)) + geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1))
-plot_count
-
-
 
 # Section 4.4 Concordance table within confidence levels -------------------------------------------
 diel_full_long <- read.csv(here("cetacean_confidence_long_df.csv"))
