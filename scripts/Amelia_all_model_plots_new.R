@@ -57,7 +57,7 @@ mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 # #Section 1: max_clade_cred likelihood metrics ---------------------------
 
 #set file name
-filename <- "fixed_ruminants_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_CONSYM_models.rds"
+filename <- "cetaceans_fixed_max_clade_cred_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
 
 #returns a dataframe of all three metrics for all models
 likelihood_metrics <- max_clade_metrics(readRDS(here(filename)))
