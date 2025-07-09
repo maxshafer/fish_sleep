@@ -43,13 +43,13 @@ library(phangorn)
 setwd(here())
 
 source("scripts/fish_sleep_functions.R")
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 
 
 # Section 1: Transform cetacean data into wide format -------------------------------
 url <- 'https://docs.google.com/spreadsheets/d/1eG_WIbhDzSv_g-PY90qpTMteESgPZZZt772g13v-H1o/edit?usp=sharing'
 diel_full <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
-mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 #take only the columns we're interested in
 diel_full <- diel_full[, c(1, 3:6, 9:16)]
@@ -257,6 +257,7 @@ tabulateFunc2 <- function(x) {
 #run each species through this function, x species with activity pattern data (di, noc or cath)
 activity_pattern_df <- test_diel_long[!is.na(test_diel_long$new_diel),] %>% group_by(Species_name) %>% do(tabulated_diel_pattern = tabulateFunc2(.)) %>% unnest()
 
+
 unique(activity_pattern_df$tabulated_diel_pattern)
 
 #replace cathemeral-variable with cathemeral since we aren't delineating between the two in the analysis
@@ -332,6 +333,13 @@ for(i in 1:nrow(test)){
 unique(test$tabulated_diel)
 
 test <- test[, c("Species_name", "tabulated_diel")]
+
+#check that nothing about the data has changed since running it last 
+previous_dataset <- read.csv(here("cetacean_tabulated_full.csv"))
+current_dataset <- test
+all(previous_dataset == current_dataset)
+if(all(previous_dataset == current_dataset) == FALSE) stop("Dataset is not the same!")
+
 #save out the new tabulated activity pattern dataframe
 write.csv(test, here("cetacean_tabulated_full.csv"), row.names = FALSE)
 
@@ -366,6 +374,8 @@ diel.plot <- diel.plot + new_scale_fill() + geom_tile(data = diel.plot$data[1:le
 diel.plot <- diel.plot + geom_tiplab(size = 3, offset = 3)
 diel.plot
 
+#what species are different
+trait.data.different <- trait.data[trait.data$Diel_Pattern!=trait.data$tabulated_diel, c("Species_name", "Diel_Pattern", "tabulated_diel")]
 
 # Section 3.5 Save out cetacean data frame with additional details -------
 #load in the dataframe with the tabulated activity patterns (objective calls based on source concordance)
@@ -380,10 +390,10 @@ cetaceans_full <- merge(cetaceans_full, cetaceans_tabulated_full, by = "Species_
 write.csv(cetaceans_full, here("cetaceans_full_with_sources.csv"))
 
 #remove unnecessary columns
-cetaceans_full <- cetaceans_full[c("Species_name", "Confidence", "Parvorder", "tabulated_diel")]
+cetaceans_full <- cetaceans_full[c("Species_name", "Confidence", "Parvorder", "Family", "tabulated_diel")]
 #add a column for tips, formatted as the species names appear in the phylogenetic tree
 cetaceans_full$tips <- str_replace(cetaceans_full$Species_name, pattern = " ", replacement = "_")
-colnames(cetaceans_full) <- c("Species_name", "Confidence", "Parvorder", "Diel_Pattern", "tips")
+colnames(cetaceans_full) <- c("Species_name", "Confidence", "Parvorder", "Family", "Diel_Pattern", "tips")
 
 #add suborder taxonomic info for future reference
 cetaceans_full$Suborder <- "whippomorpha"
@@ -418,8 +428,8 @@ write.csv(cetaceans_full, file = here("cetaceans_full.csv"), row.names = FALSE)
 
 #save out a version with hippos
 whippomorpha <- read.csv(here("cetaceans_full.csv"))
-whippomorpha <- rbind(whippomorpha, c("Hexaprotodon liberiensis", 3, "Hippopotamidae", "nocturnal/crepuscular", "Hexaprotodon_liberiensis", "whippomorpha", "crepusuclar", "nocturnal"))
-whippomorpha <- rbind(whippomorpha, c("Hippopotamus amphibius", 4, "Hippopotamidae", "nocturnal/crepuscular", "Hippopotamus_amphibius", "whippomorpha", "crepusuclar", "nocturnal"))
+whippomorpha <- rbind(whippomorpha, c("Hexaprotodon liberiensis", 3, "Hippopotamidae", "Hippopotamidae", "nocturnal/crepuscular", "Hexaprotodon_liberiensis", "whippomorpha", "crepusuclar", "nocturnal"))
+whippomorpha <- rbind(whippomorpha, c("Hippopotamus amphibius", 4, "Hippopotamidae","Hippopotamidae", "nocturnal/crepuscular", "Hippopotamus_amphibius", "whippomorpha", "crepusuclar", "nocturnal"))
 rownames(whippomorpha) <- whippomorpha$tips
 write.csv(whippomorpha, file = here("whippomorpha.csv"), row.names = FALSE)
 

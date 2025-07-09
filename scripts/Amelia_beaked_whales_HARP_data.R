@@ -40,13 +40,13 @@ setwd(here())
 # filenames <- list.files("C:/Users/ameli/Downloads/Mm", pattern = "*.mat", full.names = TRUE)
 # whalename <- "mesoplodon_mirus"
 
-# #for mesoplodon europaeus
-filenames <- list.files("C:/Users/ameli/Downloads/Me", pattern = "*.mat", full.names = TRUE)
-whalename <- "mesoplodon_europaeus"
+# # #for mesoplodon europaeus
+# filenames <- list.files("C:/Users/ameli/Downloads/Me", pattern = "*.mat", full.names = TRUE)
+# whalename <- "mesoplodon_europaeus"
 
-# #for kogiia
-# filenames <- list.files("C:/Users/ameli/Downloads/Kogia", pattern = "*.mat", full.names = TRUE)
-# whalename <- "kogia"
+#for kogiia
+filenames <- list.files("C:/Users/ameli/Downloads/Kogia", pattern = "*.mat", full.names = TRUE)
+whalename <- "kogia"
 
 files <- lapply(filenames, readMat)
 #make a dataframe out of just the time column from each mat file, all other information is irrelevant
