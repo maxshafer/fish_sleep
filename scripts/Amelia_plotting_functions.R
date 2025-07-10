@@ -64,7 +64,7 @@ plot1kLikelihoods <- function(model_results = readRDS(here("finalized_1k_models/
     SYM_likelihoods  <- unlist(lapply(model_results$SYM_model, function(x) returnLikelihoods(model = x)))
     ARD_likelihoods  <- unlist(lapply(model_results$ARD_model, function(x) returnLikelihoods(model = x)))
     bridge_only_likelihoods  <- unlist(lapply(model_results$bridge_only_model, function(x) returnLikelihoods(model = x)))
-    CONSYM_likelihoods  <- unlist(lapply(model_results$CONSYM, function(x) returnLikelihoods(model = x)))
+    CONSYM_likelihoods  <- unlist(lapply(model_results$CONSYM_model, function(x) returnLikelihoods(model = x)))
     
     df1 <- data.frame(model = "ER", likelihoods = ER_likelihoods)
     df2 <- data.frame(model = "SYM", likelihoods = SYM_likelihoods)

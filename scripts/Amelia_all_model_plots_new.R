@@ -93,11 +93,18 @@ plotMKmodel(model_results$CONSYM_model)
 dev.off()
 
 # #Section 3: Plot likelihoods from 1k model results ----------------------
-filename <- "fixed_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_CONSYM_models.rds"
+model_6 <- readRDS(here(paste0("finalized_1k_models/", "fixed_cetaceans_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models_1-5.rds")))
+model_10 <- readRDS(here(paste0("finalized_1k_models/", "fixed_cetaceans_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models_6-10.rds")))
+model_20 <- readRDS(here(paste0("finalized_1k_models/", "fixed_cetaceans_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models_10-20.rds")))
+model_results <- c(model_6, model_10, model_20)
+  
+filename <- "fixed_cetaceans_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models_10-20.rds"
 
 #requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, bridge_only)
 #function returns a dataframe of the likelihoods for all 1k trees x number of Mk models
 df_full <- plot1kLikelihoods(readRDS(here(paste0("finalized_1k_models/", filename))), 5)
+
+df_full <- plot1kLikelihoods(model_results, 5)
 
 #check if data fits the ANOVA assumptions
 #anovaAssumptions(df_full, df_full$likelihoods)
@@ -130,11 +137,13 @@ ggplot(df_full, aes(x = fct_inorder(model), y = likelihoods)) +
 dev.off()
 
 # #Section 4: Plot AIC scores from 1k model results ----------------------
-filename <- "fixed_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_CONSYM_models.rds"
+#filename <- "fixed_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_CONSYM_models.rds"
 
 #requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, bridge_only)
 #returns a df of the AIC scores for all 1k trees x number of Mk models
 df_full <- plot1kAIC(readRDS(here(paste0("finalized_1k_models/", filename))), 5)
+
+df_full <- plot1kAIC(model_results, 5)
 
 means <- aggregate(AIC_score ~  model, df_full, mean)
 means$AIC_score <- round(means$AIC_score, digits = 2)
@@ -223,6 +232,7 @@ dev.off()
 #filename <- "ruminants_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"
 #reminder: enter 5 states for the 6 state cetacean/whippomorpha
 rates_df <- plot1kTransitionRates(readRDS(here(paste0("finalized_1k_models/", filename))), 4, 4)
+rates_df <- plot1kTransitionRates(model_results, 4, 4)
 
 #plot as a violin plot
 #important note: the colours column doesn't line up with the correct solution in the df but if we plot the solutions in alphabetical order and then colouring them with the pallette in the colours column is in the correct order

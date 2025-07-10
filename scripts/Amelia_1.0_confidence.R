@@ -29,6 +29,7 @@ library(tidyr)
 #colours
 library(viridis)
 #sankey diagram
+#install.packages("ggsankey")
 library(ggsankey)
 
 ## Packages for phylogenetic analysis in R (overlapping uses)
