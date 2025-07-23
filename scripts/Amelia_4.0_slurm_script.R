@@ -94,7 +94,11 @@ mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
 #mammal_trees <- mammal_trees[6:10]
 #mammal_trees <- mammal_trees[10:20]
 #mammal_trees <- mammal_trees[20:50]
+<<<<<<< HEAD
 mammal_trees <- mammal_trees[1:500]
+=======
+mammal_trees <- mammal_trees[1:100]
+>>>>>>> 583d53836e964cb01e494f797c878bd9159731b5
 
 phylo_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_names = trait.data$tips))
 

@@ -109,7 +109,7 @@ findMRCANode <- function(phylo = tr, trait.data = trait.data, taxonomic_level_co
   return(nodes_df)
 }
   
-
+ 
 findMRCANode2 <- function(phylo = tr, trait.data = trait.data, taxonomic_level_col = 3, taxonomic_level_name = "Araneae"){
   nodes_list <- list()
   trait.data <- trait.data %>% group_by_at(taxonomic_level_col) %>% filter(n()>1)
