@@ -32,7 +32,7 @@ colnames(Bennie_mam_data) <- "SpeciesBehaviourReference"
 Bennie_mam_data$SpeciesBehaviourReference <- str_replace(string = Bennie_mam_data$SpeciesBehaviourReference, pattern = " ", replacement  = "_")
 Bennie_mam_data <- separate(Bennie_mam_data, col = SpeciesBehaviourReference, into = c("Species", "Activity_pattern", "Reference"), sep = " ")
 
-#read in the Maor diel actiivty patterns
+#read in the Maor diel activity patterns
 #from https://doi.org/10.1038/s41559-017-0366-5 
 maor_mam_data <- read_excel(here("Maor_diel_activity_data.xlsx"))
 maor_mam_data <- maor_mam_data[17:nrow(maor_mam_data), 3:5]
