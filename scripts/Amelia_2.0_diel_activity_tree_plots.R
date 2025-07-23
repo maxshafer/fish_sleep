@@ -134,35 +134,20 @@ mammals_df <- read.csv(here("sleepy_mammals.csv")) #data from Bennie et al, 2014
 
 #add in my primary source data 
 artio_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
-artio_full$Order <- "Amelia_artiodactyla"
-ggplot(artio_full, aes(x = Suborder, fill = Diel_Pattern)) + geom_bar(position = "fill")
+artio_full <- artio_full[!is.na(artio_full$Diel_Pattern), ]
 
-new_mammals <- rbind(artio_full, mammals_df)
-new_mammals <- new_mammals[!is.na(new_mammals$Diel_Pattern), ]
-ggplot(new_mammals, aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
-
-#plot the proportion of species in each diel category for each order
-#filter to orders with at least ??? 5 species?
-mammals_df_filtered <- mammals_df %>% group_by(Order) %>% filter(n()>=5)
-ggplot(mammals_df_filtered, aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
-
-#for just my artiodactyla data
-new_mammals %>% filter(Order == "Amelia_Artiodactyla") %>% ggplot(., aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
-
-#for just my cetacean data
-artio_full %>% filter(Suborder == "Whippomorpha") %>% ggplot(., aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
-
-new_mammals %>% filter(Family == "Odontoceti") %>% ggplot(., aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
-new_mammals %>% filter(Family == "Mysticeti") %>% ggplot(., aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill")
+#replace their artiodactyla data with my artiodactyla data?
+# mammals_df <- mammals_df %>% filter(Order != "Artiodactyla")
+# new_mammals <- rbind(mammals_df, artio_full)
 
 #we want to compare all mammals, vs all artiodactyla vs cetaceans/ruminants
 new_mammals$mammals <- "Mammals"
 
 custom.colours <- c("#dd8ae7","peachpuff2", "#FC8D62", "#66C2A5")
-mammals_plot <- ggplot(new_mammals, aes(x = mammals, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern") + theme_minimal() + theme(legend.position = "none")
-artiodactyla_plot <- new_mammals %>% filter(Order == "Amelia_artiodactyla") %>% ggplot(., aes(x = Order, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern") + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank())
-ruminantia_plot <- new_mammals %>% filter(Suborder == "Ruminantia") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern") + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank())
-whippomorpha_plot <- new_mammals %>% filter(Suborder == "Whippomorpha") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.9) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern") + theme_minimal() + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.background = element_rect(fill='transparent'))
+mammals_plot <- ggplot(new_mammals, aes(x = mammals, fill = max_crep)) + geom_bar(position = "fill", width = 0.75) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.x = element_blank())
+artiodactyla_plot <- artio_full %>% filter(Order == "Artiodactyla") %>% ggplot(., aes(x = Order, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
+ruminantia_plot <- artio_full %>% filter(Suborder == "Ruminantia") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
+whippomorpha_plot <- artio_full %>% filter(Suborder == "Whippomorpha") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_classic() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
 
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/barplot_percentages.pdf", width = 10, height = 10, bg = "transparent")
 grid.arrange(mammals_plot, artiodactyla_plot, ruminantia_plot, whippomorpha_plot, nrow = 1)

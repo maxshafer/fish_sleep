@@ -30,7 +30,7 @@ library(tidyr)
 library(viridis)
 #sankey diagram
 #install.packages("ggsankey")
-library(ggsankey)
+#library(ggsankey)
 
 ## Packages for phylogenetic analysis in R (overlapping uses)
 ## They aren't all used here, but you should have them all
@@ -388,7 +388,7 @@ cetaceans_full <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors
 #add in the tabulated diel patterns
 cetaceans_full <- merge(cetaceans_full, cetaceans_tabulated_full, by = "Species_name", all.x = TRUE)
 #save out full version with sources
-write.csv(cetaceans_full, here("cetaceans_full_with_sources.csv"))
+write.csv(cetaceans_full, here("cetaceans_full_with_sources.csv"), row.names = FALSE)
 
 #remove unnecessary columns
 cetaceans_full <- cetaceans_full[c("Species_name", "Confidence", "Parvorder", "Family", "tabulated_diel")]
@@ -546,7 +546,7 @@ diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "unclear
 diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "unclear/cathemeral", replacement = "crepuscular")
 
 #with only species included in the final tree. From 83 to 75.
-diel_full_long <- diel_full_long[diel_full_long$tips %in% mam.tree$tip.label,]
+#diel_full_long <- diel_full_long[diel_full_long$tips %in% mam.tree$tip.label,]
 
 #get a list of all the species with more than one source (should be most of them)
 species_list <- table(diel_full_long$Species_name)
@@ -618,6 +618,14 @@ plot_freq
 plot_count <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = count)) +
   geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1))
 plot_count
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance.pdf", width = 9, height = 8, bg = "transparent")
+plot_freq
+dev.off() 
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance_count.pdf", width = 9, height = 8, bg = "transparent")
+plot_count
+dev.off()
 
 # Section 5: Cetacean confidence sankey ----------------------------------
 diel_full <- read.csv(here("cetacean_confidence_wide.csv"))
