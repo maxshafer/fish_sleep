@@ -258,7 +258,6 @@ tabulateFunc2 <- function(x) {
 #run each species through this function, x species with activity pattern data (di, noc or cath)
 activity_pattern_df <- test_diel_long[!is.na(test_diel_long$new_diel),] %>% group_by(Species_name) %>% do(tabulated_diel_pattern = tabulateFunc2(.)) %>% unnest()
 
-
 unique(activity_pattern_df$tabulated_diel_pattern)
 
 #replace cathemeral-variable with cathemeral since we aren't delineating between the two in the analysis
@@ -273,7 +272,7 @@ test_diel_long$crepuscular <- as.numeric(test_diel_long$crepuscular) #mark all c
 test_diel_long$total <- 1 #used to calculate the percentage of crepuscular species out of the total species
 
 #use to test function below
-#x <- filter(test_diel_long, Species_name == "Eubalaena glacialis")
+x <- filter(test_diel_long, Species_name == "Stenella clymene")
 
 #if category 3 greater than 50%, category 4 higher than 0% and if category 2 higher than 75% then call this source crepuscular
 #if majority of evidence categories call it crepuscular then designate it crepuscular
@@ -287,7 +286,7 @@ tabulateCrep = function(x){
   
   #if species only has level 1 and/or 5 data then total evidence will always be FALSE (we can't determine crepuscularity)
   if(all(!df2$Category %in% c("Conf2", "Conf3", "Conf4")) == TRUE){
-    total_evidence <- FALSE
+    total_evidence <- "non"
     return(total_evidence)
   }
   
@@ -298,12 +297,12 @@ tabulateCrep = function(x){
   df3 <- data.frame(Category = c("Conf2", "Conf3", "Conf4"), cutoff = c(50, 50, 20))
   df2 <- merge(df2, df3, by = "Category")  #species can have Conf2, Conf3 and/or Conf4 evidence, when merged any missing categories will be dropped
   df2$crep_evidence <- df2$percentage >= df2$cutoff
-  #find if there are more instances of crepuscular evidence or not. This doesn't work I think TRUE always overrides
-  #so every species with at least one level of crepuscular evidence will say TRUE
+  df2[df2$crep_evidence == TRUE, "crep_evidence"] <- "crepuscular"
+  df2[df2$crep_evidence == FALSE, "crep_evidence"] <- "non"
   unique_percents <- unique(df2$crep_evidence)
   #check if there's a tie, since we only use level 2,3 and 4, a tie will only occur when using two evidence levels 
   if(nrow(df2) == 2){
-    if(TRUE & FALSE %in% df2$crep_evidence){
+    if("crepuscular" %in% df2$crep_evidence & "non" %in% df2$crep_evidence){
       #to break ties could look at which has more sources (to avoid making calls off one source)
       #total_evidence <- df2[which.max(df2$x.y), "crep_evidence"]
       #instead could also break ties by looking at the higher confidence level (this will always be the second row but use which to be safe)
@@ -314,9 +313,11 @@ tabulateCrep = function(x){
   } else {total_evidence <- unique_percents[which.max(tabulate(match(df2$crep_evidence, unique_percents)))]}
   #additional screen: if there is level 4 evidence then evaluate to true 
   if(nrow(filter(df2, Category == "Conf4"))==1){
-    total_evidence <- any(df2[which(df2$Category == "Conf4"), "crep_evidence"], total_evidence)
-  } else {return(total_evidence)
-  }
+    if(df2[df2$Category == "Conf4", "crep_evidence"] == "crepuscular"){
+      total_evidence <- "crepuscular"
+    }
+  } 
+  return(total_evidence)
 }
 
 #can't determine crepuscular activity from level or level 5 data. So manually fix any species with only level 1 and/or 5 data
@@ -326,7 +327,7 @@ crep_df <- test_diel_long %>% group_by(Species_name) %>% do(tabulated_crep = tab
 test <- merge(crep_df, activity_pattern_df, by = "Species_name")
 test$tabulated_diel <- test$tabulated_diel_pattern
 for(i in 1:nrow(test)){
-  if(test[i, "tabulated_crep"] == TRUE){
+  if(test[i, "tabulated_crep"] == "crepuscular"){
     test[i, "tabulated_diel"] <- paste(test[i, "tabulated_diel_pattern"], "crepuscular", sep = "/")
   }
 }
@@ -527,23 +528,24 @@ for(i in seq_along(concordance_list)){
 
 # Section 4.5: Concordance between confidence levels ----------------------
 diel_full_long <- read.csv(here("cetacean_confidence_long_df.csv"))
-diel_full_long[diel_full_long == "unclear"] <- NA
-diel_full_long <- diel_full_long[!is.na(diel_full_long$value),]
 
 #use below for four state data, will also need to make a call on partially cathemeral species
-diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "nocturnal/crepuscular", replacement = "nocturnal")
-diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "diurnal/crepuscular", replacement = "diurnal")
-diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
-diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "nocturnal/cathemeral", replacement = "cathemeral")
-diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "diurnal/cathemeral", replacement = "cathemeral")
-
-unique(diel_full_long$value)
+# diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "nocturnal/crepuscular", replacement = "nocturnal")
+# diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "diurnal/crepuscular", replacement = "diurnal")
+# diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
+# diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "nocturnal/cathemeral", replacement = "cathemeral")
+# diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "diurnal/cathemeral", replacement = "cathemeral")
 
 #remove unclear as an option, since we aren't interested in if unclear matches with unclear
 diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "unclear/nocturnal", replacement = "nocturnal")
 diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "unclear/diurnal", replacement = "diurnal")
 diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "unclear/crepuscular", replacement = "crepuscular")
 diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "unclear/cathemeral", replacement = "crepuscular")
+
+diel_full_long[diel_full_long == "unclear"] <- NA
+diel_full_long <- diel_full_long[!is.na(diel_full_long$value),]
+
+unique(diel_full_long$value)
 
 #with only species included in the final tree. From 83 to 75.
 #diel_full_long <- diel_full_long[diel_full_long$tips %in% mam.tree$tip.label,]

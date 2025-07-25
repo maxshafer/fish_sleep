@@ -28,10 +28,10 @@ source("scripts/Amelia_functions.R")
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 #uncomment whichever clade you want to plot
-# clade_name <- "cetaceans_full"
-# clade_name <- "sleepy_artiodactyla_full"
-# clade_name <- "ruminants_full"
-clade_name <- "whippomorpha"
+clade_name <- "cetaceans_full"
+#clade_name <- "sleepy_artiodactyla_full"
+#clade_name <- "ruminants_full"
+#clade_name <- "whippomorpha"
 # clade_name <- "sleepy_artiodactyla_minus_cetaceans"
 
 diel_full <- read.csv(here(paste0(clade_name, ".csv")))
@@ -130,15 +130,12 @@ dev.off()
 
 
 # Section 4 breakdown of % activity patterns ----------------------------
-mammals_df <- read.csv(here("sleepy_mammals.csv")) #data from Bennie et al, 2014
+new_mammals <- read.csv(here("sleepy_mammals.csv")) #data from Bennie et al, 2014
 
 #add in my primary source data 
 artio_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
 artio_full <- artio_full[!is.na(artio_full$Diel_Pattern), ]
 
-#replace their artiodactyla data with my artiodactyla data?
-# mammals_df <- mammals_df %>% filter(Order != "Artiodactyla")
-# new_mammals <- rbind(mammals_df, artio_full)
 
 #we want to compare all mammals, vs all artiodactyla vs cetaceans/ruminants
 new_mammals$mammals <- "Mammals"
@@ -147,10 +144,66 @@ custom.colours <- c("#dd8ae7","peachpuff2", "#FC8D62", "#66C2A5")
 mammals_plot <- ggplot(new_mammals, aes(x = mammals, fill = max_crep)) + geom_bar(position = "fill", width = 0.75) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.x = element_blank())
 artiodactyla_plot <- artio_full %>% filter(Order == "Artiodactyla") %>% ggplot(., aes(x = Order, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
 ruminantia_plot <- artio_full %>% filter(Suborder == "Ruminantia") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
-whippomorpha_plot <- artio_full %>% filter(Suborder == "Whippomorpha") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_classic() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
+whippomorpha_plot <- artio_full %>% filter(Suborder == "Whippomorpha") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
 
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/barplot_percentages.pdf", width = 10, height = 10, bg = "transparent")
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/barplot_percentages.pdf", width = 10, height = 5, bg = "transparent")
 grid.arrange(mammals_plot, artiodactyla_plot, ruminantia_plot, whippomorpha_plot, nrow = 1)
+dev.off()
+
+#replace their artiodactyla data with my artiodactyla data?
+artio_full$Order <- "Amelia_artiodactyla"
+artio_full$mammals <- "Mammals"
+mammals_df <- rbind(new_mammals, artio_full)
+
+mammals_df %>% filter(Order %in% c("Artiodactyla", "Amelia_artiodactyla")) %>% ggplot(., aes(x = Order, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
+custom.colours <- c("#dd8ae7","peachpuff2", "peachpuff2" ,"#FC8D62", "gold", "#66C2A5", "green")
+mammals_df %>% filter(Order %in% c("Artiodactyla", "Amelia_artiodactyla")) %>% ggplot(., aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
+
+
+# Section: Mammal tree ----------------------------------------------------
+
+#make plot of bennie et al data with the artiodactyla data replaced with my own
+new_mammals <- read.csv(here("sleepy_mammals.csv")) #data from Bennie et al, 2014
+new_mammals <- new_mammals %>% filter(Order != "Artiodactyla")
+artio_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
+artio_full <- artio_full[!is.na(artio_full$Diel_Pattern), ] #318 species (83 cetaceans, 235 non cetaceans)
+diel_full <- rbind(new_mammals, artio_full)
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+trait.data <- diel_full[diel_full$tips %in% mam.tree$tip.label,] #should be 3,102 species
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+custom.colours <- c("#dd8ae7", "peachpuff2" ,"#FC8D62", "#66C2A5","grey")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x+3, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 6) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
+diel.plot
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "clade_name", "sleepy_mammals", "_max_crep_plot_unlabelled.pdf"), width = 9, height = 8, bg = "transparent")
+diel.plot
+dev.off() 
+
+order_list <- trait.data %>% group_by(Order) %>% filter(n()>10)
+order_list <- unique(order_list$Order)
+node_labels <- lapply(order_list, function(x){findMRCANode2(phylo = trpy_n, trait.data = trait.data, taxonomic_level_col = 2, taxonomic_level_name = x)})
+node_labels <- do.call(rbind.data.frame, node_labels)
+node_labels$barsize <- 2
+node_labels$vjust <- 0.5
+node_labels_left <- node_labels[node_labels$clade_name %in% c("Lagomorpha", "Scandentia", "Primates", "Artiodactyla", "Carnivora", "Perissodactyla", "Dermoptera", "Pholidota"),]
+#node_labels_left[node_labels_left$clade_name %in% c("Dermoptera", "Pholidota"), "vjust"] <- -2
+#node_labels_left[node_labels_left$clade_name %in% c("Perissodactyla"), "vjust"] <- -2
+node_labels_right <- node_labels[!node_labels$clade_name %in% c("Lagomorpha", "Scandentia", "Primates", "Artiodactyla", "Carnivora", "Perissodactyla", "Dermoptera", "Pholidota"),]
+#node_labels_right[node_labels_right$clade_name %in% c("Proboscidea", "Monotremata"), "vjust"] <- -2
+node_labels_right[node_labels_right$clade_name %in% c("Cingulata"), "vjust"] <- 0
+
+diel.plot <- ggtree(trpy_n, layout = "circular", fill = "transparent") %<+% trait.data[,c("tips", "max_crep")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 6) + scale_fill_manual(values = custom.colours)
+diel.plot <- diel.plot + geom_cladelab(barsize = 1.5, barcolor = "grey50", node = node_labels_left$node_number, label = node_labels_left$clade_name, hjust = 1, offset = 3, vjust = node_labels_left$vjust, offset.text = 2)
+diel.plot <- diel.plot + geom_cladelab(barsize = 1.5, barcolor = "grey50", node = node_labels_right$node_number, label = node_labels_right$clade_name, offset = 3, vjust = node_labels_right$vjust, offset.text = 2)
+diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
+diel.plot
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/mammals_max_crep_plot_cladelabels.pdf", bg = "transparent", width = 10, height = 10)
+diel.plot
 dev.off()
 
 # Section 2: Phylogenetic signal -----------------

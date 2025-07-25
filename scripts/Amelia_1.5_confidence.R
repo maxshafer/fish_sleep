@@ -1,4 +1,3 @@
-
 # Section 1: Load in and format artiodactyla data ------------------------------------------------
 url <- 'https://docs.google.com/spreadsheets/d/1JGC7NZE_S36-IgUWpXBYyl2sgnBHb40DGnwPg2_F40M/edit?gid=562902012#gid=562902012'
 diel_full <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
@@ -22,7 +21,7 @@ diel_full$Confidence_level <- paste(diel_full$column, diel_full$values, sep = "_
 diel_full_1 <- diel_full %>% filter(column == "Confidence_primary_source") %>% pivot_wider(names_from = Confidence_level, values_from = Diel_Pattern_primary) 
 diel_full_1 <- diel_full_1[, c(1, 2, 10:14)]
 diel_full_2 <- diel_full %>% filter(column == "Confidence_secondary_source") %>% pivot_wider(names_from = Confidence_level, values_from = Diel_Pattern_secondary)
-diel_full_2 <- diel_full_2[, c(10:14)]
+diel_full_2 <- diel_full_2[, c(10:15)]
 diel_full_3 <- diel_full %>% filter(column == "Confidence_tertiary_source") %>% pivot_wider(names_from = Confidence_level, values_from = Diel_Pattern_tertiary)
 diel_full_3 <- diel_full_3[, c(10:14)]
 diel_full_4 <- diel_full %>% filter(column == "Confidence_4th_source") %>% pivot_wider(names_from = Confidence_level, values_from = Diel_pattern_4th_source)
@@ -31,15 +30,21 @@ diel_full_5 <- diel_full %>% filter(column == "Confidence_5th_source") %>% pivot
 diel_full_5 <- diel_full_5[, c(10:13)]
 diel_full_6 <- diel_full %>% filter(column == "Confidence_6th_source") %>% pivot_wider(names_from = Confidence_level, values_from = Diel_Pattern_6th_source)
 diel_full_6 <- diel_full_6[, c(10:12)]
+
 diel_full <- cbind(diel_full_1, diel_full_2, diel_full_3, diel_full_4, diel_full_5, diel_full_6)
 #rename the columns to the confidence level, R will add .1 for every duplicate so they will end up with unique identifiers
-colnames(diel_full) <- c("Species_name", "Family", "Conf5", "Conf4", "Conf3", "Conf2", "Conf1", "Conf3", "Conf4", "Conf2", "Conf1", "Conf5", "Conf3", "Conf4", "Conf1", "third_source_NA", "Conf2", "Conf3", "Conf4", "fourth_source_NA", "Conf1", "Conf2", "fifth_source_NA", "Conf3", "Conf5", "Conf4", "sixth_source_NA", "Conf3", "Conf4")
-#drop the two columns with only NA values ("tertiary_source_NA", "fourth_source_NA", etc)
-diel_full <- diel_full[, -c(16, 20, 23, 27)]
-
+colnames(diel_full) <- paste("Conf", str_sub(colnames(diel_full), -1, -1), sep = "")
 diel_full <- diel_full[,order(colnames(diel_full))]
-diel_full <- diel_full %>% relocate("Species_name", .before = "Conf1")
-diel_full <- diel_full %>% relocate("Family", .after = "Species_name")
+
+#drop the columns with only NA values
+diel_full <- diel_full %>% select(-c("ConfA", "ConfA.1", "ConfA.2", "ConfA.3", "ConfA.4"))
+
+diel_full <- diel_full %>% relocate("Confe", .before = "Conf1")
+diel_full <- diel_full %>% relocate("Confy", .after = "Confe")
+colnames(diel_full) <- c("Species_name", "Family", colnames(diel_full)[3:24])
+
+#collapse columns
+diel_full$Conf1
 
 diel_full[diel_full == ""] <- NA
 
@@ -64,7 +69,7 @@ write.csv(diel_full, here("confidence_artio_wide.csv"), row.names = FALSE)
 diel_full <- read.csv(here("confidence_artio_wide.csv"))
 
 #convert into long format
-diel_full_long <- diel_full %>% pivot_longer(cols = c(3:25), names_to = "column", values_to = "value")
+diel_full_long <- diel_full %>% pivot_longer(cols = c(3:24), names_to = "column", values_to = "value")
 
 diel_full_long <- diel_full_long[!is.na(diel_full_long$value),]
 unique(diel_full_long$value)
@@ -75,6 +80,8 @@ diel_full_long$value <- str_replace(diel_full_long$value, pattern = "diurnal/cat
 
 #check for any unconventional strings
 unique(diel_full_long$value)
+
+x <- "Addax nasomaculatus"
 
 #check what the highest confidence level is for each species and return that number
 confidence_list <- lapply(unique(diel_full_long$Species_name), function(x){
@@ -87,6 +94,9 @@ confidence_df <- data.frame(Species_name = unique(diel_full_long$Species_name))
 confidence_df$Confidence <- as.numeric(confidence_list)
 
 write.csv(diel_full_long, here("confidence_artio_long.csv"), row.names = FALSE)
+
+
+# Section: Objective method of calling activity patterns ------------------
 
 diel_full_long <- read.csv(here("confidence_artio_long.csv"))
 
@@ -145,7 +155,9 @@ which.max.simple=function(x,na.rm=TRUE,tie_value="NA"){
   }
 }
 
-x <- filter(diel_full_long, Species_name == "Babyrousa babyrussa")
+diel_full_long <- diel_full_long[!is.na(diel_full_long$new_diel),]
+
+x <- filter(diel_full_long, Species_name == "Damaliscus pygargus")
 
 tabulateFunc3 <- function(x) {
   #first check if there is multiple level 4 confidence entries
@@ -175,7 +187,9 @@ tabulateFunc3 <- function(x) {
         if(NA %in% activity_pattern){ #if there is no level 4 data to use as the tiebreaker then add in the level 1 and 2 data
           activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf2", "Conf1")], unique(x$new_diel))), tie_value = "NA")]
           if(NA %in% activity_pattern){
-            activity_pattern <- "cathemeral-variable"
+            if(nrow(x) == 1){
+              activity_pattern <- x$new_diel #if there is only one row take the activity pattern from this row
+            } else {activity_pattern <- "cathemeral-variable"}
           }
         } 
         } else {activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]}
@@ -199,53 +213,52 @@ diel_full_long[is.na(diel_full_long)] <- "0"
 diel_full_long$crepuscular <- str_replace(diel_full_long$crepuscular, pattern = "crepuscular", replacement = "1")
 diel_full_long$crepuscular <- as.numeric(diel_full_long$crepuscular)
 diel_full_long$total <- 1
+diel_full_long$column <- substr(diel_full_long$column, start = 1, stop = 5)
+
+#x <- filter(diel_full_long, Species_name == "Aepyceros melampus")
 
 tabulateCrep = function(x){
   df <- aggregate(x$crepuscular, by = list(Category = x$column), FUN = sum)
   #confidence level 1 and 5 don't have any information on crepuscularity so remove them, they will always be zero
-  df <- df[df$Category %in% c("Conf2", "Conf3", "Conf4"), ]
   df2 <- aggregate(x$total, by = list(Category = x$column), FUN = sum)
-  
-  #if species only has level 1 and/or 5 data then total evidence will always be FALSE (we can't determine crepuscularity)
-  if(all(!df2$Category %in% c("Conf2", "Conf3", "Conf4")) == TRUE){
-    total_evidence <- FALSE
-    return(total_evidence)
-  }
-  
-  df2 <- df2[df2$Category %in% c("Conf2", "Conf3", "Conf4"), ]
   df2 <- merge(df, df2, by = "Category")
   df2$percentage <- round((df2$x.x/df2$x.y) * 100, digits = 1)
   #define what percentage of each category we want to call a species crepuscular,
-  df3 <- data.frame(Category = c("Conf2", "Conf3", "Conf4"), cutoff = c(50, 50, 20))
+  df3 <- data.frame(Category = c("Conf1", "Conf2", "Conf3", "Conf4", "Conf5"), cutoff = c(50, 50, 50, 20,20))
   df2 <- merge(df2, df3, by = "Category")  #species can have Conf2, Conf3 and/or Conf4 evidence, when merged any missing categories will be dropped
   df2$crep_evidence <- df2$percentage >= df2$cutoff
-  #find if there are more instances of crepuscular evidence or not. This doesn't work I think TRUE always overrides
-  #so every species with at least one level of crepuscular evidence will say TRUE
+  df2[df2$crep_evidence == TRUE, "crep_evidence"] <- "crepuscular"
+  df2[df2$crep_evidence == FALSE, "crep_evidence"] <- "non"
   unique_percents <- unique(df2$crep_evidence)
-  #check if there's a tie, since we only use level 2,3 and 4, a tie will only occur when using two evidence levels 
-  if(nrow(df2) == 2){
-    if(TRUE & FALSE %in% df2$crep_evidence){
-      #to break ties could look at which has more sources (to avoid making calls off one source)
-      #total_evidence <- df2[which.max(df2$x.y), "crep_evidence"]
-      #instead could also break ties by looking at the higher confidence level (this will always be the second row but use which to be safe)
-      total_evidence <- df2[which(df2$Category == max(df2$Category)), "crep_evidence"]
-    } else{
-      total_evidence <- unique_percents[which.max(tabulate(match(df2$crep_evidence, unique_percents)))]
-    }
-  } else {total_evidence <- unique_percents[which.max(tabulate(match(df2$crep_evidence, unique_percents)))]}
+  
+  #check if there is a tie, if so take the higher confidence level
+  if(nrow(df2[df2$crep_evidence == "crepuscular",]) == nrow(df2[df2$crep_evidence == "non",]) ){
+    #take the higher confidence level to break ties
+    total_evidence <- df2[which(df2$Category == max(df2$Category)), "crep_evidence"]
+    #alternative method: take whatever has more sources
+    #total_evidence <- df2[which.max(df2$x.y), "crep_evidence"]
+  } else {
+    #if no tie then take the maximum value
+    total_evidence <- unique_percents[which.max(tabulate(match(df2$crep_evidence, unique_percents)))]
+  }
+  
   #additional screen: if there is level 4 evidence then evaluate to true 
   if(nrow(filter(df2, Category == "Conf4"))==1){
-    total_evidence <- any(df2[which(df2$Category == "Conf4"), "crep_evidence"], total_evidence)
-  } else {return(total_evidence)
-  }
+    if(df2[df2$Category == "Conf4", "crep_evidence"] == "crepuscular"){
+      total_evidence <- "crepuscular"
+    }
+  } 
+  return(total_evidence)
 }
 
 crep_df <- diel_full_long %>% group_by(Species_name) %>% do(tabulated_crep = tabulateCrep(.)) %>% unnest()
 
+crep_df <- crep_df[!is.na(crep_df$tabulated_crep),]
+
 test <- merge(crep_df, activity_pattern_df, by = "Species_name")
 test$tabulated_diel <- test$tabulated_diel_pattern
 for(i in 1:nrow(test)){
-  if(test[i, "tabulated_crep"] == TRUE){
+  if(test[i, "tabulated_crep"] == "crepuscular"){
     test[i, "tabulated_diel"] <- paste(test[i, "tabulated_diel_pattern"], "crepuscular", sep = "/")
   }
 }
@@ -336,15 +349,17 @@ rownames(artiodactyla_full) <- artiodactyla_full$tips #should just get rid of th
 write.csv(artiodactyla_full, file = here("sleepy_artiodactyla_full.csv"), row.names = FALSE)
 
 # Section 4: Plot new vs old diel pattern comparison ------------------------
-diel_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
+#diel_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
 diel_full <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv"))
-diel_full <- read.csv(here("ruminants_full.csv"))
+# diel_full <- read.csv(here("ruminants_full.csv"))
   
 #compare to original data
 url <- 'https://docs.google.com/spreadsheets/d/1JGC7NZE_S36-IgUWpXBYyl2sgnBHb40DGnwPg2_F40M/edit?gid=562902012#gid=562902012'
 diel_full_old <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
-diel_full_old <- diel_full_old[!is.na(diel_full_old$Diel_Pattern_2), c("Species_name", "Diel_Pattern_2")]
+diel_full_old <- diel_full_old[, c("Species_name", "Diel_Pattern_2")]
 diel_full <- merge(diel_full, diel_full_old, by = "Species_name")
+
+diel_full$match <- tolower(diel_full$Diel_Pattern_2) == diel_full$Diel_Pattern
 
 trait.data <- diel_full[diel_full$tips %in% mam.tree$tip.label,]
 trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
@@ -381,9 +396,8 @@ diel_full_long$value <- str_replace(diel_full_long$value, pattern = "unclear/cre
 diel_full_long[diel_full_long == "unclear"] <- NA
 diel_full_long <- diel_full_long[!is.na(diel_full_long$value),]
 
-species_list <- table(diel_full_long$Species_name)
-#should be 116 species
-species_list <- names(species_list[species_list > 1])
+species_list <- table(diel_full_long$Species_name) #235 species
+species_list <- names(species_list[species_list > 1]) #120 species with multiple sources
 
 #function Max wrote for comparing entries
 compTwo <- function(comp1 = "comp1", comp2 = "comp2") {
@@ -447,6 +461,13 @@ plot_freq
 plot_count <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = count)) + geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1))
 plot_count
 
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_minus_cet_btw_source_concordance.pdf", width = 9, height = 8, bg = "transparent")
+plot_freq
+dev.off() 
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_minus_cet_btw_source_concordance_count.pdf", width = 9, height = 8, bg = "transparent")
+plot_count
+dev.off()
 
 # Section 6: Concordance within confidence levels -------------------------
 diel_full_long <- read.csv(here("confidence_artio_long.csv"))
@@ -468,8 +489,8 @@ diel_full <- diel_full[!is.na(diel_full$value),]
 
 #filter
 mulitple_sources <- diel_full %>% count(Species_name) %>% filter(n>1)
-diel_full_filtered <- diel_full[!diel_full$Species_name %in% mulitple_sources$Species_name,]
-#this removes 114 species without an informative second source (121 out of 235 have a second source)
+diel_full_filtered <- diel_full[diel_full$Species_name %in% mulitple_sources$Species_name,]
+#this removes 115 species without an informative second source (120 out of 235 have a second source)
 
 #to include only species in the final tree, is this necessary? If so I should do it consistently 
 diel_full_filtered$tips <- str_replace(diel_full_filtered$Species_name, pattern = " ", replacement = "_")
@@ -488,7 +509,7 @@ ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom
   scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") 
 #since there are four diel categories, anything above 25% is better than chance?
 
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_all_conf_levels_confusion_matrix.pdf")
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_minus_cet_all_conf_levels_confusion_matrix.pdf")
 ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
   scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") 
 dev.off()
