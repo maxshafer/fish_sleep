@@ -157,7 +157,7 @@ which.max.simple=function(x,na.rm=TRUE,tie_value="NA"){
 
 diel_full_long <- diel_full_long[!is.na(diel_full_long$new_diel),]
 
-x <- filter(diel_full_long, Species_name == "Damaliscus pygargus")
+#x <- filter(diel_full_long, Species_name == "Damaliscus pygargus")
 
 tabulateFunc3 <- function(x) {
   #first check if there is multiple level 4 confidence entries
@@ -294,8 +294,9 @@ artio_full <- artio_full[c("Species_name", "Family", "tabulated_diel")]
 artio_full$tips <- str_replace(artio_full$Species_name, pattern = " ", replacement = "_")
 colnames(artio_full) <- c("Species_name", "Family", "Diel_Pattern", "tips")
 
-#add suborder taxonomic info for future reference
-artio_full$Parvorder <- "non-whippomorpha"
+#add parvborder taxonomic info for future reference (to match with cetacean dataset)
+artio_full$Parvorder <- "non-cetacean"
+
 
 #rename the row names to be the tip names so it's easier to subset by the tree tip labels later
 row.names(artio_full) <- artio_full$tips
@@ -347,6 +348,12 @@ cetaceans_full <- read.csv(here("cetaceans_full.csv"))
 artiodactyla_full <- rbind(cetaceans_full, artio_full)
 rownames(artiodactyla_full) <- artiodactyla_full$tips #should just get rid of this line since I don't save out rownames anyway
 write.csv(artiodactyla_full, file = here("sleepy_artiodactyla_full.csv"), row.names = FALSE)
+
+#save out a version of cetacean dataset with hippos
+whippomorpha <- read.csv(here("cetaceans_full.csv"))
+hippo <- artio_full[artio_full$Family == "Hippopotamidae", ]
+whippomorpha <- rbind(whippomorpha, hippo)
+write.csv(whippomorpha, file = here("whippomorpha.csv"), row.names = FALSE)
 
 # Section 4: Plot new vs old diel pattern comparison ------------------------
 #diel_full <- read.csv(here("sleepy_artiodactyla_full.csv"))

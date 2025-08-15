@@ -1,24 +1,3 @@
-# Section 0: Packages -----------------------------------------------------
-library(ape) 
-library(corHMM)
-library(phangorn)
-library(stringr)
-library(here)
-library(rotl)
-library(ggtree)
-library(gsheet)
-library(dplyr)
-library(phytools)
-library(geiger)
-library(dplyr)
-library(readxl)
-library(tidyr)
-library(lubridate)
-#install.packages("deeptime")
-library(deeptime)
-#update.packages("ggplot2")
-library(ggplot2)
-library(gridExtra)
 setwd(here())
 
 source("scripts/fish_sleep_functions.R")
@@ -46,7 +25,7 @@ trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 # Section 2: Create all the desired plots ---------------------------------
 
 #all diel patterns
-custom.colours <- c("#dd8ae7", "peachpuff2" ,"#FC8D62", "gold", "#66C2A5", "#A6D854","grey")
+custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "gold", "#66C2A5", "#A6D854","grey")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x+1.5, y=y, fill = Diel_Pattern), inherit.aes = FALSE, colour = "transparent", width = 3) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
 diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
@@ -57,7 +36,7 @@ pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", clade
 diel.plot
 dev.off() 
 
-custom.colours <- c("#dd8ae7", "peachpuff2" ,"#FC8D62", "#66C2A5","grey")
+custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5","grey")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x+1.5, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 3) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
 diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
@@ -68,7 +47,7 @@ pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", clade
 diel.plot
 dev.off() 
 
-custom.colours <- c("#dd8ae7", "peachpuff2" ,"#FC8D62", "#66C2A5","grey")
+custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5","grey")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x+1.5, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 3) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
 diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
@@ -90,7 +69,7 @@ trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 findMRCANode2(phylo = trpy_n, trait.data = trait.data, taxonomic_level_col = 4, taxonomic_level_name = "Mysticeti")
 findMRCANode2(phylo = trpy_n, trait.data = trait.data, taxonomic_level_col = 4, taxonomic_level_name = "Odontoceti")
 
-custom.colours <- c("#dd8ae7","peachpuff2", "#FC8D62", "#66C2A5")
+custom.colours <- c("#dd8ae7","#EECBAD", "#FC8D62", "#66C2A5")
 diel.plot <- ggtree(trpy_n, layout = "circular", fill = "transparent") %<+% trait.data[,c("tips", "max_crep")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
 diel.plot <- diel.plot + 
@@ -118,7 +97,7 @@ for(i in cetacean_families$Family){
 nodes_df$hjust <- c(0,0, 1, 0, 1, 1, 1)
 nodes_df$colour <- c("red", "pink", "grey", "blue", "slateblue", "black", "lightblue")
   
-custom.colours <- c("#dd8ae7","peachpuff2", "#FC8D62", "#66C2A5")
+custom.colours <- c("#dd8ae7","#EECBAD", "#FC8D62", "#66C2A5")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
 diel.plot <- diel.plot + geom_cladelab(node = nodes_df$node_number, label = nodes_df$clade_name, align = TRUE, geom = "label", offset=1, align=TRUE, offset.text=1, barsize=2, fontsize=3, fill = "grey", barcolour = nodes_df$colour, textcolour = "black")
@@ -140,7 +119,7 @@ artio_full <- artio_full[!is.na(artio_full$Diel_Pattern), ]
 #we want to compare all mammals, vs all artiodactyla vs cetaceans/ruminants
 new_mammals$mammals <- "Mammals"
 
-custom.colours <- c("#dd8ae7","peachpuff2", "#FC8D62", "#66C2A5")
+custom.colours <- c("#dd8ae7","#EECBAD", "#FC8D62", "#66C2A5")
 mammals_plot <- ggplot(new_mammals, aes(x = mammals, fill = max_crep)) + geom_bar(position = "fill", width = 0.75) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.x = element_blank())
 artiodactyla_plot <- artio_full %>% filter(Order == "Artiodactyla") %>% ggplot(., aes(x = Order, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
 ruminantia_plot <- artio_full %>% filter(Suborder == "Ruminantia") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
@@ -156,7 +135,7 @@ artio_full$mammals <- "Mammals"
 mammals_df <- rbind(new_mammals, artio_full)
 
 mammals_df %>% filter(Order %in% c("Artiodactyla", "Amelia_artiodactyla")) %>% ggplot(., aes(x = Order, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
-custom.colours <- c("#dd8ae7","peachpuff2", "peachpuff2" ,"#FC8D62", "gold", "#66C2A5", "green")
+custom.colours <- c("#dd8ae7","#EECBAD", "#EECBAD" ,"#FC8D62", "gold", "#66C2A5", "green")
 mammals_df %>% filter(Order %in% c("Artiodactyla", "Amelia_artiodactyla")) %>% ggplot(., aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
 
 
@@ -172,7 +151,7 @@ mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 trait.data <- diel_full[diel_full$tips %in% mam.tree$tip.label,] #should be 3,102 species
 trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 
-custom.colours <- c("#dd8ae7", "peachpuff2" ,"#FC8D62", "#66C2A5","grey")
+custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5","grey")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x+3, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 6) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
 diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))

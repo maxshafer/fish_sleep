@@ -30,7 +30,7 @@ library(tidyr)
 library(viridis)
 #sankey diagram
 #install.packages("ggsankey")
-#library(ggsankey)
+library(ggsankey)
 
 ## Packages for phylogenetic analysis in R (overlapping uses)
 ## They aren't all used here, but you should have them all
@@ -39,6 +39,22 @@ library(phytools)
 library(geiger)
 library(corHMM)
 library(phangorn)
+
+#extra packages
+library(lubridate)
+#install.packages("deeptime")
+library(scales)
+#install.packages("ggforce")
+library(ggforce)
+library(forcats)
+#install.packages("ggdist")
+library(ggdist)
+library(knitr)
+#install.packages("kableExtra")
+library(kableExtra)
+#install.packages("webshot")
+library(webshot)
+
 
 # Set the working directory and source the functions (not used yet)
 setwd(here())
@@ -444,18 +460,11 @@ cetaceans_full <- cetaceans_full %>% select("Species_name", "Order", "Suborder",
 #save out a local copy in case google goes bankrupt
 write.csv(cetaceans_full, file = here("cetaceans_full.csv"), row.names = FALSE)
 
-#save out a version with hippos
-whippomorpha <- read.csv(here("cetaceans_full.csv"))
-whippomorpha <- rbind(whippomorpha, c("Hexaprotodon liberiensis", "Artiodactyla","Whippomorpha", "non-cetacean", "Hippopotamidae", "nocturnal/crepuscular", "crepuscular", "nocturnal",3, "Hexaprotodon_liberiensis"))
-whippomorpha <- rbind(whippomorpha, c("Hippopotamus amphibius", "Artiodactyla", "Whippomorpha", "non-cetacean","Hippopotamidae", "nocturnal/crepuscular", "crepuscular", "nocturnal",4, "Hippopotamus_amphibius"))
-rownames(whippomorpha) <- whippomorpha$tips
-write.csv(whippomorpha, file = here("whippomorpha.csv"), row.names = FALSE)
-
 # Section 4 Concordance table within confidence levels -------------------------------------------
 diel_full_long <- read.csv(here("cetacean_confidence_long_df.csv"))
 #this is cheating but read in the tabulated activity patterns
 diel_full <- read.csv(here("cetaceans_full.csv"))
-diel_full <- merge(diel_full[, c("Species_name", "Diel_Pattern", "max_crep", "max_dinoc")], diel_full_long[c("Species_name", "column", "value")])
+diel_full <- merge(diel_full[, c("Species_name", "Parvorder", "Diel_Pattern", "max_crep", "max_dinoc")], diel_full_long[c("Species_name", "column", "value")])
 
 diel_full$column <- substr(diel_full$column, 1,5)
 
@@ -484,6 +493,10 @@ diel_full_filtered <- diel_full[diel_full$Species_name %in% mulitple_sources$Spe
 #to include only species in the final tree, is this necessary? If so I should do it consistently 
 diel_full_filtered$tips <- str_replace(diel_full_filtered$Species_name, pattern = " ", replacement = "_")
 diel_full_filtered <- diel_full_filtered[diel_full_filtered$tips %in% mam.tree$tip.label,]
+
+#check to see if there is a difference in accuracy in mysticetes vs odontocetes
+#diel_full_filtered <- filter(diel_full_filtered, Parvorder == "Mysticeti")
+diel_full_filtered <- filter(diel_full_filtered, Parvorder == "Odontoceti")
 
 concordance <- as.data.frame(table(diel_full_filtered$max_crep, diel_full_filtered$value))
 colnames(concordance) <- c("actual", "predicted", "freq")
@@ -547,12 +560,16 @@ diel_full_long <- diel_full_long[!is.na(diel_full_long$value),]
 
 unique(diel_full_long$value)
 
-#with only species included in the final tree. From 83 to 75.
-#diel_full_long <- diel_full_long[diel_full_long$tips %in% mam.tree$tip.label,]
+#with only species included in the final tree. From 84 to 76.
+diel_full_long <- diel_full_long[diel_full_long$tips %in% mam.tree$tip.label,]
+
+#check to see if there is a difference in concordance for mysticeti vs odontoceti
+#diel_full_long <- filter(diel_full_long, Parvorder == "Mysticeti")
+#diel_full_long <- filter(diel_full_long, Parvorder == "Odontoceti")
 
 #get a list of all the species with more than one source (should be most of them)
 species_list <- table(diel_full_long$Species_name)
-#should be 76 species with all cetaceans, x with cetaceans 
+#should be 72 species with all cetaceans w multiple sources, 67 with only cetaceans in tree with mulitple sources
 species_list <- names(species_list[species_list > 1])
 
 
@@ -574,8 +591,6 @@ compTwo <- function(comp1 = "comp1", comp2 = "comp2") {
   }
   
 }
-
-#species <- "Balaenoptera acutorostrata"
 
 #apply this function across all species with multiple entries
 output <- lapply(species_list, function(species) {
