@@ -42,58 +42,18 @@ plotMKmodel(model_results$bridge_only)
 plotMKmodel(model_results$CONSYM_model)
 dev.off()
 
-# Section 3: Plot likelihoods from 1k model results ----------------------
-model_6 <- readRDS(here(paste0("finalized_1k_models/", "fixed_cetaceans_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models_1-5.rds")))
-model_10 <- readRDS(here(paste0("finalized_1k_models/", "fixed_cetaceans_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models_6-10.rds")))
-model_20 <- readRDS(here(paste0("finalized_1k_models/", "fixed_cetaceans_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models_10-20.rds")))
-model_results <- c(model_6, model_10, model_20)
 
-filename <- "fixed_cetaceans_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models_10-20.rds"
-
-#requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, bridge_only)
-#function returns a dataframe of the likelihoods for all 1k trees x number of Mk models
-df_full <- plot1kLikelihoods(readRDS(here(paste0("finalized_1k_models/", filename))), 5)
-
-df_full <- plot1kLikelihoods(model_results, 5)
-
-#check if data fits the ANOVA assumptions
-#anovaAssumptions(df_full, df_full$likelihoods)
-
-#determine the number of comparisons
-if(length(unique(df_full$model)) == 5){
-  my_comparisons <- list( c("ER", "SYM"), c("ER", "ARD"), c("ER", "bridge_only"), c("SYM", "ARD"), c("SYM", "bridge_only"), c("ARD", "bridge_only"), c("ER", "CONSYM"), c("SYM", "CONSYM"), c("ARD", "CONSYM"), c("bridge_only", "CONSYM"))
-} 
-
-if(length(unique(df_full$model)) == 4){
-  my_comparisons <- list( c("ER", "SYM"), c("ER", "ARD"), c("ER", "bridge_only"), c("SYM", "ARD"), c("SYM", "bridge_only"), c("ARD", "bridge_only"))
-} 
-
-if(length(unique(df_full$model)) == 3){
-  my_comparisons <- list( c("ER", "SYM"), c("ER", "ARD"), c("SYM", "ARD"))
-}
-
-means <- aggregate(likelihoods ~  model, df_full, mean)
-means$likelihoods <- round(means$likelihoods, digits = 2)
-
-#plot and save out
-png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/", filename, " _likelihoods", ".png"), width = 20, height = 20, units = "cm", res = 400)
-ggplot(df_full, aes(x = fct_inorder(model), y = likelihoods)) + 
-  geom_jitter(alpha = 0.6, color = "#F8766D") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
-  labs(x = "Model", y = "Log likelihood") + 
-  scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "Constrained ARD", "Constrained SYM")) + 
-  geom_text(data = means, aes(label = likelihoods, y = likelihoods, vjust = -0.5), parse = TRUE) + 
-  ggtitle(filename)  
-dev.off()
+# Section 3: Load in and format data --------------------------------------
+model_1_500 <- readRDS(here("august_12__whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
+model_501_1000 <- readRDS(here("august_14__whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
+model_results <- c(model_1_500, model_501_1000)
+saveRDS(model_results, here("august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
+filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
 
 # Section 4: Plot AIC scores from 1k model results ----------------------
-#filename <- "fixed_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_CONSYM_models.rds"
-
 #requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, bridge_only)
 #returns a df of the AIC scores for all 1k trees x number of Mk models
-df_full <- plot1kAIC(readRDS(here(paste0("finalized_1k_models/", filename))), 5)
-
-df_full <- plot1kAIC(model_results, 5)
+df_full <- plot1kAIC(readRDS(here(filename)), 5)
 
 means <- aggregate(AIC_score ~  model, df_full, mean)
 means$AIC_score <- round(means$AIC_score, digits = 2)
@@ -114,22 +74,22 @@ means$AIC_score <- as.integer(means$AIC_score)
 
 #plot and save out - raincloud plot, ruminant format
 filename1 <- "fixed_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_bridge_only_CONSYM_models.rds"
-df_full1 <- plot1kAIC(readRDS(here(paste0("finalized_1k_models/", filename1))), 5)
+df_full <- plot1kAIC(readRDS(here(filename)), 5)
 means <- aggregate(AIC_score ~  model, df_full1, mean)
 means$AIC_score <- round(means$AIC_score, digits = 2)
 
 png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/", "1_test_", filename1, "_AIC", ".png"), width = 20, height = 15, units = "cm", res = 600)
-ggplot(df_full1, aes(x = fct_inorder(model), y = AIC_score, fill = fct_inorder(model))) + 
+ggplot(df_full, aes(x = fct_inorder(model), y = AIC_score, fill = fct_inorder(model))) + 
   scale_fill_manual(values = c("blue", "royalblue","slateblue", "mediumpurple", "orchid")) +
   ggdist::stat_halfeye(alpha = 0.6, adjust = .5, width = .6, justification = -.3, .width = 0, point_colour = NA) +
   geom_boxplot(alpha = 0.2, width = .25, colour = "black",outlier.shape = NA) + 
   geom_point(aes(color = fct_inorder(model)), stroke = 1, size = 1, alpha = .2, position = position_jitter(seed = 1, width = .15)) +
   scale_color_manual(values = c("blue", "royalblue","slateblue", "mediumpurple", "orchid")) +
   labs(x = "Model", y = "AIC scores")  +
-  scale_x_discrete(labels = c("ER", "SYM", "ARD", "CON-ARD")) +
+  scale_x_discrete(labels = c("ER", "SYM", "ARD", "CON-ARD", "CON-SYM")) +
   theme(axis.text = element_text(size = 12), axis.title = element_text(size = 18), legend.position = "none") +
   geom_text(data = means, aes(label = AIC_score, y = AIC_score, hjust = -1), parse = TRUE) +
-  ggtitle(filename1) #+ 
+  ggtitle(filename) #+ 
 #coord_cartesian(xlim = c(1.4, 4.3), ylim = c(342, 451))
 dev.off()
 
@@ -162,6 +122,7 @@ ggplot(df_full2, aes(y = AIC_score, x = model))+ geom_boxplot() + stat_summary(f
 #requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, bridge_only)
 #returns a df of the AICc scores for all 1k trees x number of Mk models
 df_full <- plot1kAICc(readRDS(here(paste0("finalized_1k_models/", filename))), 5)
+df_full <- plot1kAICc(model_results, 5)
 
 means <- aggregate(AICc_score ~  model, df_full, mean)
 means$AICc_score <- round(means$AICc_score, digits = 2)
@@ -181,8 +142,7 @@ dev.off()
 #returns a dataframe of the rates from each of the Mk models, for each of the 1k trees
 #filename <- "ruminants_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"
 #reminder: enter 5 states for the 6 state cetacean/whippomorpha
-rates_df <- plot1kTransitionRates(readRDS(here(paste0("finalized_1k_models/", filename))), 4, 4)
-rates_df <- plot1kTransitionRates(model_results, 4, 4)
+rates_df <- plot1kTransitionRates(model_results, 4, 5)
 
 #plot as a violin plot
 #important note: the colours column doesn't line up with the correct solution in the df but if we plot the solutions in alphabetical order and then colouring them with the pallette in the colours column is in the correct order
@@ -318,3 +278,45 @@ likelihood_metrics[which(likelihood_metrics$AIC_scores == min(likelihood_metrics
 # pdf(paste("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "ancestral_recon_crepuscular_", file_name, "_", model_name,  ".pdf", sep = ""), width=17,height=16)
 # ancestral_plot_crep
 # dev.off()
+
+
+
+# Section 10: Compare old and new results ---------------------------------
+
+filename <- "whippomorpha_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"
+model_results <- readRDS(here(paste0("finalized_1k_models/", filename)))
+df_full <- plot1kAIC(readRDS(here(paste0("finalized_1k_models/", filename))), 4)
+
+means <- aggregate(AIC_score ~  model, df_full, mean)
+means$AIC_score <- round(means$AIC_score, digits = 2)
+
+#plot 
+ggplot(df_full, aes(x = fct_inorder(model), y = AIC_score)) + geom_jitter(alpha = 0.6, color = "#6daaf8") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
+  labs(x = "Model", y = "AIC score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "CON-ARD", "CON-SYM")) + 
+  geom_text(data = means, aes(label = AIC_score, y = AIC_score, vjust = -0.5), parse = TRUE) +
+  ggtitle(filename) 
+
+model_1_500 <- readRDS(here("august_12__whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
+model_501_1000 <- readRDS(here("august_14__whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
+model_results <- c(model_1_500, model_501_1000)
+
+saveRDS(model_results, here("august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
+
+filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+model_results <- readRDS(here(filename))
+df_full <- plot1kAIC(readRDS(here(filename)), 5)
+
+df_full1 <- plot1kAIC(model_1_500, 5)
+df_full2 <- plot1kAIC(model_501_1000, 5)
+df_full <- plot1kAIC(model_results, 5)
+
+df_full <- rbind(df_full1, df_full2)
+means <- aggregate(AIC_score ~  model, df_full, mean)
+means$AIC_score <- round(means$AIC_score, digits = 2)
+
+#plot 
+ggplot(df_full, aes(x = fct_inorder(model), y = AIC_score)) + geom_jitter(alpha = 0.6, color = "#6daaf8") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
+  labs(x = "Model", y = "AICc score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "CON-ARD", "CON-SYM")) + 
+  geom_text(data = means, aes(label = AIC_score, y = AIC_score, vjust = -0.5), parse = TRUE) +
+  ggtitle(filename) 
+

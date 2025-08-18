@@ -219,6 +219,10 @@ plot1kTransitionRates <- function(model_results = readRDS(here("finalized_1k_mod
   if(number_of_models == 4){
     models_in_file = c("ER","SYM","ARD","bridge_only")
   }
+  
+  if(number_of_models == 5){
+    models_in_file = c("ER","SYM","ARD","bridge_only", "CONSYM")
+  }
 
   if("ER" %in% models_in_file){
     rates <- unlist(lapply(model_results$ER_model, function(x) returnRates(model = x)))
@@ -301,6 +305,7 @@ plot1kTransitionRates <- function(model_results = readRDS(here("finalized_1k_mod
       ARD_rates_df$colours <- c("#ac00b6", "#bb46c2", "#ca6ccd", "#d78fd8", "#e3b0e3","#2a2956", "#383e6f", "#47558a", "#556ca4", "#6385bf",  "#a63d13", "#bd5c35", "#d37a57", "#e79979", "#fbb89d", "#b48204", "#c6952e", "#d7a84a", "#e9bb65","#facf80","#176d56", "#40826d","#629884","#82ae9d","#a2c4b6", "#5c8816", "#779d40", "#92b264", "#adc887", "#c9deab")
     }
   }
+  
 
   if("bridge_only" %in% models_in_file){
     rates <- unlist(lapply(model_results$bridge_only_model, function(x) returnRates(model = x)))
@@ -322,6 +327,18 @@ plot1kTransitionRates <- function(model_results = readRDS(here("finalized_1k_mod
     #   print("six_not_done")
     #   }
   }
+  
+  if("CONSYM" %in% models_in_file){
+    rates <- unlist(lapply(model_results$CONSYM_model, function(x) returnRates(model = x)))
+    CONSYM_rates_df <- as.data.frame(rates)
+    CONSYM_rates_df$model <- "CONSYM"
+    CONSYM_rates_df <- CONSYM_rates_df[!(is.na(CONSYM_rates_df$rates)),]
+    
+    if(states_in_model == 4){
+      CONSYM_rates_df$solution <- c("Crep -> Cath", "Di -> Cath", "Noc -> Cath", "Cath -> Crep", "Di -> Crep", "Noc -> Crep",  "Cath -> Di", "Crep -> Di", "Noc -> Di", "Cath -> Noc", "Crep -> Noc", "Di -> Noc")
+      CONSYM_rates_df$colours <- c("#ac00b6",  "#ca6ccd", "#e3b0e3", "#383e6f", "#47558a", "#6385bf",  "#a63d13", "#d37a57", "#fbb89d","#176d56","#629884","#a2c4b6")
+    }
+  }
 
   if(number_of_models == 3){
     rates_full <- rbind(ER_rates_df, SYM_rates_df, ARD_rates_df)
@@ -329,6 +346,10 @@ plot1kTransitionRates <- function(model_results = readRDS(here("finalized_1k_mod
 
   if(number_of_models == 4){
     rates_full <- rbind(ER_rates_df, SYM_rates_df, ARD_rates_df, bridge_only_rates_df)
+  }
+  
+  if(number_of_models == 5){
+    rates_full <- rbind(ER_rates_df, SYM_rates_df, ARD_rates_df, bridge_only_rates_df, CONSYM_rates_df)
   }
 
   return(rates_full)

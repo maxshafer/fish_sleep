@@ -27,7 +27,7 @@ if(!(args[1] %in% c("max_crep", "max_dinoc", "six_state", "four_state_max_crep",
   stop("first argument must be states in the model")
 }
 
-if(!(args[2] %in% c("cetaceans", "whippomorpha", "artiodactyla", "artiodactyla_minus_cetaceans", "ruminants", "mammals"))) {  
+if(!(args[2] %in% c("cetaceans", "whippomorpha", "whippomorpha_high_conf", "artiodactyla", "artiodactyla_minus_cetaceans", "ruminants", "ruminants_high_conf", "mammals"))) {  
   stop("second argument must be the phylogenetic tree")
 }
 
@@ -56,8 +56,16 @@ if(args[2] == "ruminants"){
   trait.data <- read.csv(here("ruminants_full.csv")) #from step 2
 }
 
+if(args[2] == "ruminants_high_conf"){
+  trait.data <- read.csv(here("ruminants_high_conf.csv")) #from step 2
+}
+
 if(args[2] == "whippomorpha"){
   trait.data <- read.csv(here("whippomorpha.csv")) #from step 1
+}
+
+if(args[2] == "whippomorpha_high_conf"){
+  trait.data <- read.csv(here("whippomorpha_high_conf.csv")) #from step 1
 }
 
 if(args[2] == "mammals"){
@@ -102,6 +110,20 @@ if("hidden_rate" %in% args){
 for(i in args[-(1:2)]){
   if(!(i %in% c("ER", "SYM", "ARD", "bridge_only", "hidden_rate", "CONSYM"))){
     stop("model not recognized")
+  }
+}
+
+whippo_df <- data.frame(max_crep = c("cathemeral", "crepuscular", "diurnal", "nocturnal"), n = c(27,23,7,21))
+if(args[1] == "four_state_max_crep" & args[2] == "whippomorpha"){
+  if(!all(count(trait.data, max_crep) == whippo_df)){
+    stop("whippomorpha dataset has changed")
+  }
+}
+
+whippo_high_conf_df <- data.frame(max_crep = c("cathemeral", "crepuscular", "diurnal", "nocturnal"), n = c(26,23,6,15))
+if(args[1] == "four_state_max_crep" & args[2] == "whippomorpha_high_conf"){
+  if(!all(count(trait.data, max_crep) == whippo_high_conf_df)){
+    stop("whippomorpha high confidence dataset has changed")
   }
 }
 
@@ -150,4 +172,4 @@ if("bridge_only" %in% args & "six_state" %in% args){
 result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x)))
 names(result_list) <- paste(args[-(1:2)], "_model", sep = "")
 
-saveRDS(result_list, paste(args[2], "finalized_max_clade_cred", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
+saveRDS(result_list, paste(args[2], "august_max_clade_cred", args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))

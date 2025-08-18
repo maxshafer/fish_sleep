@@ -7,10 +7,11 @@ source("scripts/Amelia_functions.R")
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 #uncomment whichever clade you want to plot
-clade_name <- "cetaceans_full"
+#clade_name <- "cetaceans_full"
 #clade_name <- "sleepy_artiodactyla_full"
 #clade_name <- "ruminants_full"
 #clade_name <- "whippomorpha"
+clade_name <- "whippomorpha_high_conf"
 # clade_name <- "sleepy_artiodactyla_minus_cetaceans"
 
 diel_full <- read.csv(here(paste0(clade_name, ".csv")))

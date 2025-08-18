@@ -27,9 +27,9 @@ diel_full_3 <- diel_full_3[, c(10:14)]
 diel_full_4 <- diel_full %>% filter(column == "Confidence_4th_source") %>% pivot_wider(names_from = Confidence_level, values_from = Diel_pattern_4th_source)
 diel_full_4 <- diel_full_4[, c(10:14)]
 diel_full_5 <- diel_full %>% filter(column == "Confidence_5th_source") %>% pivot_wider(names_from = Confidence_level, values_from = Diel_Pattern_5th_source)
-diel_full_5 <- diel_full_5[, c(10:13)]
+diel_full_5 <- diel_full_5[, c(10:15)]
 diel_full_6 <- diel_full %>% filter(column == "Confidence_6th_source") %>% pivot_wider(names_from = Confidence_level, values_from = Diel_Pattern_6th_source)
-diel_full_6 <- diel_full_6[, c(10:12)]
+diel_full_6 <- diel_full_6[, c(10:13)]
 
 diel_full <- cbind(diel_full_1, diel_full_2, diel_full_3, diel_full_4, diel_full_5, diel_full_6)
 #rename the columns to the confidence level, R will add .1 for every duplicate so they will end up with unique identifiers
@@ -41,10 +41,10 @@ diel_full <- diel_full %>% select(-c("ConfA", "ConfA.1", "ConfA.2", "ConfA.3", "
 
 diel_full <- diel_full %>% relocate("Confe", .before = "Conf1")
 diel_full <- diel_full %>% relocate("Confy", .after = "Confe")
-colnames(diel_full) <- c("Species_name", "Family", colnames(diel_full)[3:24])
+colnames(diel_full) <- c("Species_name", "Family", colnames(diel_full)[3:28])
 
 #collapse columns
-diel_full$Conf1
+#diel_full$Conf1
 
 diel_full[diel_full == ""] <- NA
 
@@ -69,7 +69,7 @@ write.csv(diel_full, here("confidence_artio_wide.csv"), row.names = FALSE)
 diel_full <- read.csv(here("confidence_artio_wide.csv"))
 
 #convert into long format
-diel_full_long <- diel_full %>% pivot_longer(cols = c(3:24), names_to = "column", values_to = "value")
+diel_full_long <- diel_full %>% pivot_longer(cols = c(3:28), names_to = "column", values_to = "value")
 
 diel_full_long <- diel_full_long[!is.na(diel_full_long$value),]
 unique(diel_full_long$value)
@@ -80,8 +80,6 @@ diel_full_long$value <- str_replace(diel_full_long$value, pattern = "diurnal/cat
 
 #check for any unconventional strings
 unique(diel_full_long$value)
-
-x <- "Addax nasomaculatus"
 
 #check what the highest confidence level is for each species and return that number
 confidence_list <- lapply(unique(diel_full_long$Species_name), function(x){
@@ -343,6 +341,11 @@ write.csv(artio_full, file = here("sleepy_artiodactyla_minus_cetaceans.csv"), ro
 ruminants <- artio_full %>% filter(Suborder == "Ruminantia")
 write.csv(ruminants, here("ruminants_full.csv"),row.names = FALSE)
 
+#save out a high confidence version of ruminants
+ruminants <- read.csv(here("ruminants_full.csv")) # should be 235 sps(includes NA species)
+ruminants_high_conf <- ruminants %>% filter(Confidence %in% c(3,4,5)) #should be x species
+write.csv(ruminants_high_conf, file = here("ruminants_high_conf.csv"), row.names = FALSE)
+
 #save out a version with cetaceans, hippos are already in artiodactyla minus cetaceans
 cetaceans_full <- read.csv(here("cetaceans_full.csv"))
 artiodactyla_full <- rbind(cetaceans_full, artio_full)
@@ -357,9 +360,10 @@ write.csv(whippomorpha, file = here("whippomorpha.csv"), row.names = FALSE)
 
 # Section 4: Plot new vs old diel pattern comparison ------------------------
 #diel_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
-diel_full <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv"))
-# diel_full <- read.csv(here("ruminants_full.csv"))
-  
+#diel_full <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv"))
+#diel_full <- read.csv(here("ruminants_full.csv"))
+diel_full <- read.csv(here("ruminants_high_conf.csv"))
+
 #compare to original data
 url <- 'https://docs.google.com/spreadsheets/d/1JGC7NZE_S36-IgUWpXBYyl2sgnBHb40DGnwPg2_F40M/edit?gid=562902012#gid=562902012'
 diel_full_old <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
@@ -392,6 +396,7 @@ diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.lab
 diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.2, name = "Tabulated activity pattern")
 diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
 diel.plot
+
 
 # Section 5: Concordance between confidence levels ---------------------------------------------
 diel_full_long <- read.csv(here("confidence_artio_long.csv"))

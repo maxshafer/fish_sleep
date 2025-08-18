@@ -29,8 +29,8 @@ library(tidyr)
 #colours
 library(viridis)
 #sankey diagram
-#install.packages("ggsankey")
-library(ggsankey)
+# install.packages("ggsankey")
+# library(ggsankey)
 
 ## Packages for phylogenetic analysis in R (overlapping uses)
 ## They aren't all used here, but you should have them all
@@ -54,6 +54,7 @@ library(knitr)
 library(kableExtra)
 #install.packages("webshot")
 library(webshot)
+library(forcats)
 
 
 # Set the working directory and source the functions (not used yet)
@@ -220,7 +221,7 @@ which.max.simple=function(x,na.rm=TRUE,tie_value="NA"){
 #example, diurnal appears twice, nocturnal appears once and cathemeral appears three times. So it returns cathemeral as the activity pattern
 
 #example species
-x <- filter(test_diel_long, Species_name == "Phocoena spinipinnis")
+x <- filter(test_diel_long, Species_name == "Lagenorhynchus cruciger")
 
 # my method: take mode of mutliple level 4 sources if they exist, if not mode of Conf3 and Conf4
 #if unclear add in Conf5 data, if unclear use single level 4 source (if it exists), if still unclear call cathemeral-variable
@@ -459,6 +460,17 @@ cetaceans_full <- cetaceans_full %>% select("Species_name", "Order", "Suborder",
 
 #save out a local copy in case google goes bankrupt
 write.csv(cetaceans_full, file = here("cetaceans_full.csv"), row.names = FALSE)
+
+#save out a version with hippos
+whippomorpha <- read.csv(here("cetaceans_full.csv"))
+whippomorpha <- rbind(whippomorpha, c("Choeropsis liberiensis", "Artiodactyla","Whippomorpha", "non-cetacean", "Hippopotamidae", "nocturnal/crepuscular", "crepuscular", "nocturnal",4, "Choeropsis_liberiensis"))
+whippomorpha <- rbind(whippomorpha, c("Hippopotamus amphibius", "Artiodactyla", "Whippomorpha", "non-cetacean","Hippopotamidae", "nocturnal/crepuscular", "crepuscular", "nocturnal",4, "Hippopotamus_amphibius"))
+write.csv(whippomorpha, file = here("whippomorpha.csv"), row.names = FALSE)
+
+#save out a version with only high confidence data (level 3-5)
+whippomorpha <- read.csv(here("whippomorpha.csv")) # should be 100 sps(includes NA species)
+whippomorpha_high_conf <- whippomorpha %>% filter(Confidence %in% c(3,4,5)) #should be 76 species
+write.csv(whippomorpha_high_conf, file = here("whippomorpha_high_conf.csv"), row.names = FALSE)
 
 # Section 4 Concordance table within confidence levels -------------------------------------------
 diel_full_long <- read.csv(here("cetacean_confidence_long_df.csv"))

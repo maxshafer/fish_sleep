@@ -30,7 +30,7 @@ if(!(args[1] %in% c("max_crep", "max_dinoc", "four_state_max_crep", "four_state_
   stop("first argument must be states in the model")
 }
 
-if(!(args[2] %in% c("cetaceans", "whippomorpha", "artiodactyla", "artiodactyla_minus_cetaceans", "ruminants"))) {  
+if(!(args[2] %in% c("cetaceans", "whippomorpha", "whippomorpha_high_conf", "artiodactyla", "artiodactyla_minus_cetaceans", "ruminants", "ruminants_high_conf"))) {  
   stop("second argument must be the phylogenetic tree")
 }
 
@@ -55,6 +55,10 @@ if(args[2] == "whippomorpha"){
   trait.data <- read.csv(here("whippomorpha.csv"))
 }
 
+if(args[2] == "whippomorpha_high_conf"){
+  trait.data <- read.csv(here("whippomorpha_high_conf.csv"))
+}
+
 
 if(args[2] == "artiodactyla"){
   trait.data <- read.csv(here("Sleepy_artiodactyla_full.csv"))
@@ -66,6 +70,10 @@ if(args[2] == "artiodactyla_minus_cetaceans"){
 
 if(args[2] == "ruminants"){
   trait.data <- read.csv(here("ruminants_full.csv"))
+}
+
+if(args[2] == "ruminants_high_conf"){
+  trait.data <- read.csv(here("ruminants_high_conf.csv"))
 }
 
 
@@ -89,17 +97,9 @@ mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
 
 #subset cetacean trees for now to see if it runs
 #mammal_trees <- mammal_trees[sample(1:length(mammal_trees), 2)]
-#take the first 2 trees specifically, easier to split and run in batches this way
-#mammal_trees <- mammal_trees[1:5]
-#mammal_trees <- mammal_trees[6:10]
-#mammal_trees <- mammal_trees[10:20]
-#mammal_trees <- mammal_trees[20:50]
-<<<<<<< HEAD
-mammal_trees <- mammal_trees[1:500]
-=======
-mammal_trees <- mammal_trees[1:100]
->>>>>>> 583d53836e964cb01e494f797c878bd9159731b5
-
+#take the first 500 trees specifically, easier to split and run in batches this way
+#mammal_trees <- mammal_trees[1:500]
+#mammal_trees <- mammal_trees[501:1000]
 phylo_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_names = trait.data$tips))
 
 #subset trait data to only include species that are in the tree
@@ -115,6 +115,33 @@ for(i in args[-(1:2)]){
   }
 }
 
+whippo_df <- data.frame(Diel_Pattern = c("cathemeral", "crepuscular", "diurnal", "nocturnal"), n = c(27,23,7,21))
+if(args[1] == "four_state_max_crep" & args[2] == "whippomorpha"){
+  if(!all(count(trait.data, Diel_Pattern) == whippo_df)){
+    stop("whippomorpha dataset has changed!")
+  }
+}
+
+whippo_high_conf_df <- data.frame(Diel_Pattern = c("cathemeral", "crepuscular", "diurnal", "nocturnal"), n = c(26,23,6,15))
+if(args[1] == "four_state_max_crep" & args[2] == "whippomorpha_high_conf"){
+  if(!all(count(trait.data, Diel_Pattern) == whippo_high_conf_df)){
+    stop("whippomorpha high confidence dataset has changed!")
+  }
+}
+
+ruminants_df <- data.frame(Diel_Pattern = c("cathemeral", "crepuscular", "diurnal", "nocturnal"), n = c(21,125,34,23))
+if(args[1] == "four_state_max_crep" & args[2] == "ruminants"){
+  if(!all(count(trait.data, Diel_Pattern) == ruminants_df)){
+    stop("ruminant dataset has changed!")
+  }
+}
+
+ruminants_high_conf_df <- data.frame(Diel_Pattern = c("cathemeral", "crepuscular", "diurnal", "nocturnal"), n = c(18,83,24,18))
+if(args[1] == "four_state_max_crep" & args[2] == "ruminants_high_conf"){
+  if(!all(count(trait.data, Diel_Pattern) == ruminants_high_conf_df)){
+    stop("ruminant high confidence dataset has changed!")
+  }
+}
 if("ER" %in% args){
   ER <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern", rate.cat = 1, custom.rate.mat = "none", model = "ER", node.states = "marginal"))
 }
@@ -155,84 +182,5 @@ if("CONSYM" %in% args & "four_state_max_crep" %in% args){
 result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x))) 
 names(result_list) <- paste(args[-(1:2)], "_model", sep = "")
 
-saveRDS(result_list, paste("fixed", args[2], args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
+saveRDS(result_list, paste("august_15_", args[2], args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
 
-
-#6 state constrained
-# trait.data <- read.csv(here("ruminants_full.csv"))
-# mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-# trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
-# trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)),]
-# trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-# 
-# test_ARD <- corHMM(trpy_n, trait.data, rate.cat = 1, rate.mat = NULL, model = "ARD")
-# least_con_ARD
-# mid_con_ARD
-# most_con_ARD
-# 
-# 
-# matrix <- matrix(c(0, 1, 2, 3, 4, 5,
-#                    6, 0, 7, 8, 9, 10,
-#                    11, 12, 0, 13, 14, 15,
-#                    16, 17, 18, 0, 19, 20, 
-#                    21, 22, 23, 24, 0, 25,
-#                    26, 27, 28, 29, 30, 0),
-#                  ncol = 6, nrow = 6)
-# 
-# #first make a matrix of the least constrained model for 6 state crepuscular bridge
-# #same as below but also allows for di/crep <-> noc and noc/crep <-> di
-# least_con_matrix <- matrix(c(0, 1, 0, 3, 0, 5,
-#                              6, 0, 7, 8, 9, 10,
-#                              0, 12, 0, 13, 0, 15,
-#                              16, 17, 18, 0, 19, 20, 
-#                              0, 22, 0, 24, 0, 25,
-#                              26, 27, 0, 29, 30, 0),
-#                            ncol = 6, nrow = 6)
-# 
-# #same as below but allows noc/crep <-> di/crep
-# mid_con_matrix <- matrix(c(0, 1, 0, 0, 0, 0,
-#                            6, 0, 0, 8, 0, 10,
-#                            0, 0, 0, 13, 0, 0,
-#                            0, 17, 18, 0, 0, 20, 
-#                            0, 0, 0, 0, 0, 25,
-#                            0, 27, 0, 29, 30, 0),
-#                          ncol = 6, nrow = 6)
-# 
-# #only allows gains/losses of crep, and di/crep <-> cath/crep <-> noc/crep transitions
-# most_con_matrix <- matrix(c(0, 1, 0, 0, 0, 0,
-#                             6, 0, 0, 8, 0, 10,
-#                             0, 0, 0, 13, 0, 0,
-#                             0, 0, 18, 0, 0, 0, 
-#                             0, 0, 0, 0, 0, 25,
-#                             0, 27, 0, 0, 30, 0),
-#                           ncol = 6, nrow = 6)
-# 
-# #the same but for a 5 state model
-# trait.data <- read.csv(here("whippomorpha.csv"))
-# mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-# trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
-# trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)),]
-# trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-# 
-# test_ARD <- corHMM(trpy_n, trait.data, rate.cat = 1, rate.mat = NULL, model = "ARD")
-# least_con_ARD 
-# mid_con_ARD
-# most_con_ARD
-# 
-# matrix <- matrix(c(0, 1, 2, 3, 4, 
-#                    5, 6, 0, 7, 8, 
-#                    9, 10, 0, 11, 12,
-#                    0, 13, 14, 15, 16,
-#                    17, 18, 0, 19, 20),
-#                  ncol = 5, nrow = 5)
-# 
-# least_con_matrix <- matrix(c(0, 0, 2, 3, 4, 
-#                    0, 6, 0, 0, 8, 
-#                    9, 10, 0, 11, 12,
-#                    0, 0, 0, 15, 16,
-#                    17, 18, 0, 19, 20),
-#                  ncol = 5, nrow = 5)
-# 
-# 
