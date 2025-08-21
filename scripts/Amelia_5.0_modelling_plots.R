@@ -4,13 +4,12 @@ source("scripts/Amelia_functions.R")
 source("scripts/Amelia_plotting_functions.R")
 
 #load in mammal tree and cetacean dataframe
-mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 # Section 1: max_clade_cred likelihood metrics ---------------------------
 
 #set file name
-filename <- "artiodactyla_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models"
+#filename <- "artiodactyla_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models"
 #filename <- "whippomorpha_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models"
 #filename <- "ruminants_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models"
 
@@ -53,12 +52,11 @@ model_results1$bridge_only_model <- c(model_results1$bridge_only_model, model_re
 model_results1$CONSYM_model <- c(model_results1$CONSYM_model, model_results2$CONSYM_model)
 
 saveRDS(model_results1, here("august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
-
-filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
-model_results <- readRDS(here("august_12__whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
-model_results <- readRDS(here("august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
-
 # Section 4: Plot AIC scores from 1k model results ----------------------
+
+#filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+filename <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+
 #requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, CONARD, 5: ER, SYM, ARD, bridge_only, CONSYM)
 #returns a df of the AIC scores for all 1k trees x number of Mk models
 df_full <- plot1kAIC(readRDS(here(filename)), 5)
@@ -67,9 +65,9 @@ means <- aggregate(AIC_score ~  model, df_full, mean)
 means$AIC_score <- round(means$AIC_score, digits = 2)
 
 #plot and save out - boxplot
-png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", filename, "_AIC", ".png"), width = 20, height = 20, units = "cm", res = 400)
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", filename, "_AIC", ".pdf"))
 ggplot(df_full, aes(x = fct_inorder(model), y = AIC_score)) + geom_jitter(alpha = 0.6, color = "royalblue1") + #other colour option 766df8 and 6daaf8
-  geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black") +
+  geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black") + theme_bw() +
   theme(axis.text.x = element_text(angle = 0, vjust = 0, hjust=0, size = 10), axis.title = element_text(size = 12)) +
   labs(x = "Model", y = "AIC score") +
   scale_x_discrete(labels = c("ER", "SYM", "ARD", "CON-ARD", "CON-SYM")) + 
@@ -78,17 +76,17 @@ ggplot(df_full, aes(x = fct_inorder(model), y = AIC_score)) + geom_jitter(alpha 
 dev.off()
 
 #plot and save out - raincloud plot, ruminant format
-png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "raincloud", filename, "_AIC", ".png"), width = 20, height = 15, units = "cm", res = 600)
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "raincloud", filename, "_AIC", ".pdf"), width = 9, height = 7)
 ggplot(df_full, aes(x = fct_inorder(model), y = AIC_score, fill = fct_inorder(model))) + 
   scale_fill_manual(values = c("blue", "royalblue","slateblue", "mediumpurple", "orchid")) +
   ggdist::stat_halfeye(alpha = 0.6, adjust = .5, width = .6, justification = -.3, .width = 0, point_colour = NA) +
   geom_boxplot(alpha = 0.2, width = .25, colour = "black",outlier.shape = NA) + 
   geom_point(aes(color = fct_inorder(model)), stroke = 1, size = 1, alpha = .2, position = position_jitter(seed = 1, width = .15)) +
   scale_color_manual(values = c("blue", "royalblue","slateblue", "mediumpurple", "orchid")) +
-  labs(x = "Model", y = "AIC scores")  +
+  labs(x = "Model", y = "AIC scores")  + theme_bw() +
   scale_x_discrete(labels = c("ER", "SYM", "ARD", "CON-ARD", "CON-SYM")) +
   theme(axis.text = element_text(size = 12), axis.title = element_text(size = 18), legend.position = "none") +
-  geom_text(data = means, aes(label = AIC_score, y = AIC_score, hjust = -1), parse = TRUE) +
+  geom_text(data = means, aes(label = AIC_score, y = AIC_score, hjust = -0.5), parse = TRUE) +
   ggtitle(filename) #+ 
 #coord_cartesian(xlim = c(1.4, 4.3), ylim = c(342, 451))
 dev.off()
@@ -99,56 +97,42 @@ ggplot(df_full, aes(y = AIC_score, x = model))+ geom_boxplot() + stat_summary(fu
 #what is the most likely model on the most likely tree?
 min(df_full$AIC_score)
 
-# Section 5: Plot AICc scores from 1k model results ----------------------
-#requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, bridge_only)
-#returns a df of the AICc scores for all 1k trees x number of Mk models
-df_full <- plot1kAICc(readRDS(here(filename)), 5)
-means <- aggregate(AICc_score ~  model, df_full, mean)
-means$AICc_score <- round(means$AICc_score, digits = 2)
-
-#plot and save out
-png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/", filename, "_AICc", ".png"), width = 20, height = 20, units = "cm", res = 400)
-ggplot(df_full, aes(x = fct_inorder(model), y = AICc_score)) + geom_jitter(alpha = 0.6, color = "#6daaf8") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
-  labs(x = "Model", y = "AICc score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "CON-ARD", "CON-SYM")) + 
-  geom_text(data = means, aes(label = AICc_score, y = AICc_score, vjust = -0.5), parse = TRUE) +
-  ggtitle(filename) 
-dev.off()
-
 # Section 6: Plot transition rates from 1k model results ----------------------
 #requires the filename, the number of states in the model and the number of Mk models 
 #returns a dataframe of the rates from each of the Mk models, for each of the 1k trees
-#filename <- "ruminants_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"
-#reminder: enter 5 states for the 6 state cetacean/whippomorpha
 rates_df <- plot1kTransitionRates(readRDS(here(filename)), 4, 5)
 
 #plot as a violin plot
-#important note: the colours column doesn't line up with the correct solution in the df but if we plot the solutions in alphabetical order and then colouring them with the pallette in the colours column is in the correct order
-png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figure/", filename, "_violin_rate_plot_all", ".png"), width = 40, height = 20, units = "cm", res = 600)
-ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_df$colours) + geom_violin(color = "black", scale = "width") + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_df$colours) + theme(legend.position = "none") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=2, colour = "red") + ggtitle(filename) + facet_wrap(~fct_inorder(model), ncol = 3, nrow = 2) 
+#important note: the colours column doesn't line up with the correct solution in the df but if we plot the solutions in alphabetical order and then colouring them with the palette in the colours column is in the correct order
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", filename, "_violin_rate_plot_all", ".pdf"), width = 14, height = 7)
+ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_df$colours) + geom_violin(color = "black", scale = "width") + theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_df$colours) + theme(legend.position = "none") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=2, colour = "red") + ggtitle(filename) + facet_wrap(~fct_inorder(model), ncol = 3, nrow = 2) 
+dev.off()
+
+model_selection <- "Bridge_only"
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", filename, "_violin_rate_plot_", model_selection, ".pdf"), width = 10, height = 7)
+rates_df %>% filter(model == model_selection) %>% ggplot(., aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_df$colours) + geom_violin(color = "black", scale = "width") +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_df$colours) + theme(legend.position = "none") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=2, colour = "red") + ggtitle(filename) 
 dev.off()
 
 #violin plots for each Mk model
-for(i in 1:length(unique(rates_df$model))){
-  png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figure/", filename, "_violin_rate_plot_", unique(rates_df$model)[i], ".png"), width = 25, height = 12, units = "cm", res = 600)
-  print(ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_df$colours) + geom_violin(color = "black", scale = "width") + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_df$colours) + theme(legend.position = "none") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=2, colour = "red") + ggtitle(filename) + facet_wrap_paginate(~fct_inorder(model), ncol = 1, nrow = 1, page = i)) 
-  dev.off()
-}
+# for(i in 1:length(unique(rates_df$model))){
+#   png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", filename, "_violin_rate_plot_", unique(rates_df$model)[i], ".png"), width = 25, height = 12, units = "cm", res = 600)
+#   print(ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_df$colours) + geom_violin(color = "black", scale = "width") + theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_df$colours) + theme(legend.position = "none") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=2, colour = "red") + ggtitle(filename) + facet_wrap_paginate(~fct_inorder(model), ncol = 1, nrow = 1, page = i)) 
+#   dev.off()
+# }
 
 #plot as full rates histograms
-png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/", filename, "_histogram_rate_plot_all",".png"), width = 50, height = 20, units = "cm", res = 600)
-ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_df$colours) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + labs(title = filename, y = "count" , x = "transition rate per unit of evolutionary time") + facet_wrap(~fct_inorder(model) + solution, nrow = length(unique(rates_df$model)), ncol = length(unique(rates_df$solution)))
-dev.off()
+# png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", filename, "_histogram_rate_plot_all",".png"), width = 50, height = 20, units = "cm", res = 600)
+# ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_df$colours) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + labs(title = filename, y = "count" , x = "transition rate per unit of evolutionary time") + facet_wrap(~fct_inorder(model) + solution, nrow = length(unique(rates_df$model)), ncol = length(unique(rates_df$solution)))
+# dev.off()
 
 #plot rates histograms separated by Mk model
 #cannot find a way to facet_wrap_paginate by multiple variables, instead I will cycle through all the models and plot them with a for loop
 
-for(i in 1:(length(unique(rates_df$model)))){
-  png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/", filename, "_rate_plot_", unique(rates_df$model)[i], ".png"), width = 50, height = 20, units = "cm", res = 600)
-  print(rates_df %>% filter(model == unique(rates_df$model)[i]) %>% ggplot(., aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_df$colours) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + labs(title = filename, y = "count" , x = "transition rate per unit of evolutionary time") + facet_wrap(~solution))
-  dev.off()
-}
-
-
+# for(i in 1:(length(unique(rates_df$model)))){
+#   png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/", filename, "_rate_plot_", unique(rates_df$model)[i], ".png"), width = 50, height = 20, units = "cm", res = 600)
+#   print(rates_df %>% filter(model == unique(rates_df$model)[i]) %>% ggplot(., aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_df$colours) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + labs(title = filename, y = "count" , x = "transition rate per unit of evolutionary time") + facet_wrap(~solution))
+#   dev.off()
+# }
 
 # Section 7: Ancestral reconstruction -----------------------------------
 
@@ -179,27 +163,22 @@ model_name <- "CONSYM"
 # model_results <- all_model_results$bridge_only
 # model_name <- "bridge_only"
 
+#option 2: use the most likely model + tree from 1k trees
+#filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+filename <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+
+model_results <- readRDS(here(filename))
+model_results <- model_results$bridge_only_model
+#model_results <- model_results[474] #whippomorpha
+model_results <- model_results[911] #ruminants
+model_results <- model_results$UNTITLED
+model_name <- "most_likely_bridge_only"
+
 #from the model results file, tip states describes the trait states at the tips, states describes the trait states at the nodes
 lik.anc <- as.data.frame(rbind(model_results$tip.states, model_results$states))
 #for max_crep cath/crep makes more sense, for max_dinoc cathemeral makes more sense
 colnames(lik.anc) <- c("cathemeral", "crepuscular", "diurnal", "nocturnal")
 phylo_tree <- model_results$phy
-#associate each of these species and their trait states with its node
-lik.anc$node <- c(1:length(phylo_tree$tip.label), (length(phylo_tree$tip.label) + 1):(phylo_tree$Nnode + length(phylo_tree$tip.label)))
-
-#plot the ancestral reconstruction, displaying each of the three trait states (cathemeral, diurnal, nocturnal)
-ancestral_plot_di <- ggtree(phylo_tree, layout = "circular", size = 2) %<+% lik.anc + aes(color = diurnal) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5) + scale_colour_gradientn(colours = c("white", "#BF491B"))  + geom_tiplab(color = "black", size = 2, offset = 0.5) + geom_tippoint(aes(color = diurnal), shape = 16, size = 1.5)
-ancestral_plot_di <- ancestral_plot_di + theme(panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
-ancestral_plot_noc <- ggtree(phylo_tree, layout = "circular", size =2) %<+% lik.anc + aes(color = nocturnal) + geom_tippoint(aes(color = nocturnal), shape = 16, size = 1.5)+ scale_colour_gradientn(colours = c("white", "#297D63")) + geom_tiplab(color = "black", size = 2, offset = 0.5) + geom_tippoint(aes(color = nocturnal), shape = 16, size = 1.5)
-ancestral_plot_noc <- ancestral_plot_noc + theme(panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
-ancestral_plot_cath <- ggtree(phylo_tree, layout = "circular", size = 2) %<+% lik.anc + aes(color = cathemeral) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5) + scale_colour_gradientn(colours = c("white", "#A747B3")) + geom_tiplab(color = "black", size = 2, offset = 0.5) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5)
-ancestral_plot_cath <- ancestral_plot_cath + theme(panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
-ancestral_plot_crep <- ggtree(phylo_tree, layout = "circular", size = 2) %<+% lik.anc + aes(color = crepuscular) + geom_tippoint(aes(color = crepuscular), shape = 16, size = 1.5) + scale_colour_gradientn(colours = c("white", "#856A54")) + geom_tiplab(color = "black", size = 2, offset = 0.5) + geom_tippoint(aes(color = cathemeral), shape = 16, size = 1.5)
-ancestral_plot_crep <- ancestral_plot_crep + theme(panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
-
-pdf(paste("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "ancestral_recon_", file_name, "_", model_name, ".pdf", sep = ""), width=18,height=17, bg = "transparent")
-grid.arrange(ancestral_plot_di,ancestral_plot_noc, ancestral_plot_cath, ancestral_plot_crep, ncol = 2, nrow = 2)
-dev.off()
 
 ancestral_plot <- ggtree(phylo_tree, layout = "circular", size = 2) + geom_tiplab(color = "black", size = 2, offset = 0.5) + geom_text(aes(label=node, colour = "red"), hjust=-.2, size = 3)
 ancestral_plot

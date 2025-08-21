@@ -335,8 +335,8 @@ plot1kTransitionRates <- function(model_results = readRDS(here("finalized_1k_mod
     CONSYM_rates_df <- CONSYM_rates_df[!(is.na(CONSYM_rates_df$rates)),]
     
     if(states_in_model == 4){
-      CONSYM_rates_df$solution <- c("Crep -> Cath", "Di -> Cath", "Noc -> Cath", "Cath -> Crep", "Di -> Crep", "Noc -> Crep",  "Cath -> Di", "Crep -> Di", "Noc -> Di", "Cath -> Noc", "Crep -> Noc", "Di -> Noc")
-      CONSYM_rates_df$colours <- c("#ac00b6",  "#ca6ccd", "#e3b0e3", "#383e6f", "#47558a", "#6385bf",  "#a63d13", "#d37a57", "#fbb89d","#176d56","#629884","#a2c4b6")
+      CONSYM_rates_df$solution <- c("Crep -> Cath", "Di -> Cath", "Noc -> Cath", "Cath -> Crep", "Di -> Crep", "Noc -> Crep",  "Cath -> Di", "Crep -> Di", "Cath -> Noc", "Crep -> Noc")
+      CONSYM_rates_df$colours <- c("#ac00b6",  "#ca6ccd", "#e3b0e3", "#383e6f", "#47558a", "#6385bf",  "#a63d13", "#d37a57", "#fbb89d","#176d56")
     }
   }
 

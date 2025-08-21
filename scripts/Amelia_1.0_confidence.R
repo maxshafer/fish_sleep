@@ -648,15 +648,22 @@ plot_count <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = coun
   geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1))
 plot_count
 
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance.pdf", width = 9, height = 8, bg = "transparent")
-plot_freq
+#want to make a plot that has both the frequency and the counts
+table2$freq_count <- paste0(round(table2$Freq, 2), "\n", "(n=", table2$count, ")")
+plot_countfreq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = freq_count)) +
+  geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1)) + 
+  theme_minimal() + ylab("Primary source") + xlab("Secondary source") +
+  scale_x_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
+  scale_y_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E"))
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance.pdf", width = 7, height = 7, bg = "transparent")
+plot_countfreq
 dev.off() 
 
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance_count.pdf", width = 9, height = 8, bg = "transparent")
-plot_count
-dev.off()
+# Section 5: Tables -------------------------------------------------------
 
-# Section 5: Cetacean confidence sankey ----------------------------------
+
+# Section 6: Cetacean confidence sankey ----------------------------------
 diel_full <- read.csv(here("cetacean_confidence_wide.csv"))
 
 #use below for all columns

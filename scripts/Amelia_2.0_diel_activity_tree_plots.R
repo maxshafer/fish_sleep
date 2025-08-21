@@ -8,10 +8,10 @@ mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 #uncomment whichever clade you want to plot
 #clade_name <- "cetaceans_full"
-#clade_name <- "sleepy_artiodactyla_full"
+clade_name <- "sleepy_artiodactyla_full"
 #clade_name <- "ruminants_full"
 #clade_name <- "whippomorpha"
-clade_name <- "whippomorpha_high_conf"
+#clade_name <- "whippomorpha_high_conf"
 # clade_name <- "sleepy_artiodactyla_minus_cetaceans"
 
 diel_full <- read.csv(here(paste0(clade_name, ".csv")))
@@ -29,7 +29,7 @@ trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "gold", "#66C2A5", "#A6D854","grey")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x+1.5, y=y, fill = Diel_Pattern), inherit.aes = FALSE, colour = "transparent", width = 3) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
+diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
 diel.plot <- diel.plot + geom_tiplab(size = 3, offset = 3.2) 
 diel.plot
 
@@ -40,7 +40,7 @@ dev.off()
 custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5","grey")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x+1.5, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 3) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
+diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
 diel.plot <- diel.plot + geom_tiplab(size = 3, offset = 3.2) 
 diel.plot
 
@@ -51,7 +51,7 @@ dev.off()
 custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5","grey")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x+1.5, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 3) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
+diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
 diel.plot
 
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", clade_name, "_max_crep_plot_unlabelled.pdf"), width = 9, height = 8, bg = "transparent")
@@ -60,7 +60,8 @@ dev.off()
 
 
 # Section 3: Clade labels -------------------------------------------------
-cetaceans_full <- read.csv(here("cetaceans_full.csv"))
+#cetaceans_full <- read.csv(here("cetaceans_full.csv"))
+cetaceans_full <- read.csv(here("whippomorpha.csv"))
 cetaceans_full <- cetaceans_full[!is.na(cetaceans_full$max_crep), ]
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 trait.data <- cetaceans_full[cetaceans_full$tips %in% mam.tree$tip.label,]
@@ -83,31 +84,74 @@ pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/max_crep_plot_n
 diel.plot
 dev.off()
 
-#label major families
-findMRCANode2(phylo = trpy_n, trait.data = trait.data, taxonomic_level_col = 4, taxonomic_level_name = "Mysticeti")
-cetacean_families <- trait.data %>% count(Family) %>% filter(n>1) #filter for clades with more than one species or it can't find the MRCA
-#lapply(list(cetacean_families$Family), findMRCANode2(phylo = trpy_n, trait.data = trait.data, taxonomic_level_col = 4, taxonomic_level_name = x))
 
-#I don't know why the lapply wasn't working so do a for loop
-for(i in cetacean_families$Family){
-  node_df <- findMRCANode2(phylo = trpy_n, trait.data = trait.data, taxonomic_level_col = 4, taxonomic_level_name = i)
+
+# Whippomorpha with family labels ----------------------------------------
+diel_full <- read.csv(here("whippomorpha.csv"))
+diel_full <- diel_full[!is.na(diel_full$max_crep), ]
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+trait.data <- diel_full[diel_full$tips %in% mam.tree$tip.label,]
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+#label major families
+families <- trait.data %>% count(Family) %>% filter(n>1) #filter for clades with more than one species or it can't find the MRCA
+
+#Use a for loop to find the nodes for all the families
+nodes_list <- list()
+for(i in families$Family){
+  node_df <- findMRCANode2(phylo = trpy_n, trait.data = trait.data, taxonomic_level_col = 5, taxonomic_level_name = i)
   nodes_list[[i]] <- node_df
   nodes_df <- do.call(rbind, nodes_list)
 }
 
-nodes_df$hjust <- c(0,0, 1, 0, 1, 1, 1)
-nodes_df$colour <- c("red", "pink", "grey", "blue", "slateblue", "black", "lightblue")
-  
+nodes_left <- nodes_df[c("Delphinidae", "Phocoenidae", "Monodontidae", "Ziphiidae"),]
+nodes_right <- nodes_df[c("Kogiidae", "Balaenopteridae", "Balaenidae", "Hippopotamidae"),]
+
 custom.colours <- c("#dd8ae7","#EECBAD", "#FC8D62", "#66C2A5")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot + geom_cladelab(node = nodes_df$node_number, label = nodes_df$clade_name, align = TRUE, geom = "label", offset=1, align=TRUE, offset.text=1, barsize=2, fontsize=3, fill = "grey", barcolour = nodes_df$colour, textcolour = "black")
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 3) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot + geom_cladelab(node = nodes_right$node_number, label = nodes_right$clade_name, offset=1.5, offset.text=2, barsize=2, fontsize=3, barcolour = "grey50", textcolour = "black")
+diel.plot <- diel.plot + geom_cladelab(node = nodes_left$node_number, label = nodes_left$clade_name, offset=1.5, offset.text=2, hjust = 1, barsize=2, fontsize=3, barcolour = "grey50", textcolour = "black")
+diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
 diel.plot
 
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/max_crep_plot_no_Na_unlabelled_famlabels.pdf", width = 10, height = 10, bg = "transparent")
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/whippo_with_families.pdf", width = 8, height = 7, bg = "transparent")
 diel.plot
 dev.off()
 
+
+# Section 6: Artiodactyla with suborder labels ----------------------------
+diel_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
+diel_full <- diel_full[!is.na(diel_full$max_crep), ]
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+trait.data <- diel_full[diel_full$tips %in% mam.tree$tip.label,]
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+#label major families
+suborders <- trait.data %>% count(Suborder) %>% filter(n>1) #filter for clades with more than one species or it can't find the MRCA
+
+#For loop to find the labels for each suborder
+nodes_list <- list()
+for(i in suborders$Suborder){
+  node_df <- findMRCANode2(phylo = trpy_n, trait.data = trait.data, taxonomic_level_col = 3, taxonomic_level_name = i)
+  nodes_list[[i]] <- node_df
+  nodes_df <- do.call(rbind, nodes_list)
+}
+
+nodes_left <- nodes_df[c("Ruminantia"),]
+nodes_right <- nodes_df[c("Whippomorpha", "Tylopoda", "Suina"),]
+
+custom.colours <- c("#dd8ae7","#EECBAD", "#FC8D62", "#66C2A5")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 3) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot + geom_cladelab(node = nodes_right$node_number, label = nodes_right$clade_name, offset=1.5, offset.text=2, barsize=2, fontsize=3, barcolour = "grey50", textcolour = "black")
+diel.plot <- diel.plot + geom_cladelab(node = nodes_left$node_number, label = nodes_left$clade_name, offset=1.5, offset.text=2, hjust = 1, barsize=2, fontsize=3, barcolour = "grey50", textcolour = "black")
+diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
+diel.plot
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_with_suborders.pdf", width = 7, height = 7, bg = "transparent")
+diel.plot
+dev.off()
 
 # Section 4 breakdown of % activity patterns ----------------------------
 new_mammals <- read.csv(here("sleepy_mammals.csv")) #data from Bennie et al, 2014
@@ -155,7 +199,7 @@ trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5","grey")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x+3, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 6) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
+diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
 diel.plot
 
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "clade_name", "sleepy_mammals", "_max_crep_plot_unlabelled.pdf"), width = 9, height = 8, bg = "transparent")
