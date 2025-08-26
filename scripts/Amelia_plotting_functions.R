@@ -237,8 +237,7 @@ plot1kTransitionRates <- function(model_results = readRDS(here("finalized_1k_mod
 
     if(states_in_model == 4){
       ER_rates_df$solution <- c("Crep -> Cath", "Di -> Cath", "Noc -> Cath", "Cath -> Crep", "Di -> Crep", "Noc -> Crep",  "Cath -> Di", "Crep -> Di", "Noc -> Di", "Cath -> Noc", "Crep -> Noc", "Di -> Noc")
-      ER_rates_df$colours <- c("#ac00b6",  "#ca6ccd", "#e3b0e3", "#383e6f", "#47558a", "#6385bf",  "#a63d13", "#d37a57", "#fbb89d","#176d56","#629884","#a2c4b6")
-      
+      ER_rates_df$colours <- c( "#A024AE", "#DD8AE7","#EEC4F3", "#9F7C60", "#BFA895","#D3C3B6",  "#FA4A05", "#FC8D62", "#FECCB9","#3C967E", "#66C2A5","#ABDECE")
     }
     
     if(states_in_model == 5){
@@ -265,7 +264,7 @@ plot1kTransitionRates <- function(model_results = readRDS(here("finalized_1k_mod
 
     if(states_in_model == 4){
       SYM_rates_df$solution <- c("Crep -> Cath", "Di -> Cath", "Noc -> Cath", "Cath -> Crep", "Di -> Crep", "Noc -> Crep",  "Cath -> Di", "Crep -> Di", "Noc -> Di", "Cath -> Noc", "Crep -> Noc", "Di -> Noc")
-      SYM_rates_df$colours <- c("#ac00b6",  "#ca6ccd", "#e3b0e3", "#383e6f", "#47558a", "#6385bf",  "#a63d13", "#d37a57", "#fbb89d","#176d56","#629884","#a2c4b6")
+      SYM_rates_df$colours <- c( "#A024AE", "#DD8AE7","#EEC4F3", "#9F7C60", "#BFA895","#D3C3B6",  "#FA4A05", "#FC8D62", "#FECCB9","#3C967E", "#66C2A5","#ABDECE")
     }
 
     if(states_in_model == 5){
@@ -292,7 +291,7 @@ plot1kTransitionRates <- function(model_results = readRDS(here("finalized_1k_mod
 
     if(states_in_model == 4){
       ARD_rates_df$solution <- c("Crep -> Cath", "Di -> Cath", "Noc -> Cath", "Cath -> Crep", "Di -> Crep", "Noc -> Crep",  "Cath -> Di", "Crep -> Di", "Noc -> Di", "Cath -> Noc", "Crep -> Noc", "Di -> Noc")
-      ARD_rates_df$colours <- c("#ac00b6",  "#ca6ccd", "#e3b0e3", "#383e6f", "#47558a", "#6385bf",  "#a63d13", "#d37a57", "#fbb89d","#176d56","#629884","#a2c4b6")
+      ARD_rates_df$colours <- c( "#A024AE", "#DD8AE7","#EEC4F3", "#9F7C60", "#BFA895","#D3C3B6",  "#FA4A05", "#FC8D62", "#FECCB9","#3C967E", "#66C2A5","#ABDECE")
     }
     
     if(states_in_model == 5){
@@ -320,7 +319,7 @@ plot1kTransitionRates <- function(model_results = readRDS(here("finalized_1k_mod
 
     if(states_in_model == 4){
       bridge_only_rates_df$solution <- c("Crep -> Cath", "Di -> Cath", "Noc -> Cath", "Cath -> Crep", "Di -> Crep", "Noc -> Crep",  "Cath -> Di", "Crep -> Di", "Cath -> Noc", "Crep -> Noc")
-      bridge_only_rates_df$colours <- c("#ac00b6",  "#ca6ccd", "#e3b0e3", "#383e6f", "#47558a", "#6385bf",  "#a63d13", "#d37a57","#176d56","#629884")
+      bridge_only_rates_df$colours <- c( "#A024AE", "#DD8AE7","#EEC4F3", "#9F7C60", "#BFA895","#D3C3B6",  "#FA4A05", "#FC8D62","#3C967E", "#66C2A5")
     }
 
     # if(number_of_states == 6){
@@ -336,7 +335,7 @@ plot1kTransitionRates <- function(model_results = readRDS(here("finalized_1k_mod
     
     if(states_in_model == 4){
       CONSYM_rates_df$solution <- c("Crep -> Cath", "Di -> Cath", "Noc -> Cath", "Cath -> Crep", "Di -> Crep", "Noc -> Crep",  "Cath -> Di", "Crep -> Di", "Cath -> Noc", "Crep -> Noc")
-      CONSYM_rates_df$colours <- c("#ac00b6",  "#ca6ccd", "#e3b0e3", "#383e6f", "#47558a", "#6385bf",  "#a63d13", "#d37a57", "#fbb89d","#176d56")
+      CONSYM_rates_df$colours <-  c( "#A024AE", "#DD8AE7","#EEC4F3", "#9F7C60", "#BFA895","#D3C3B6",  "#FA4A05", "#FC8D62","#3C967E", "#66C2A5")
     }
   }
 

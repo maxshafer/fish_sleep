@@ -661,6 +661,9 @@ plot_countfreq
 dev.off() 
 
 # Section 5: Tables -------------------------------------------------------
+data <- read.csv(here("cetacean_confidence_long_df.csv"))
+data$column <- substr(data$column, 5,5)
+
 
 
 # Section 6: Cetacean confidence sankey ----------------------------------

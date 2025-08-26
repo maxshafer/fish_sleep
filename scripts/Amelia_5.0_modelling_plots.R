@@ -1,3 +1,4 @@
+
 setwd(here())
 source("scripts/fish_sleep_functions.R")
 source("scripts/Amelia_functions.R")
@@ -55,7 +56,8 @@ saveRDS(model_results1, here("august_whippomorpha_four_state_max_crep_traits_ER_
 # Section 4: Plot AIC scores from 1k model results ----------------------
 
 #filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
-filename <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+#filename <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+filename <- "august_artiodactyla_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
 
 #requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, CONARD, 5: ER, SYM, ARD, bridge_only, CONSYM)
 #returns a df of the AIC scores for all 1k trees x number of Mk models
@@ -108,31 +110,25 @@ pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", filen
 ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_df$colours) + geom_violin(color = "black", scale = "width") + theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_df$colours) + theme(legend.position = "none") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=2, colour = "red") + ggtitle(filename) + facet_wrap(~fct_inorder(model), ncol = 3, nrow = 2) 
 dev.off()
 
-model_selection <- "Bridge_only"
+model_selection <- "ARD"
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", filename, "_violin_rate_plot_", model_selection, ".pdf"), width = 10, height = 7)
 rates_df %>% filter(model == model_selection) %>% ggplot(., aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_df$colours) + geom_violin(color = "black", scale = "width") +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_df$colours) + theme(legend.position = "none") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=2, colour = "red") + ggtitle(filename) 
 dev.off()
 
-#violin plots for each Mk model
-# for(i in 1:length(unique(rates_df$model))){
-#   png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", filename, "_violin_rate_plot_", unique(rates_df$model)[i], ".png"), width = 25, height = 12, units = "cm", res = 600)
-#   print(ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_df$colours) + geom_violin(color = "black", scale = "width") + theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_df$colours) + theme(legend.position = "none") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=2, colour = "red") + ggtitle(filename) + facet_wrap_paginate(~fct_inorder(model), ncol = 1, nrow = 1, page = i)) 
-#   dev.off()
-# }
+#extract just the starting state
+rates_df <- rates_df$start_state <- substr(rates_df$solution, 1, 4)
 
-#plot as full rates histograms
-# png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", filename, "_histogram_rate_plot_all",".png"), width = 50, height = 20, units = "cm", res = 600)
-# ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_df$colours) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + labs(title = filename, y = "count" , x = "transition rate per unit of evolutionary time") + facet_wrap(~fct_inorder(model) + solution, nrow = length(unique(rates_df$model)), ncol = length(unique(rates_df$solution)))
-# dev.off()
+rates_df %>% filter(model == model_selection) %>% ggplot(., aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + 
+  geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_df$colours) +
+  geom_violin(color = "black", scale = "width") +theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.25, size =10), axis.text.y = element_text(size =10))  +
+  scale_fill_manual(values = rates_df$colours) + theme(legend.position = "none") + labs(x = "Transition", y = "Log(rates)") + 
+  stat_summary(fun=median, geom="point", size=2, colour = "red") + facet_wrap(~start_state, scales = "free_x", nrow = 1, ncol = 4) +
+  scale_x_discrete(labels = c("Cathemeral -> Crepuscular", "Cathemeral -> Diurnal", "Cathemeral -> Nocturnal", "Crepuscular -> Cathemeral", "Crepuscular -> Diurnal", "Crepuscular -> Nocturnal", "Diurnal -> Cathemeral", "Diurnal -> Crepuscular", "Diurnal -> Nocturnal", "Nocturnal -> Cathemeral", "Nocturnal -> Crepuscular", "Nocturnal -> Diurnal")) +
+  ggtitle(filename) 
 
-#plot rates histograms separated by Mk model
-#cannot find a way to facet_wrap_paginate by multiple variables, instead I will cycle through all the models and plot them with a for loop
-
-# for(i in 1:(length(unique(rates_df$model)))){
-#   png(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/finalized_results_plots/", filename, "_rate_plot_", unique(rates_df$model)[i], ".png"), width = 50, height = 20, units = "cm", res = 600)
-#   print(rates_df %>% filter(model == unique(rates_df$model)[i]) %>% ggplot(., aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_df$colours) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + labs(title = filename, y = "count" , x = "transition rate per unit of evolutionary time") + facet_wrap(~solution))
-#   dev.off()
-# }
+#histogram of rates
+#ggplot(rates_df, aes(x= rates, fill = solution)) + geom_histogram() + scale_fill_manual(values = rates_df$colours) + scale_x_continuous(trans='log10', labels = trans_format("log10", math_format(10^.x))) + theme_bw() + theme(plot.title = element_blank(), legend.position = "none") + labs(title = filename, y = "count" , x = "transition rate per unit of evolutionary time") + facet_wrap(~fct_inorder(model) + solution, nrow = length(unique(rates_df$model)), ncol = length(unique(rates_df$solution)))
 
 # Section 7: Ancestral reconstruction -----------------------------------
 
