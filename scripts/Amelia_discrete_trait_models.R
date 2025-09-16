@@ -965,3 +965,78 @@ trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern_2, pattern = "diu
 trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
 
 trait.data <- merge(trait.data, Dive_depth, by = "tips")
+
+# Phylogenetic signal of orbit size ---------------------------------------
+
+#calculate pagels lambda and bloombergs k for cetacean orbit ratio using phylosig function
+#not sure if the vector has to be in the same species order as the tr structure
+#will order it this way just in case
+sps_order <- as.data.frame(trpy_n$tip.label)
+colnames(sps_order) <- "tips"
+sps_order$id <- 1:nrow(sps_order)
+test <- merge(trait.data, sps_order, by = "tips")
+test <- test[order(test$id), ]
+trait.vector <- test$Orbit_ratio
+names(trait.vector) <- test$tips
+
+orbit_K <- phylosig(trpy_n, trait.vector, method="K", test=TRUE, nsim=1000, se=NULL, start=NULL,
+                    control=list(), niter=10)
+#k = 1.8925 for cetaceans
+#p-value = 0.001 for cetaceans
+
+#k = 0.348275 for non-cetacean artiodactyls
+#p-value = 0.038
+orbit_lambda <- phylosig(trpy_n, trait.vector, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
+                         control=list(), niter=10)
+#lambda = 0.993593 for cetaceans
+#p-value = 1.18 e-11 for cetaceans
+
+#lambda = 0.964172
+# p-value = 0.00269743
+
+
+# Phylogenetic ANOVA for orbit size vs activity pattern ---------------------------------
+
+#we can make a phenogram of eye size evolution
+#requires the trait data to be a named vector in the same species order as appears in trpy_n$tip.labels
+sps_order <- as.data.frame(trpy_n$tip.label)
+colnames(sps_order) <- "tips"
+sps_order$id <- 1:nrow(sps_order)
+test <- merge(trait.data, sps_order, by = "tips")
+test <- test[order(test$id), ]
+#y trait is the continuous (response) variable 
+trait.y <- test$Orbit_ratio
+names(trait.y) <- test$tips
+#x trait is the categorical variable 
+trait.x <- test$Diel_Pattern
+names(trait.x) <- test$tips
+
+#use function phenogram from phytools
+phenogram(trpy_n, trait.y,ftype="reg", spread.labels = TRUE, spread.cost=c(1,0))
+
+#colour the tips by the activity pattern
+tiplabels(pie = to.matrix(trait.x, unique(trait.data$Diel_Pattern)), piecol = c("peachpuff2", "#dd8ae7", "#66C2A5", "#FC8D62"), cex = 0.25)
+
+#check for association between response variable y (orbit size) and categorical variable x (diel pattern)
+#regular one way ANOVA
+orbit_ANOVA <- aov(Orbit_ratio ~ Diel_Pattern, data = trait.data)
+summary(orbit_ANOVA) #not statistically significant for cetaceans, p value of F statistic = 0.297
+#statistically significant for non-cetacean artiodactyls, p value of F statistic = 0.00213
+
+#phylogenetically corrected ANOVA
+orbit_phylANOVA <- phylANOVA(trpy_n, trait.x, trait.y, nsim=1000, posthoc=TRUE, p.adj="holm")
+#not statistically significant for cetaceans, p value of F statistic = 0.441
+#statistically significant for non-cetacean artiodactyls, p value of F statistic = 0.002
+
+#plot by families (more than one species)
+trait.data %>% group_by(Family) %>% filter(n()>2) %>% ggplot(., aes(x = Diel_Pattern, y = Orbit_ratio))+ geom_boxplot() + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + facet_wrap(~ Family) + 
+  labs(x = "Temporal activity pattern", y = "Orbit ratio") + scale_fill_manual(values=as.vector(polychrome(26)))
+#plot by families with only one species
+trait.data %>% group_by(Family) %>% filter(n()<2) %>% ggplot(., aes(x = Diel_Pattern, y = Orbit_ratio))+ geom_boxplot() + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + facet_wrap(~ Family) + 
+  labs(x = "Temporal activity pattern", y = "Orbit ratio") + scale_fill_manual(values=as.vector(polychrome(26)))
+
+png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/orbit_ratio_vs_diel_boxplot.png", width=20,height=15,units="cm",res=1200)
+ggplot(trait.data, aes(x = Diel_Pattern_2, y = Orbit_ratio)) + geom_boxplot() + geom_point()
+dev.off()

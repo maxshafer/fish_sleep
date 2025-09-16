@@ -31,6 +31,7 @@ library(viridis)
 #sankey diagram
 # install.packages("ggsankey")
 # library(ggsankey)
+library(ggpubr)
 
 ## Packages for phylogenetic analysis in R (overlapping uses)
 ## They aren't all used here, but you should have them all

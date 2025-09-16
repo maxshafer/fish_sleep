@@ -231,13 +231,16 @@ diel.plot
 dev.off()
 
 # Section 2: Phylogenetic signal -----------------
-
-#can we do this for discrete traits as well? 
+#to calculate the phylogenetic signal of discrete traits
 # some people use delta statistic https://github.com/mrborges23/delta_statistic 
+setwd(here())
 source("scripts/Amelia_delta_code.R")
 
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-trait.data <- read.csv(here("cetaceans_full.csv"))
+#trait.data <- read.csv(here("cetaceans_full.csv"))
+
+trait.data <- read.csv(here("sleepy_artiodactyla_full.csv"))
+trait.data <- filter(trait.data, Suborder == "Ruminantia")
 
 #keep only necessary columns
 trait.data <- trait.data[, c("Species_name", "max_crep", "tips")]
@@ -251,13 +254,20 @@ mam.tree <- keep.tip(mam.tree, tip = trait.data$tips)
 #this doesn't replace anything in the cetacean tree so comment it out for now
 mam.tree$edge.length[mam.tree$edge.length == 0] <- quantile(mam.tree$edge.length, 0.1)*0.1
 
-#vector of trait data, with species in same order as in tree (tree$tip.label)
+#vector of trait data, with species in same order as in tree (mam.tree$tip.label)
 sps_order <- as.data.frame(mam.tree$tip.label)
 colnames(sps_order) <- "tips"
 sps_order$id <- 1:nrow(sps_order)
 trait.data <- merge(trait.data, sps_order, by = "tips")
 trait.data <- trait.data[order(trait.data$id), ]
 trait <- trait.data$max_crep
+
+#convert to a vector
+trait <- str_replace(trait, pattern = "cathemeral", replacement = "1")
+trait <- str_replace(trait, pattern = "crepuscular", replacement = "2")
+trait <- str_replace(trait, pattern = "diurnal", replacement = "3")
+trait <- str_replace(trait, pattern = "nocturnal", replacement = "4")
+trait <- as.numeric(trait)
 
 #now we calculate delta using their custom function
 delta_diel <- delta(trait, mam.tree, 0.1, 0.0589, 1000, 10, 100)
@@ -270,7 +280,7 @@ for (i in 1:100){
   random_delta[i] <- delta(rtrait,mam.tree,0.1,0.0589,10000,10,100)
 }
 p_value <- sum(random_delta>delta_diel)/length(random_delta)
-boxplot(random_delta)
+boxplot(random_delta) 
 abline(h=delta_diel,col="red")
 
 #if p-value less than 0.05 there is evidence of phylogenetic signal between the trait and character
