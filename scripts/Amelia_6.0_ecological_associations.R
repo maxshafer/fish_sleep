@@ -232,118 +232,43 @@ dev.off()
 
 
 # # Churchill et al: dive depth -------------------------------------------
-#dive depth, dive duration, body length, mass
-mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-church_pt2 <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Churchill_Baltz_2021_pt2.xlsx")
 
-trait.data <- read.csv(here("cetaceans_full.csv"))
-trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern)), c("tips", "Diel_Pattern", "Parvorder")]
-#filer out species with an unknown activity pattern
-trait.data <- trait.data[trait.data$Diel_Pattern %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), ]
-
-#use below to rerun with max-crep four state model
+#read in trait data, dive depth on 56 species
+trait.data <- read.csv(here("cetacean_dive_depth.csv"))
 trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "diurnal/crepuscular", replacement = "crepuscular")
 trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
 trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
 
-colnames(church_pt2) <- c("Species", "Dive_depth", "Log_dive_depth", "Dive_duration", "Log_dive_duration", "Mass", "Log_mass", "Total_body_length", "Log_body_length", "Assymetry_index", "Peak_frequency", "Log_frequency")
-
-#filter for species with dive data, leaves 28 species
-church_pt2 <- church_pt2[!(is.na(church_pt2$Dive_depth)), c("Species", "Dive_depth", "Dive_duration", "Mass", "Total_body_length", "Assymetry_index", "Peak_frequency")]
-
-#correct species spelling to match
-church_pt2[8, "Species" ] = "Berardius bairdii"
-church_pt2[17, "Species" ] = "Lagenorhynchus obliquidens"
-
-#read in the additional dive data I collected
-url <- 'https://docs.google.com/spreadsheets/d/1_0ZS_tbddOCckkcKn9H5HpVRDZty4jhkUU20Nc0YYQY/edit?usp=sharing'
-dive_full <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
-
-#average dive depth is very inconsistent (deep vs shallow dives, day vs night dives)
-#and measured inconsistently (average of means across individuals, average of medians etc) so exclude for now
-dive_full <- dive_full[!is.na(dive_full$Max_dive_depth_m),1:9]
-
-#filter to rows with an alternative value
-dive_full_alt <- dive_full[!is.na(dive_full$Alt_Max_1), ]
-dive_full <- dive_full[is.na(dive_full$Alt_Max_1), ]
-
-#pick the bigger value between max dive depth and alt dive depth
-dive_full_alt[is.na(dive_full_alt)] <- 0
-dive_full_alt$Max_dive_depth_m <- pmax(dive_full_alt$Max_dive_depth_m, dive_full_alt$Alt_Max_1)
-dive_full_alt$Max_dive_depth_m <- pmax(dive_full_alt$Max_dive_depth_m, dive_full_alt$Alt_Max_2)
-dive_full_alt$Max_dive_depth_m <- pmax(dive_full_alt$Max_dive_depth_m, dive_full_alt$Alt_Max_3)
-dive_full_alt$Max_dive_depth_m <- pmax(dive_full_alt$Max_dive_depth_m, dive_full_alt$Alt_Max_4)
-
-#combine with original values
-dive_full <- rbind(dive_full, dive_full_alt)
-dive_full <- dive_full[, c("Species_name", "Max_dive_depth_m")]
-colnames(dive_full) <- c("Species", "Max_dive_depth_m")
-church_pt2 <- merge(church_pt2, dive_full, all.x = TRUE, all.y = TRUE)
-church_pt2[is.na(church_pt2)] <- 0
-church_pt2$Dive_depth <- pmax(church_pt2$Max_dive_depth_m, church_pt2$Dive_depth)
-church_pt2$tips <- str_replace(church_pt2$Species, " ", "_")
-church_pt2[church_pt2 == 0] <- NA
-
-#filter the dive data by the species in our trait data 
-church_pt2 <- church_pt2 %>% filter(church_pt2$tips %in% trait.data$tips)
-
-trait.data <- merge(trait.data, church_pt2, by = "tips")
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-trait.data <- trait.data[!is.na(trait.data$Dive_depth),]
-trait.data$Dive_depth <- as.numeric(trait.data$Dive_depth)
-
 #use below to look just at odontocetes or mysticetes
 #trait.data <- trait.data %>% filter(Parvorder == "Odontoceti")
-#trait.data <- trait.data %>% filter(Parvorder == "Mysticeti")
+trait.data <- trait.data %>% filter(Parvorder == "Mysticeti")
 
-#all 28 species with dive data are in the tree
+#53 species with dive data are in the tree, B brydei, B ricei and S plumbea are not 
 trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
 trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 
+trait.vector <- trait.data$Dive_depth
+names(trait.vector) <- trait.data$tips
+
+dive_K <- phylosig(trpy_n, trait.vector, method="K", test=TRUE, nsim=1000, se=NULL, start=NULL, control=list(), niter=10)
+#K: 0.714, p-value = 0.001
+
+dive_lambda <- phylosig(trpy_n, trait.vector, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL, control=list(), niter=10)
+lambda <- round(dive_lambda$lambda, digits = 2)
+#lambda: 1.0027, p-value = 1.287 e-8
+
 #custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854")
-custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
+custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5", "grey")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern", "Dive_depth")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Dive_depth), inherit.aes = FALSE, colour = "transparent") + scale_fill_gradient(low = "#ceecff", high = "#07507e", name = "Dive depth")
-diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
+diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Dive_depth), inherit.aes = FALSE, colour = "transparent") + scale_fill_gradient(low = "#ceecff", high = "#07507e", name = paste("Maximum dive depth", "\n", "λ = ", lambda))
+diel.plot <- diel.plot #+ geom_tiplab(size = 2, offset = 3)
 diel.plot
 
 png("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_data_diel_plots/improved_dive_depth_vs_diel.png", width=20,height=15,units="cm",res=1200)
 diel.plot
 dev.off()
 
-#plot out dive depth vs activity pattern (NOT phylogenetically corrected)
-ggplot(trait.data, aes(x = Diel_Pattern, y = Dive_depth)) + geom_boxplot(outlier.shape = NA) + 
-  geom_jitter(aes(fill = Parvorder), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
-  labs(x = "Temporal activity pattern", y = "Dive depth") + scale_fill_manual(values=as.vector(polychrome(26))) 
-
-#identify the phylogenetic signal of dive depth
-trait.vector <- trait.data$Dive_depth
-names(trait.vector) <- trait.data$tips
-
-dive_K <- phylosig(trpy_n, trait.vector, method="K", test=TRUE, nsim=1000, se=NULL, start=NULL,
-                   control=list(), niter=10)
-#K: 1.3837
-#p-value = 0.001
-
-#with additional species
-#K: 0.766911 
-#p-value = 0.001
-
-dive_lambda <- phylosig(trpy_n, trait.vector, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
-                        control=list(), niter=10)
-#lambda: 0.910314 
-#p-value = 3.2622 e-6
-
-#with additional species
-#lambda: 0.910314 
-#p-value = 1.03408e-05  
-
-#optional: remove sperm whales because it skews everything
-# trait.data <- trait.data[-(20),]
-# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-
-#we can make a phenogram of dive depth evolution
 #requires the trait data to be a named vector in the same species order as appears in trpy_n$tip.labels
 sps_order <- as.data.frame(trpy_n$tip.label)
 colnames(sps_order) <- "tips"
@@ -357,13 +282,29 @@ names(trait.y) <- test$tips
 trait.x <- test$Diel_Pattern
 names(trait.x) <- test$tips
 
-#use function phenogram from phytools
-phenogram(trpy_n, trait.y, ftype="reg", spread.labels = TRUE, spread.cost=c(1,0))
+comparison_list <- list(c("cathemeral", "crepuscular"), c("crepuscular", "diurnal"), c("diurnal", "nocturnal"), c("cathemeral", "diurnal"), c("cathemeral", "nocturnal"),  c("crepuscular", "nocturnal"))
 
-#colour the tips by the activity pattern
-tiplabels(pie = to.matrix(trait.x, unique(trait.data$Diel_Pattern)), piecol = c("#dd8ae7", "#FC8D62", "#66C2A5","peachpuff2"), cex = 0.25)
+#plot out  dive depth vs activity pattern (NOT phylogenetically collected)
+boxplot_KW <- ggplot(trait.data, aes(x = Diel_Pattern, y = Dive_depth)) + geom_boxplot(outlier.shape = NA) +  
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Dive depth") + scale_fill_manual(values=as.vector(polychrome(26))) +
+  stat_compare_means(comparisons = comparison_list) + stat_compare_means(label.y = 4000)
 
-#check for association between response variable y (orbit size) and categorical variable x (diel pattern)
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/dive_depth_boxplots_KW.pdf")
+boxplot_KW
+dev.off()
+
+boxplot_anova <- ggplot(trait.data, aes(x = Diel_Pattern, y = Dive_depth)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Dive depth") + scale_fill_manual(values=as.vector(polychrome(26))) +
+  facet_wrap(~Parvorder) +
+  stat_compare_means(label = "p.signif", method = "t.test",ref.group = ".all.") + stat_compare_means(label.y = 3500, method = "anova")
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/dive_depth_boxplots_anova.pdf")
+boxplot_anova
+dev.off()
+
+#check for association between response variable y (dive depth) and categorical variable x (diel pattern)
 #regular one way ANOVA
 dive_ANOVA <- aov(Dive_depth ~ Diel_Pattern, data = trait.data)
 summary(dive_ANOVA) #statistically significant, p value of F statistic = 0.0003
@@ -378,17 +319,89 @@ dive_phylANOVA <- phylANOVA(trpy_n, trait.x, trait.y, nsim=1000, posthoc=TRUE, p
 #statistically significant, p value of F statistic = 0.01
 #not statistically significant, p value of F statistic = 0.227
 
+boxplot_phyloanova <- ggplot(trait.data, aes(x = Diel_Pattern, y = Dive_depth)) + geom_boxplot(outlier.shape = NA) +  
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Dive depth") + scale_fill_manual(values=as.vector(polychrome(26))) +
+  annotate("text", x = 1.5, y = 700, label = paste("phylANOVA, p =", dive_phylANOVA$Pf))
+
+
+# Section: Habitat vs activity pattern ------------------------------------
+
+#we should see a similar pattern when we look at habitats (shallow habitats like rivers vs deep habitats like pelagic species)
+trait.data <- read.csv(here("cetaceans_full.csv"))
+trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern)), c("tips", "Diel_Pattern", "Family", "Parvorder")]
+
+#filer out species with an unknown activity pattern
+trait.data <- trait.data[trait.data$Diel_Pattern %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"),]
+trait.data$Diel_Pattern <- str_replace_all(trait.data$Diel_Pattern, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+trait.data$Diel_Pattern <- str_replace_all(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+trait.data$Diel_Pattern <- str_replace_all(trait.data$Diel_Pattern, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
+
+echo <- read_xlsx("C:/Users/ameli/OneDrive/Documents/R_projects/cetacean_discrete_traits/Coombs_et_al_2021.xlsx")
+echo <- echo[!(is.na(echo$Echo)), c("Museum ID", "Age", "Echo", "Diet", "Dentition", "FM", "Habitat")]
+echo$tips <- str_replace(echo$`Museum ID`, " ", "_")
+echo <- echo %>% filter(echo$tips %in% trait.data$tips)
+
+trait.data <- merge(trait.data, echo, by = "tips")
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
+custom.colours.2 <- c( "grey90", "grey40", "grey66", "black")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern", "Habitat")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot +  new_scale_fill() +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Habitat), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.2, name = "Habitat")
+diel.plot <- diel.plot #+ geom_tiplab(size = 2, offset = 3)
+diel.plot
+
+test_df <- trait.data[trait.data$Diel_Pattern %in% c("cathemeral", "diurnal","nocturnal", "crepuscular"), c("Diel_Pattern", "Habitat")]
+test <- fisher.test(table(test_df))
+
+mosaicplot(table(test_df), color = TRUE, main = paste0("Fischer's exact test: ", "p-value = ", round(test$p.value, 3))) 
+
+dive_data <- read.csv(here("cetacean_dive_depth.csv"))
+trait.data <- merge(trait.data, dive_data, by = "tips")
+
+custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Habitat", "Dive_depth")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Habitat), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Habitat")
+diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Dive_depth), inherit.aes = FALSE, colour = "transparent") + scale_fill_gradient(low = "#ceecff", high = "#07507e", name = paste("Maximum dive depth", "\n", "λ = ", lambda))
+diel.plot <- diel.plot #+ geom_tiplab(size = 2, offset = 3)
+diel.plot
+
+
+boxplot_KW <- ggplot(trait.data, aes(x = Habitat, y = Dive_depth)) + geom_boxplot(outlier.shape = NA) +  
+  geom_jitter(aes(fill = Family.x), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Habitat", y = "Dive depth") + scale_fill_manual(values=as.vector(polychrome(26))) +
+  stat_compare_means(comparisons = comparison_list) + stat_compare_means(label.y = 4000)
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/habitat_dive_depth_boxplots_KW.pdf")
+boxplot_KW
+dev.off()
+
+boxplot_anova <- ggplot(trait.data, aes(x = Habitat, y = Dive_depth)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = Family.x), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Habitat", y = "Dive depth") + scale_fill_manual(values=as.vector(polychrome(26))) +
+  stat_compare_means(label = "p.signif", method = "t.test",ref.group = ".all.") + stat_compare_means(label.y = 3500, method = "anova")
+
+ggplot(trait.data, aes(x = Habitat, y = Dive_depth)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = Diel_Pattern.x), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Habitat", y = "Dive depth") + scale_fill_manual(values=as.vector(polychrome(26))) +
+  stat_compare_means(label = "p.signif", method = "t.test",ref.group = ".all.") + stat_compare_means(label.y = 3500, method = "anova")
+
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/habitat_dive_depth_boxplots_anova.pdf")
+boxplot_anova
+dev.off()
+
+
 # #Body mass from Churchill et all ----------------------------------------
 church_pt2 <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Churchill_Baltz_2021_pt2.xlsx")
-
-trait.data <- read.csv(here("cetaceans_full.csv"))
-trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern)), c("tips", "Diel_Pattern", "Parvorder")]
-#filer out species with an unknown activity pattern
-trait.data <- trait.data[trait.data$Diel_Pattern %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), ]
 
 #use below to rerun with max-crep four state model
 trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "diurnal/crepuscular", replacement = "crepuscular")
 trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
 
 colnames(church_pt2) <- c("Species", "Dive_depth", "Log_dive_depth", "Dive_duration", "Log_dive_duration", "Mass", "Log_mass", "Total_body_length", "Log_body_length", "Assymetry_index", "Peak_frequency", "Log_frequency")
 
@@ -475,11 +488,11 @@ tiplabels(pie = to.matrix(trait.x, unique(trait.data$Diel_Pattern)), piecol = c(
 
 #check for association between response variable y (orbit size) and categorical variable x (diel pattern)
 #regular one way ANOVA
-orbit_ANOVA <- aov(Mass ~ Diel_Pattern, data = test)
-summary(orbit_ANOVA) #not statistically significant, p value of F statistic = 0.142
+mass_ANOVA <- aov(Mass ~ Diel_Pattern, data = test)
+summary(mass_ANOVA) #not statistically significant, p value of F statistic = 0.142
 
 #phylogenetically corrected ANOVA
-dive_phylANOVA <- phylANOVA(trpy_n, trait.x, trait.y, nsim=1000, posthoc=TRUE, p.adj="holm")
+mass_phylANOVA <- phylANOVA(trpy_n, trait.x, trait.y, nsim=1000, posthoc=TRUE, p.adj="holm")
 #not statistically significant, p value of F statistic = 0.393
 
 
@@ -550,12 +563,16 @@ colnames(Dive_depth) <- c("tips", "Species", 'Dive_depth')
 #four entries only have genus (Delphinus_sp, Lagenorhynchus_cruciger, Lissodelphis_sp, Neophocaena_sp,)
 
 trait.data <- read.csv(here("cetaceans_full.csv"))
-trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern)), c("tips", "Diel_Pattern", "Parvorder")]
+trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern)), c("tips", "Diel_Pattern", "Parvorder", "Family")]
 #filer out species with an unknown activity pattern
 trait.data <- trait.data[trait.data$Diel_Pattern %in% c("diurnal", "cathemeral", "diurnal/crepuscular", "nocturnal", "nocturnal/crepuscular"), ]
 
 #use below to rerun with max-crep four state model
-trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "diurnal/crepuscular", replacement = "crepuscular")
-trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+# trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "diurnal/crepuscular", replacement = "crepuscular")
+# trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
+# trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
 
+#final dive data has 56 species
 trait.data <- merge(trait.data, Dive_depth, by = "tips")
+
+write.csv(trait.data, here("cetacean_dive_depth.csv"), row.names = FALSE)
