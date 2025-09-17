@@ -241,7 +241,7 @@ trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "cathe
 
 #use below to look just at odontocetes or mysticetes
 #trait.data <- trait.data %>% filter(Parvorder == "Odontoceti")
-trait.data <- trait.data %>% filter(Parvorder == "Mysticeti")
+#trait.data <- trait.data %>% filter(Parvorder == "Mysticeti")
 
 #53 species with dive data are in the tree, B brydei, B ricei and S plumbea are not 
 trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
@@ -336,6 +336,8 @@ trait.data <- trait.data[trait.data$Diel_Pattern %in% c("diurnal", "cathemeral",
 trait.data$Diel_Pattern <- str_replace_all(trait.data$Diel_Pattern, pattern = "diurnal/crepuscular", replacement = "crepuscular")
 trait.data$Diel_Pattern <- str_replace_all(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
 trait.data$Diel_Pattern <- str_replace_all(trait.data$Diel_Pattern, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
+
+trait.data <- trait.data %>% filter(Parvorder == "Odontoceti")
 
 echo <- read_xlsx("C:/Users/ameli/OneDrive/Documents/R_projects/cetacean_discrete_traits/Coombs_et_al_2021.xlsx")
 echo <- echo[!(is.na(echo$Echo)), c("Museum ID", "Age", "Echo", "Diet", "Dentition", "FM", "Habitat")]
