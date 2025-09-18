@@ -118,7 +118,6 @@ boxplot_phyloanova
 dev.off()
 
 # Baker et al artiodactyla axial length -----------------------------------
-mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 artio_eyes <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Baker_2019.xlsx")
 artio_eyes <- artio_eyes[2: nrow(artio_eyes),]
 colnames(artio_eyes) <- c("tips", "Order", "Corneal_diameter", "Axial_length", "Activity_pattern", "Source")
@@ -578,3 +577,7 @@ trait.data <- trait.data[trait.data$Diel_Pattern %in% c("diurnal", "cathemeral",
 trait.data <- merge(trait.data, Dive_depth, by = "tips")
 
 write.csv(trait.data, here("cetacean_dive_depth.csv"), row.names = FALSE)
+
+
+#Section y: One dataframe to rule them all
+dive_data <- read.csv(here("cetacean_dive_depth.csv"))
