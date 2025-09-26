@@ -8,14 +8,14 @@ trait.data <- read.csv(here("cetacean_ecomorphology_dataset.csv"))
 # continuous_trait <- "Orbit_ratio"
 # trait.data <- trait.data[!is.na(trait.data$Orbit_ratio),]
 
-# continuous_trait <- "Dive_depth"
-# trait.data <- trait.data[!is.na(trait.data$Dive_depth),]
+# continuous_trait <- "Dive_depth_m"
+# trait.data <- trait.data[!is.na(trait.data$Dive_depth_m),]
 
-# continuous_trait <- "Body_mass"
-# trait.data <- trait.data[!is.na(trait.data$Body_mass),]
+# continuous_trait <- "Body_mass_kg"
+# trait.data <- trait.data[!is.na(trait.data$Body_mass_kg),]
 
-# continuous_trait <- "Body_length"
-# trait.data <- trait.data[!is.na(trait.data$Body_length),]
+# continuous_trait <- "Body_length_m"
+# trait.data <- trait.data[!is.na(trait.data$Body_length_m),]
 
 #use below instead for artiodactyla orbit size
 # trait.data <- read.csv(here("artio_orbit_ratio.csv"))
