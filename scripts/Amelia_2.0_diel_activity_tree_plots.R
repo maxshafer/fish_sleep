@@ -7,8 +7,8 @@ source("scripts/Amelia_functions.R")
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 #uncomment whichever clade you want to plot
-#clade_name <- "cetaceans_full"
-clade_name <- "sleepy_artiodactyla_full"
+clade_name <- "cetaceans_full"
+#clade_name <- "sleepy_artiodactyla_full"
 #clade_name <- "ruminants_full"
 #clade_name <- "whippomorpha"
 #clade_name <- "whippomorpha_high_conf"
@@ -153,7 +153,7 @@ pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_with_subo
 diel.plot
 dev.off()
 
-# Section 4 breakdown of % activity patterns ----------------------------
+# Section 4 breakdown of % activity patterns proportion plots----------------------------
 new_mammals <- read.csv(here("sleepy_mammals.csv")) #data from Bennie et al, 2014
 
 #add in my primary source data 
@@ -287,3 +287,109 @@ abline(h=delta_diel,col="red")
 #if its more than 0.05 there is not evidence for phylogenetic signal
 #p value is 0.04, so there is a phylogenetic signal for diel activity patterns in cetaceans
 
+
+#alternative method for calculating phylogenetic signal of a discrete trait
+#install.packages("remotes")
+#remotes::install_github("stoufferlab/phyloint", force = TRUE)
+library(phyloint)
+install.packages('motmot.2.0')
+library(motmot.2.0)
+
+#requires a vector of the trait data in the same order as phy$tip.label and the tree
+
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+#trait.data <- read.csv(here("cetaceans_full.csv"))
+
+trait.data <- read.csv(here("sleepy_artiodactyla_full.csv"))
+trait.data <- filter(trait.data, Suborder == "Whippomorpha")
+#trait.data <- filter(trait.data, Suborder == "Ruminantia")
+
+trait.data <- read.csv(here("Bennie_mam_data.csv"))
+#trait.data <- filter(trait.data, Order == "Eulipotyphla")
+
+#keep only necessary columns
+trait.data <- trait.data[!duplicated(trait.data$tips), c("max_crep", "tips")]
+trait.data <- trait.data[trait.data$max_crep %in% c("cathemeral", "nocturnal", "diurnal", "crepuscular"), ]
+
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,] #78 cetaceans in final tree
+mam.tree <- keep.tip(mam.tree, tip = trait.data$tips)
+
+#all branches need to have a positive length
+#replace branches with length 0 with 1% of the 1% quantile (replace it with a number very close to zero)
+#this doesn't replace anything in the cetacean tree so comment it out for now
+#mam.tree$edge.length[mam.tree$edge.length == 0] <- quantile(mam.tree$edge.length, 0.1)*0.1
+
+#vector of trait data, with species in same order as in tree (mam.tree$tip.label)
+sps_order <- as.data.frame(mam.tree$tip.label)
+colnames(sps_order) <- "tips"
+sps_order$id <- 1:nrow(sps_order)
+trait.data <- merge(trait.data, sps_order, by = "tips")
+trait.data <- trait.data[order(trait.data$id), ]
+trait <- trait.data$max_crep
+names(trait) <- trait.data$tips
+
+#function phylo.signal isn't working so load in the base code
+phylo.signal <- function(trait, phy, rep = 999) {
+  if (length(attributes(factor(trait))$levels) == length(trait)) 
+    stop("Are you sure this variable is categorical?")
+  
+  phy <- keep.tip(phy, tip = names(trait))
+  
+  # calculate likelihood corresponding to maximum likelihood value of lambda
+  obs <- fitDiscrete(phy, trait, transform="lambda")
+  
+  # calculate likelihood of model with no phylogenetic signal
+  # this wasn't working so I tested the likelihood of the lambda against a tree with traits randomly distributed
+  trait.random <- sample(trait)
+  names(trait.random) <- names(trait)
+  null <- fitDiscrete(phy, trait.random, transform = "lambda")
+  
+  # calculate the likelihood ratio between the two models
+  LLR <- -2*(null$opt$lnL - obs$opt$lnL)
+  
+  # what is the p value of this likelihood ratio?
+  p <- pchisq(LLR, df=1, lower.tail=FALSE)
+  
+  return(data.frame(row.names=NULL, lambda=obs$opt$lambda, obs=obs$opt$lnL, null=null$opt$lnL, LLR=LLR, p=p))
+}
+
+signal <- phylo.signal(trait = trait, phy = mam.tree, rep = 999)
+
+#get the phylogenetic signal for all families with more than 100 species
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+trait.data <- read.csv(here("Bennie_mam_data.csv"))
+trait.data <- trait.data[!duplicated(trait.data$tips), c("max_crep", "tips", "Order")]
+trait.data <- trait.data[trait.data$max_crep %in% c("cathemeral", "nocturnal", "diurnal", "crepuscular"), ]
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,] #4228 mammals in final tree
+mam.tree <- keep.tip(mam.tree, tip = trait.data$tips)
+table(trait.data$Order)
+
+#filter for orders that have over 100 species
+trait.data <- trait.data %>% group_by(Order) %>% filter(n() > 100)
+
+makeTraitVector <- function(trait.data = trait.data, Order_name = "Primates"){
+  trait.data <- trait.data[trait.data$Order == Order_name,]
+  sps_order <- as.data.frame(mam.tree$tip.label)
+  colnames(sps_order) <- "tips"
+  sps_order$id <- 1:nrow(sps_order)
+  trait.data <- merge(trait.data, sps_order, by = "tips")
+  trait.data <- trait.data[order(trait.data$id), ]
+  trait <- trait.data$max_crep
+  names(trait) <- trait.data$tips
+  return(trait)
+}
+  
+lapply(unique(trait.data$Order), function(x) makeTraitVector(trait = trait.data, Order_name = x))
+
+trait.vector.list <- lapply(unique(trait.data$Order), function(x) makeTraitVector(trait = trait.data, Order_name = x))
+names(trait.vector.list) <- unique(trait.data$Order)
+
+phylo.sig.list <- lapply(trait.vector.list, function(x) phylo.signal(trait = x, phy = mam.tree, rep = 3))
+
+phylo.sig.df <- do.call(rbind.data.frame, phylo.sig.list)
+phylo.sig.df$Species <- row.names(phylo.sig.df)
+
+#i think chiroptera only has nocturnal species so the random reordering isn't any different than the actual data on the tree
+ggplot(phylo.sig.df, aes(x = Species, y = lambda, fill = log(p))) + geom_bar(stat = "identity") + geom_text(aes(label = round(lambda, digits = 3)), vjust = -0.2)
+
+ggplot(trait.data, aes(x = Order, fill = max_crep)) + geom_bar(position = "fill")

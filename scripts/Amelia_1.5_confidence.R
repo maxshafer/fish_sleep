@@ -557,7 +557,7 @@ for(i in seq_along(concordance_list)){
 
 
 
-# Section R: --------------------------------------------------------------
+# Section 7: --------------------------------------------------------------
 #Load in data from Bennie et al paper, https://doi.org/10.1073/pnas.1216063110 
 #data is from "an extensive literature search of books, peer-reviewed journal articles and their supplemental info"
 Bennie_mam_data <- read_excel(here("Bennie_diel_activity_data.xlsx")) 
@@ -620,3 +620,40 @@ get_rank <- function(tax_info, rank_name) {
 # fill in taxonomy in your data frame
 df <- SV_data %>% rowwise() %>% mutate(tax_info = list(taxonomy_taxon_info(ott_id, include_lineage = TRUE)),order = get_rank(tax_info, "order"),family = get_rank(tax_info, "family"),
     genus = get_rank(tax_info, "genus")) %>% ungroup() %>% select(-tax_info)
+
+# Section 8: Bennie data with taxonomic info
+# fill in taxonomy in your data frame
+
+Bennie_mam_data <- read_excel(here("Bennie_diel_activity_data.xlsx"))
+colnames(Bennie_mam_data) <- "SpeciesBehaviourReference"
+Bennie_mam_data$SpeciesBehaviourReference <- str_replace(string = Bennie_mam_data$SpeciesBehaviourReference, pattern = " ", replacement  = "_")
+Bennie_mam_data <- separate(Bennie_mam_data, col = SpeciesBehaviourReference, into = c("tips", "max_crep", "Reference"), sep = " ")
+Bennie_mam_data$max_crep <- tolower(Bennie_mam_data$max_crep)
+Bennie_mam_data$Species_name <- str_replace(string = Bennie_mam_data$tips, pattern = "_", replacement  = " ")
+trait.data <- Bennie_mam_data[1:4478, ]
+
+library(rotl)
+resolved_names <- tnrs_match_names(names = trait.data$Species_name, context_name = "Vertebrates", do_approximate_matching = FALSE)
+resolved_names <- resolved_names[!is.na(resolved_names$ott_id), ]
+
+get_rank <- function(tax_info, rank_name) {
+  lineage <- tax_lineage(tax_info)[[1]]
+  values <- lineage$name[lineage$rank == rank_name]
+  if (length(values) == 0) return(NA_character_) else return(values[1])
+}
+
+df <- resolved_names %>% rowwise() %>% mutate(
+  tax_info = list(taxonomy_taxon_info(ott_id, include_lineage = TRUE)),
+  order = get_rank(tax_info, "order"),
+  family = get_rank(tax_info, "family"),
+  genus = get_rank(tax_info, "genus")) %>% ungroup() %>% select(-tax_info)
+
+df <- df[, c("search_string", "order", "family", "genus")]
+colnames(df) <- c("Species_name", "Order", "Family", "Genus")
+
+trait.data <- merge(trait.data, df, by = "Species_name", all = TRUE)
+trait.data <- trait.data[!is.na(trait.data$max_crep), c("tips", "max_crep", "Order", "Family", "Genus")]
+
+trait.data[is.na(trait.data$Order), c("Order")] <- "Primates"
+
+write.csv(trait.data, here("Bennie_mam_data.csv"), row.names = FALSE)

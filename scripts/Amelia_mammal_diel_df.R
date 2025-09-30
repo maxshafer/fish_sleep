@@ -32,6 +32,10 @@ colnames(Bennie_mam_data) <- "SpeciesBehaviourReference"
 Bennie_mam_data$SpeciesBehaviourReference <- str_replace(string = Bennie_mam_data$SpeciesBehaviourReference, pattern = " ", replacement  = "_")
 Bennie_mam_data <- separate(Bennie_mam_data, col = SpeciesBehaviourReference, into = c("Species", "Activity_pattern", "Reference"), sep = " ")
 
+#check how many artio species are in bennie dataset -224 species
+artio <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv"))
+nrow(Bennie_mam_data[Bennie_mam_data$Species %in% artio$tips, ])
+
 #read in the Maor diel activity patterns
 #from https://doi.org/10.1038/s41559-017-0366-5 
 maor_mam_data <- read_excel(here("Maor_diel_activity_data.xlsx"))
