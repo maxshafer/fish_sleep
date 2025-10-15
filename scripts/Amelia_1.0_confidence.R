@@ -56,7 +56,7 @@ library(kableExtra)
 #install.packages("webshot")
 library(webshot)
 library(forcats)
-
+library(ggpmisc)
 
 # Set the working directory and source the functions (not used yet)
 setwd(here())

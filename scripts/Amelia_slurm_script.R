@@ -7,8 +7,6 @@ library(here)
 library(ggtree)
 #manipulating dataframes
 library(dplyr)
-#install.packages("tictoc")
-library(tictoc)
 
 ## Packages for phylogenetic analysis in R (overlapping uses)
 ## They aren't all used here, but you should have them all
@@ -26,7 +24,7 @@ source("scripts/Amelia_functions.R")
 
 # Section 1: Arguments ----------------------------------------------------
 args <- commandArgs(trailingOnly = TRUE)
-if(!(args[1] %in% c("max_crep", "max_dinoc", "four_state_max_crep", "four_state_max_crep", "six_state"))) {  
+if(!(args[1] %in% c("four_state_max_crep", "four_state_max_crep", "six_state"))) {  
   stop("first argument must be states in the model")
 }
 
@@ -69,44 +67,22 @@ if(args[2] == "ruminants"){
 }
 
 
-if(args[1] == "max_crep"){
-  trait.data <- trait.data[,c("Diel_Pattern_2", "tips")]
-  trait.data$Diel_Pattern_2 <- tolower(trait.data$Diel_Pattern_2)
-  trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)),]
-  trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "nocturnal/crepuscular", "crep_cath")
-  trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "diurnal/crepuscular", "crep_cath")
-  trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "cathemeral/crepuscular", "crep_cath")
-  trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "cathemeral", "crep_cath")
-  trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "crep_cath", "crepuscular_cathemeral")
-  
-}
-if(args[1] == "max_dinoc"){
-  trait.data <- trait.data[,c("Diel_Pattern_2", "tips")]
-  trait.data$Diel_Pattern_2 <- tolower(trait.data$Diel_Pattern_2)
-  trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)),]
-  trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "nocturnal/crepuscular", "nocturnal")
-  trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "diurnal/crepuscular", "diurnal")
-  trait.data$Diel_Pattern_2 <- str_replace_all(trait.data$Diel_Pattern_2, "cathemeral/crepuscular", "cathemeral")
-  trait.data <- trait.data[trait.data$Diel_Pattern_2 %in% c("diurnal", "nocturnal", "cathemeral"),]
-}
-
 if(args[1] == "four_state_max_crep"){
-  trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
-  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "nocturnal/crepuscular", "crepuscular")
-  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "diurnal/crepuscular", "crepuscular")
-  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "cathemeral/crepuscular", "crepuscular")
+  trait.data <- trait.data[!is.na(trait.data$Diel_Pattern), c("tips", "Diel_Pattern")]
+  trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, "nocturnal/crepuscular", "crepuscular")
+  trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, "diurnal/crepuscular", "crepuscular")
+  trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, "cathemeral/crepuscular", "crepuscular")
 }
 
 if(args[1] == "four_state_max_dinoc"){
-  trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
-  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "nocturnal/crepuscular", "nocturnal")
-  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "diurnal/crepuscular", "diurnal")
-  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "cathemeral/crepuscular", "crepuscular")
+  trait.data <- trait.data[!is.na(trait.data$Diel_Pattern), c("tips", "Diel_Pattern")]
+  trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, "nocturnal/crepuscular", "nocturnal")
+  trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, "diurnal/crepuscular", "diurnal")
+  trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, "cathemeral/crepuscular", "crepuscular")
 }
 
 if(args[1] == "six_state"){
-  trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
-  trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)),]
+  trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern)), c("tips", "Diel_Pattern")]
 }
 
 # Section 3: Subset the trees ---------------------------------------------
@@ -135,50 +111,41 @@ for(i in args[-(1:2)]){
 }
 
 if("ER" %in% args){
-  ER <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1, custom.rate.mat = "none", model = "ER", node.states = "marginal"))
+  ER <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern", rate.cat = 1, custom.rate.mat = "none", model = "ER", node.states = "marginal"))
 }
 
 if("SYM" %in% args){
-  SYM <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1, custom.rate.mat = "none",  model = "SYM", node.states = "marginal"))
+  SYM <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern", rate.cat = 1, custom.rate.mat = "none",  model = "SYM", node.states = "marginal"))
   
 }
 
 if("ARD" %in% args){
-  ARD <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1,  custom.rate.mat = "none", model = "ARD", node.states = "marginal"))
+  ARD <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern", rate.cat = 1,  custom.rate.mat = "none", model = "ARD", node.states = "marginal"))
   
 }
 
-# if("bridge_only" %in% args & !("six_state" %in% args)){
-#   bridge_only <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1, custom.rate.mat = matrix(c(0,2,3,4,0,0,7,0,0), ncol = 3, nrow = 3, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)"), c("(1, R1)", "(2, R1)", "(3,R1)"))), model = "ARD", node.states = "marginal"))
-#   
-# }
-
-# #don't allow transitions from noc -> di, noc -> di/crep, noc/crep -> di, noc/crep -> di/crep, di -> noc, di -> noc/crep, di/crep -> noc, di/crep -> noc/crep 
-# generic_ratemat <- getStateMat4Dat(ARD$data)$rate.mat
-# #need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> nocturnal/3 (6)
-# custom_rate_matrix <- dropStateMatPars(generic_ratemat, c(14, 15, 19, 20, 23, 24, 28, 29))
-
-#for three state
-if("bridge_only" %in% args & "max_dinoc" %in% args){
-  bridge_only <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1,  custom.rate.mat = matrix(c(0,2,3,4,0,0,7,0,0), ncol = 3, nrow = 3, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)"), c("(1, R1)", "(2, R1)", "(3,R1)"))), model = "ARD", node.states = "marginal"))
-}
-
-if("bridge_only" %in% args & "max_crep" %in% args){
-  bridge_only <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1,  custom.rate.mat = matrix(c(0,2,3,4,0,0,7,0,0), ncol = 3, nrow = 3, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)"), c("(1, R1)", "(2, R1)", "(3,R1)"))), model = "ARD", node.states = "marginal"))
-}
 
 #for four state
 if("bridge_only" %in% args & "four_state_max_dinoc" %in% args){
-  bridge_only <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1,  custom.rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"), c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"))), model = "ARD", node.states = "marginal"))
+  bridge_only <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern", rate.cat = 1,  custom.rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"), c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"))), model = "ARD", node.states = "marginal"))
 }
 
 if("bridge_only" %in% args & "four_state_max_crep" %in% args){
-  bridge_only <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1, custom.rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"), c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"))), model = "ARD", node.states = "marginal"))
+  bridge_only <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern", rate.cat = 1, custom.rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"), c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"))), model = "ARD", node.states = "marginal"))
 }
 
-#try running a constrained bridge only model based on a symmetrical model
+#a constrained bridge only model based on a symmetrical model
 if("CONSYM" %in% args & "four_state_max_crep" %in% args){
-  CONSYM <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern_2", rate.cat = 1, custom.rate.mat = matrix(c(0,1,2,3,1,0,5,6,2,5,0,0,3,6,0,0), ncol = 4, nrow = 4, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"), c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"))), model = "SYM", node.states = "marginal"))
+  CONSYM <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern", rate.cat = 1, custom.rate.mat = matrix(c(0,1,2,3,1,0,5,6,2,5,0,0,3,6,0,0), ncol = 4, nrow = 4, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"), c("(1, R1)", "(2, R1)", "(3,R1)", "(4, R1)"))), model = "SYM", node.states = "marginal"))
+}
+
+#for six state
+if("bridge_only" %in% args & !("six_state" %in% args)){
+  bridge_only <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern", rate.cat = 1, custom.rate.matrix = matrix(c(0,2,3,4,5,6,7,0,9,10,11,12,13,14,0,16,0,18,19,20,21,0,23,24,25,26,0,28,0,30,31,32,33,34,35,0),ncol = 6, nrow = 6), model = "ARD", node.states = "marginal"))
+}
+
+if("CONSYM" %in% args & !("six_state" %in% args)){
+  CONSYM <- lapply(phylo_trees, function(x) returnCorModels(tree = x, trait.data = trait.data, diel_col = "Diel_Pattern", rate.cat = 1, custom.rate.matrix = matrix(c(0, 2,3,4,5,6,2,0,8,9,10,11,3,8,0,13,0,15,4,9,13,0,17,18,5,10,0,17,0,20,6,11,15,18,20,0),ncol = 6, nrow = 6), model = "SYM", node.states = "marginal"))
 }
 
 # Section 5: Save the results out and extract likelihoods  --------
@@ -187,84 +154,4 @@ if("CONSYM" %in% args & "four_state_max_crep" %in% args){
 result_list <- lapply(args[-(1:2)], function(x) eval(as.name(x))) 
 names(result_list) <- paste(args[-(1:2)], "_model", sep = "")
 
-saveRDS(result_list, paste("fixed", args[2], args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))
-
-
-#6 state constrained
-# trait.data <- read.csv(here("ruminants_full.csv"))
-# mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-# trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
-# trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)),]
-# trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-# 
-# test_ARD <- corHMM(trpy_n, trait.data, rate.cat = 1, rate.mat = NULL, model = "ARD")
-# least_con_ARD
-# mid_con_ARD
-# most_con_ARD
-# 
-# 
-# matrix <- matrix(c(0, 1, 2, 3, 4, 5,
-#                    6, 0, 7, 8, 9, 10,
-#                    11, 12, 0, 13, 14, 15,
-#                    16, 17, 18, 0, 19, 20, 
-#                    21, 22, 23, 24, 0, 25,
-#                    26, 27, 28, 29, 30, 0),
-#                  ncol = 6, nrow = 6)
-# 
-# #first make a matrix of the least constrained model for 6 state crepuscular bridge
-# #same as below but also allows for di/crep <-> noc and noc/crep <-> di
-# least_con_matrix <- matrix(c(0, 1, 0, 3, 0, 5,
-#                              6, 0, 7, 8, 9, 10,
-#                              0, 12, 0, 13, 0, 15,
-#                              16, 17, 18, 0, 19, 20, 
-#                              0, 22, 0, 24, 0, 25,
-#                              26, 27, 0, 29, 30, 0),
-#                            ncol = 6, nrow = 6)
-# 
-# #same as below but allows noc/crep <-> di/crep
-# mid_con_matrix <- matrix(c(0, 1, 0, 0, 0, 0,
-#                            6, 0, 0, 8, 0, 10,
-#                            0, 0, 0, 13, 0, 0,
-#                            0, 17, 18, 0, 0, 20, 
-#                            0, 0, 0, 0, 0, 25,
-#                            0, 27, 0, 29, 30, 0),
-#                          ncol = 6, nrow = 6)
-# 
-# #only allows gains/losses of crep, and di/crep <-> cath/crep <-> noc/crep transitions
-# most_con_matrix <- matrix(c(0, 1, 0, 0, 0, 0,
-#                             6, 0, 0, 8, 0, 10,
-#                             0, 0, 0, 13, 0, 0,
-#                             0, 0, 18, 0, 0, 0, 
-#                             0, 0, 0, 0, 0, 25,
-#                             0, 27, 0, 0, 30, 0),
-#                           ncol = 6, nrow = 6)
-# 
-# #the same but for a 5 state model
-# trait.data <- read.csv(here("whippomorpha.csv"))
-# mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-# trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
-# trait.data <- trait.data[!(is.na(trait.data$Diel_Pattern_2)),]
-# trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-# 
-# test_ARD <- corHMM(trpy_n, trait.data, rate.cat = 1, rate.mat = NULL, model = "ARD")
-# least_con_ARD 
-# mid_con_ARD
-# most_con_ARD
-# 
-# matrix <- matrix(c(0, 1, 2, 3, 4, 
-#                    5, 6, 0, 7, 8, 
-#                    9, 10, 0, 11, 12,
-#                    0, 13, 14, 15, 16,
-#                    17, 18, 0, 19, 20),
-#                  ncol = 5, nrow = 5)
-# 
-# least_con_matrix <- matrix(c(0, 0, 2, 3, 4, 
-#                    0, 6, 0, 0, 8, 
-#                    9, 10, 0, 11, 12,
-#                    0, 0, 0, 15, 16,
-#                    17, 18, 0, 19, 20),
-#                  ncol = 5, nrow = 5)
-# 
-# 
+saveRDS(result_list, paste("october", args[2], args[1], "traits", paste0(args[-(1:2)], sep = "", collapse = "_"), "models", sep = "_"))

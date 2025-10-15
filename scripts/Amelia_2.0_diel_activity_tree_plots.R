@@ -120,7 +120,7 @@ diel.plot
 dev.off()
 
 
-# Section 6: Artiodactyla with suborder labels ----------------------------
+# Section 4: Artiodactyla with suborder labels ----------------------------
 diel_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
 diel_full <- diel_full[!is.na(diel_full$max_crep), ]
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
@@ -153,7 +153,7 @@ pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_with_subo
 diel.plot
 dev.off()
 
-# Section 4 breakdown of % activity patterns proportion plots----------------------------
+# Section 5: breakdown of % activity patterns proportion plots----------------------------
 new_mammals <- read.csv(here("sleepy_mammals.csv")) #data from Bennie et al, 2014
 
 #add in my primary source data 
@@ -184,7 +184,7 @@ custom.colours <- c("#dd8ae7","#EECBAD", "#EECBAD" ,"#FC8D62", "gold", "#66C2A5"
 mammals_df %>% filter(Order %in% c("Artiodactyla", "Amelia_artiodactyla")) %>% ggplot(., aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
 
 
-# Section: Mammal tree ----------------------------------------------------
+# Section 6: Mammal tree ----------------------------------------------------
 
 #make plot of bennie et al data with the artiodactyla data replaced with my own
 new_mammals <- read.csv(here("sleepy_mammals.csv")) #data from Bennie et al, 2014
@@ -230,7 +230,7 @@ pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/mammals_max_cre
 diel.plot
 dev.off()
 
-# Section 2: Phylogenetic signal -----------------
+# Section 7: Phylogenetic signal -----------------
 #to calculate the phylogenetic signal of discrete traits
 # some people use delta statistic https://github.com/mrborges23/delta_statistic 
 setwd(here())
@@ -379,8 +379,6 @@ makeTraitVector <- function(trait.data = trait.data, Order_name = "Primates"){
   return(trait)
 }
   
-lapply(unique(trait.data$Order), function(x) makeTraitVector(trait = trait.data, Order_name = x))
-
 trait.vector.list <- lapply(unique(trait.data$Order), function(x) makeTraitVector(trait = trait.data, Order_name = x))
 names(trait.vector.list) <- unique(trait.data$Order)
 

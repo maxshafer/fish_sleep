@@ -557,7 +557,7 @@ for(i in seq_along(concordance_list)){
 
 
 
-# Section 7: --------------------------------------------------------------
+# Section 7: Old mammal data --------------------------------------------------------------
 #Load in data from Bennie et al paper, https://doi.org/10.1073/pnas.1216063110 
 #data is from "an extensive literature search of books, peer-reviewed journal articles and their supplemental info"
 Bennie_mam_data <- read_excel(here("Bennie_diel_activity_data.xlsx")) 
@@ -607,23 +607,12 @@ for(i in 1:length(Bennie_mam_data$Species_name)){
 
 Bennie_mam_data <- Bennie_mam_data %>% select("Species_name", "Order", "Suborder", "Parvorder", "Family","Diel_Pattern", "max_crep", "max_dinoc", "Confidence", "tips")
 
-write.csv(Bennie_mam_data, "sleepy_mammals.csv",row.names = FALSE)
+write.csv(Bennie_mam_data, "sleepy_mammals_old.csv",row.names = FALSE)
 
 
-#new way to get taxonomic info from open tree of life (look at later)
-get_rank <- function(tax_info, rank_name) {
-  lineage <- tax_lineage(tax_info)[[1]]
-  values <- lineage$name[lineage$rank == rank_name]
-  if (length(values) == 0) return(NA_character_) else return(values[1])
-}
+# Section 8: Bennie data with taxonomic info ------------------------------
 
 # fill in taxonomy in your data frame
-df <- SV_data %>% rowwise() %>% mutate(tax_info = list(taxonomy_taxon_info(ott_id, include_lineage = TRUE)),order = get_rank(tax_info, "order"),family = get_rank(tax_info, "family"),
-    genus = get_rank(tax_info, "genus")) %>% ungroup() %>% select(-tax_info)
-
-# Section 8: Bennie data with taxonomic info
-# fill in taxonomy in your data frame
-
 Bennie_mam_data <- read_excel(here("Bennie_diel_activity_data.xlsx"))
 colnames(Bennie_mam_data) <- "SpeciesBehaviourReference"
 Bennie_mam_data$SpeciesBehaviourReference <- str_replace(string = Bennie_mam_data$SpeciesBehaviourReference, pattern = " ", replacement  = "_")

@@ -30,6 +30,23 @@ max_clade_metrics <- function(model_results = readRDS(here("test_whippomorpha_ma
   return(likelihoods)
 }
 
+max_clade_rates <- function(data = mam_model_result_list$Carnivora){
+  if(length(unique(data$data$max_crep)) == 4){
+    rates <- as.data.frame(data$solution)
+    colnames(rates) <- c("cathemeral", "crepuscular", "diurnal", "nocturnal")
+    row.names(rates) <- c("cathemeral", "crepuscular", "diurnal", "nocturnal")
+    rates$start_state <- row.names(rates)
+    rates <- pivot_longer(rates, cols = !start_state, names_to = "end_state", values_to = "rate")
+    rates <- as.data.frame(rates)
+    rates$solution <- paste(rates$start_state, "to", rates$end_state, sep = "-")
+    rates <- rates[!is.na(rates$rate), ]
+  }
+  if(length(unique(data$data$max_crep)) < 4){
+    stop("Less than 4 states in the model")
+  }
+  
+  return(rates)
+}
 
 # # Function 2: Likelihoods from 1k model results (ER, SYM, ARD, bridge_only) -------------------------
 
@@ -345,6 +362,7 @@ plot1kTransitionRates <- function(model_results = readRDS(here("finalized_1k_mod
 
   if(number_of_models == 4){
     rates_full <- rbind(ER_rates_df, SYM_rates_df, ARD_rates_df, bridge_only_rates_df)
+    
   }
   
   if(number_of_models == 5){
@@ -354,6 +372,82 @@ plot1kTransitionRates <- function(model_results = readRDS(here("finalized_1k_mod
   return(rates_full)
 }
 
+
+# #Function 6.5: Transition rates from 1k model only for 4 state  --------
+plot1kTransitionRates4state <- function(model_results = readRDS(here("finalized_1k_models/ruminants_six_state_ER_SYM_ARD_models.rds")), number_of_models = 5){
+  
+  if(number_of_models == 3){
+    models_in_file = c("ER","SYM","ARD")
+  }
+  
+  if(number_of_models == 4){
+    models_in_file = c("ER","SYM","ARD","bridge_only")
+  }
+  
+  if(number_of_models == 5){
+    models_in_file = c("ER","SYM","ARD","bridge_only", "CONSYM")
+  }
+  
+  if("ER" %in% models_in_file){
+    rates <- unlist(lapply(model_results$ER_model, function(x) returnRates(model = x)))
+    ER_rates_df <- as.data.frame(rates)
+    ER_rates_df$model <- "ER"
+    ER_rates_df <- ER_rates_df[!(is.na(ER_rates_df$rates)),]
+    ER_rates_df$solution <- c("Crepuscular -> Cathemeral", "Diurnal -> Cathemeral", "Nocturnal -> Cathemeral", "Cathemeral -> Crepuscular", "Diurnal -> Crepuscular", "Nocturnal -> Crepuscular",  "Cathemeral -> Diurnal", "Crepuscular -> Diurnal", "Nocturnal -> Diurnal", "Cathemeral -> Nocturnal", "Crepuscular -> Nocturnal", "Diurnal -> Nocturnal")
+    ER_rates_df$colours <- c( "#A024AE", "#DD8AE7","#EEC4F3", "#AD9680", "#D1B49B","#EECBAD",  "#FA4A05", "#FC8D62", "#FECCB9","#3C967E", "#66C2A5","#ABDECE")
+  }
+  
+  if("SYM" %in% models_in_file){
+    rates <- unlist(lapply(model_results$SYM_model, function(x) returnRates(model = x)))
+    SYM_rates_df <- as.data.frame(rates)
+    SYM_rates_df$model <- "SYM"
+    SYM_rates_df <- SYM_rates_df[!(is.na(SYM_rates_df$rates)),]
+    SYM_rates_df$solution <- c("Crepuscular -> Cathemeral", "Diurnal -> Cathemeral", "Nocturnal -> Cathemeral", "Cathemeral -> Crepuscular", "Diurnal -> Crepuscular", "Nocturnal -> Crepuscular",  "Cathemeral -> Diurnal", "Crepuscular -> Diurnal", "Nocturnal -> Diurnal", "Cathemeral -> Nocturnal", "Crepuscular -> Nocturnal", "Diurnal -> Nocturnal")
+    SYM_rates_df$colours <- c( "#A024AE", "#DD8AE7","#EEC4F3","#AD9680", "#D1B49B","#EECBAD", "#FA4A05", "#FC8D62", "#FECCB9","#3C967E", "#66C2A5","#ABDECE")
+  }
+  
+  if("ARD" %in% models_in_file){
+    rates <- unlist(lapply(model_results$ARD_model, function(x) returnRates(model = x)))
+    ARD_rates_df <- as.data.frame(rates)
+    ARD_rates_df$model <- "ARD"
+    ARD_rates_df <- ARD_rates_df[!(is.na(ARD_rates_df$rates)),]
+    ARD_rates_df$solution <- c("Crepuscular -> Cathemeral", "Diurnal -> Cathemeral", "Nocturnal -> Cathemeral", "Cathemeral -> Crepuscular", "Diurnal -> Crepuscular", "Nocturnal -> Crepuscular",  "Cathemeral -> Diurnal", "Crepuscular -> Diurnal", "Nocturnal -> Diurnal", "Cathemeral -> Nocturnal", "Crepuscular -> Nocturnal", "Diurnal -> Nocturnal")
+    ARD_rates_df$colours <- c( "#A024AE", "#DD8AE7","#EEC4F3", "#AD9680", "#D1B49B","#EECBAD",  "#FA4A05", "#FC8D62", "#FECCB9","#3C967E", "#66C2A5","#ABDECE")
+  }
+  
+  if("bridge_only" %in% models_in_file){
+    rates <- unlist(lapply(model_results$bridge_only_model, function(x) returnRates(model = x)))
+    bridge_only_rates_df <- as.data.frame(rates)
+    bridge_only_rates_df$model <- "Bridge_only"
+    bridge_only_rates_df <- bridge_only_rates_df[!(is.na(bridge_only_rates_df$rates)),]
+    bridge_only_rates_df$solution <- c("Crepuscular -> Cathemeral", "Diurnal -> Cathemeral", "Nocturnal -> Cathemeral", "Cathemeral -> Crepuscular", "Diurnal -> Crepuscular", "Nocturnal -> Crepuscular",  "Cathemeral -> Diurnal", "Crepuscular -> Diurnal", "Cathemeral -> Nocturnal", "Crepuscular -> Nocturnal")
+    bridge_only_rates_df$colours <- c( "#A024AE", "#DD8AE7","#EEC4F3", "#AD9680", "#D1B49B","#EECBAD",  "#FA4A05", "#FC8D62","#3C967E", "#66C2A5")
+  }
+  
+  if("CONSYM" %in% models_in_file){
+    rates <- unlist(lapply(model_results$CONSYM_model, function(x) returnRates(model = x)))
+    CONSYM_rates_df <- as.data.frame(rates)
+    CONSYM_rates_df$model <- "CONSYM"
+    CONSYM_rates_df <- CONSYM_rates_df[!(is.na(CONSYM_rates_df$rates)),]
+    CONSYM_rates_df$solution <- c("Crepuscular -> Cathemeral", "Diurnal -> Cathemeral", "Nocturnal -> Cathemeral", "Cathemeral -> Crepuscular", "Diurnal -> Crepuscular", "Nocturnal -> Crepuscular",  "Cathemeral -> Diurnal", "Crepuscular -> Diurnal", "Cathemeral -> Nocturnal", "Crepuscular -> Nocturnal")
+    CONSYM_rates_df$colours <-  c( "#A024AE", "#DD8AE7","#EEC4F3", "#9F7C60", "#BFA895","#D3C3B6",  "#FA4A05", "#FC8D62","#3C967E", "#66C2A5")
+    
+  if(number_of_models == 3){
+    rates_full <- rbind(ER_rates_df, SYM_rates_df, ARD_rates_df)
+  }
+  
+  if(number_of_models == 4){
+    rates_full <- rbind(ER_rates_df, SYM_rates_df, ARD_rates_df, bridge_only_rates_df)
+    
+  }
+  
+  if(number_of_models == 5){
+    rates_full <- rbind(ER_rates_df, SYM_rates_df, ARD_rates_df, bridge_only_rates_df, CONSYM_rates_df)
+  }
+  
+  return(rates_full)
+  }
+  }
 
 # # Function 7: Transition rate scatterplots from 1k model results -------------------------
 

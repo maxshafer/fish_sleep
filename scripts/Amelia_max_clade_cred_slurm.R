@@ -27,7 +27,7 @@ source("scripts/Amelia_functions.R")
 
 # Section 1: Arguments ----------------------------------------------------
 args <- commandArgs(trailingOnly = TRUE)
-if(!(args[1] %in% c("max_crep", "max_dinoc", "six_state", "four_state_max_crep", "four_state_max_dinoc"))) {  
+if(!(args[1] %in% c("six_state", "four_state_max_crep", "four_state_max_dinoc"))) {  
   stop("first argument must be states in the model")
 }
 
@@ -69,37 +69,28 @@ if(args[2] == "whippomorpha"){
 }
 
 if(args[2] == "mammals"){
-  trait.data <- read.csv(here("sleepy_mammals.csv"))
-  trait.data$Diel_Pattern_2 <- trait.data$Bennie_diel
+  trait.data <- read.csv(here("Bennie_mam_data.csv"))
+  trait.data$max_crep <- trait.data$Bennie_diel
 }
 
-#the cetacean and artiodactyla dataframes are formatted to have Diel_Pattern_3 be max_crep (di/crep and noc/crep classified as crep, cath and crep pooled together)
-#and Diel_Pattern_4 to be max_dinoc (di/crep classified as di, noc/crep as noc, cathemeral alone as third state)
-
-if(args[1] == "max_crep"){
-  trait.data <- trait.data[,c("tips", "Diel_Pattern_3")]
-  
-}
-if(args[1] == "max_dinoc"){
-  trait.data <- trait.data[,c("tips", "Diel_Pattern_4")]
-}
+#select the number of trait states
 
 if(args[1] == "six_state"){
-  trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
+  trait.data <- trait.data[!is.na(trait.data$Diel_Pattern), c("tips", "Diel_Pattern")]
 }
 
 if(args[1] == "four_state_max_crep"){
-  trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
-  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "nocturnal/crepuscular", "crepuscular")
-  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "diurnal/crepuscular", "crepuscular")
-  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "cathemeral/crepuscular", "crepuscular")
+  trait.data <- trait.data[!is.na(trait.data$Diel_Pattern), c("tips", "Diel_Pattern")]
+  trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, "nocturnal/crepuscular", "crepuscular")
+  trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, "diurnal/crepuscular", "crepuscular")
+  trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, "cathemeral/crepuscular", "crepuscular")
 }
 
 if(args[1] == "four_state_max_dinoc"){
-  trait.data <- trait.data[, c("tips", "Diel_Pattern_2")]
-  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "nocturnal/crepuscular", "nocturnal")
-  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "diurnal/crepuscular", "diurnal")
-  trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, "cathemeral/crepuscular", "crepuscular")
+  trait.data <- trait.data[!is.na(trait.data$Diel_Pattern), c("tips", "Diel_Pattern")]
+  trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, "nocturnal/crepuscular", "nocturnal")
+  trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, "diurnal/crepuscular", "diurnal")
+  trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, "cathemeral/crepuscular", "crepuscular")
 }
 # Section 3: Subset the trees ---------------------------------------------
 
@@ -108,9 +99,6 @@ phylo_trees <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
 #subset trait data to only include species that are in the tree
 trait.data <- trait.data[trait.data$tips %in% phylo_trees$tip.label,]
-
-#remove any unwanted trait states (removes any species with diel pattern as unknown)
-trait.data <- trait.data %>% filter(Diel_Pattern_2 != "unknown")
 
 # this selects a tree that is only the subset with data (mutual exclusive)
 phylo_trees <- keep.tip(phylo_trees, tip = trait.data$tips)
@@ -148,7 +136,6 @@ if("CONSYM" %in% args){
 
 if("ARD" %in% args){
   ARD <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, model = "ARD", node.states = "marginal")
-
 }
 
 
@@ -160,27 +147,6 @@ if("bridge_only" %in% args & "max_crep" %in% args){
   bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = matrix(c(0,2,3,4,0,0,7,0,0), ncol = 3, nrow = 3, dimnames = list(c("(1, R1)", "(2, R1)", "(3,R1)"), c("(1, R1)", "(2, R1)", "(3,R1)"))), node.states = "marginal")
 }
 
-# #don't allow transitions form noc -> di, di -> noc
-# generic_ratemat <- getStateMat4Dat(ARD$data)$rate.mat
-# generic_ratemat <- ARD$index.mat
-# hidden_rate_matrix <- dropStateMatPars(generic_ratemat, c(4, 6, 10, 12))
-
-# if("bridge_only" %in% args & "max_dinoc" %in% args & "hidden_rate" %in% args){
-#   bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = hidden_rate_matrix, node.states = "marginal")
-# }
-# 
-# if("bridge_only" %in% args & "max_crep" %in% args & "hidden_rate" %in% args){
-#   bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = hidden_rate_matrix, node.states = "marginal")
-# }
-
-# #don't allow transitions from noc -> di, noc -> di/crep, noc/crep -> di, noc/crep -> di/crep, di -> noc, di -> noc/crep, di/crep -> noc, di/crep -> noc/crep 
-# generic_ratemat <- getStateMat4Dat(ARD$data)$rate.mat
-# #need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> nocturnal/3 (6)
-# custom_rate_matrix <- dropStateMatPars(generic_ratemat, c(14, 15, 19, 20, 23, 24, 28, 29))
-#        
-# if("bridge_only" %in% args & "six_state" %in% args){
-#   bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = custom_rate_matrix, node.states = "marginal")
-# }
 
 #for four state
 if("bridge_only" %in% args & "four_state_max_dinoc" %in% args){
@@ -192,14 +158,6 @@ if("bridge_only" %in% args & "four_state_max_crep" %in% args){
 }
 
 
-# #don't allow transitions from noc -> di, noc -> di/crep, noc/crep -> di, noc/crep -> di/crep, di -> noc, di -> noc/crep, di/crep -> noc, di/crep -> noc/crep 
-# generic_ratemat <- getStateMat4Dat(ARD$index.mat)$rate.mat
-# #need to disallow transitions from nocturnal/3 -> diurnal/2 (4) and diurnal/2 -> nocturnal/3 (6)
-# custom_rate_matrix <- dropStateMatPars(test_ratemat, c(14, 15, 19, 20, 23, 24, 28, 29, 44, 45, 49, 50, 53, 54, 58, 59))
-
-# if("bridge_only" %in% args & "six_state" %in% args & "hidden_rate" %in% args){
-#   bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = hidden_rate, rate.mat = custom_rate_matrix, node.states = "marginal")
-# }
 
 # Section 5: Save the results out and extract likelihoods  --------
 #use paste() to create a filename with all of the arguments

@@ -132,7 +132,7 @@ diel_merge <- diel_merge[!duplicated(diel_merge$tips),] #remove duplicates, back
 
 #save out the final 
 colnames(diel_merge) <- c("tips", "Bennie_diel", "Bennie_source", "Maor_diel", "Maor_source", "match", "Order", "Family")
-write.csv(diel_merge, here("sleepy_mammals.csv"))
+write.csv(diel_merge, here("sleepy_mammals_old.csv"))
 
 # Section 3: Visualizing the mammal data -------------------------------
 trait.data <- read.csv(here("sleepy_mammals.csv"))
