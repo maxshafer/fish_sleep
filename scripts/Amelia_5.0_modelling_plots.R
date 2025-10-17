@@ -327,3 +327,33 @@ ggplot(df_full, aes(x = fct_inorder(model), y = AIC_score)) + geom_jitter(alpha 
   geom_text(data = means, aes(label = AIC_score, y = AIC_score, vjust = -0.5), parse = TRUE) +
   ggtitle(filename) 
 
+
+# Section 9: Comparison of rate magnitude
+filename1 <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+filename2 <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+
+#requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, CONARD, 5: ER, SYM, ARD, bridge_only, CONSYM)
+#returns a df of the AIC scores for all 1k trees x number of Mk models
+rates_df1 <- plot1kTransitionRates4state(readRDS(here(filename1)), 5)
+rates_df1 <- filter(rates_df1, model == "ARD")
+rates_df2 <- plot1kTransitionRates4state(readRDS(here(filename2)), 5)
+rates_df2 <- filter(rates_df2, model == "ARD")
+
+#need to compare rates from the same trees 
+#each model has 12 rates, filter for one model (ARD), label each tree 
+rates_df1$tree_n <- rep(1:1000, each = 12)
+#subtract the cetacean rate from the ruminant rate, is it faster (negative number) or slower (positive number)
+rates_df2$tree_n <- rep(1:1000, each = 12)
+
+rates_df <- cbind(rates_df1, rates_df2)
+colnames(rates_df) <- c("whippo_rates", "model", "solution", "colours", "tree_n", "rumi_rates", "model", "solution", "colours", "tree_n")
+rates_df <- rates_df[, c("whippo_rates", "solution", "tree_n", "rumi_rates")]
+rates_df$difference <- rates_df$whippo_rates - rates_df$rumi_rates
+#difference is negative or small -whippo is much faster, difference is positive or large ruminants have similar rates
+
+ggplot(rates_df, aes(x = solution, y = difference)) + geom_jitter()
+ggplot(rates_df, aes(x = whippo_rates, y = rumi_rates, colour = solution)) + geom_point() + facet_wrap(~solution)
+ggplot(rates_df, aes(x = whippo_rates, fill = solution)) + geom_histogram() + facet_wrap(~solution)
+
+rates_df %>% group_by(solution) %>% summarize(mean_rates = mean(whippo_rates)) %>% ggplot(., aes(x = mean_rates, y = solution)) + geom_point()
+rates_df %>% group_by(solution) %>% summarize(mean_rates = mean(rumi_rates)) %>% ggplot(., aes(x = mean_rates, y = solution)) + geom_point()

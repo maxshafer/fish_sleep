@@ -113,12 +113,20 @@ diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.lab
 diel.plot <- diel.plot + geom_cladelab(node = nodes_right$node_number, label = nodes_right$clade_name, offset=1.5, offset.text=2, barsize=2, fontsize=3, barcolour = "grey50", textcolour = "black")
 diel.plot <- diel.plot + geom_cladelab(node = nodes_left$node_number, label = nodes_left$clade_name, offset=1.5, offset.text=2, hjust = 1, barsize=2, fontsize=3, barcolour = "grey50", textcolour = "black")
 diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
+diel.plot <- diel.plot + geom_nodelab()
 diel.plot
 
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/whippo_with_families.pdf", width = 8, height = 7, bg = "transparent")
 diel.plot
 dev.off()
 
+#use geom tile as a clade label instead
+custom.colours <- c("#dd8ae7","#EECBAD", "#FC8D62", "#66C2A5")
+custom.colours.2 <- c("#dd8ae7","#EECBAD", "#FC8D62", "#66C2A5", "red", "grey","blue", "pink", "chocolate", "black", "skyblue", "magenta", "orchid", "orange")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep", "Family")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Family), inherit.aes = FALSE) #+ scale_fill_manual(values = custom.colours.2)
+diel.plot
 
 # Section 4: Artiodactyla with suborder labels ----------------------------
 diel_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
@@ -152,6 +160,7 @@ diel.plot
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_with_suborders.pdf", width = 7, height = 7, bg = "transparent")
 diel.plot
 dev.off()
+
 
 # Section 5: breakdown of % activity patterns proportion plots----------------------------
 new_mammals <- read.csv(here("sleepy_mammals.csv")) #data from Bennie et al, 2014

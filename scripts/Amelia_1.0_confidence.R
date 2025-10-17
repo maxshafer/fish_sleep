@@ -222,7 +222,7 @@ which.max.simple=function(x,na.rm=TRUE,tie_value="NA"){
 #example, diurnal appears twice, nocturnal appears once and cathemeral appears three times. So it returns cathemeral as the activity pattern
 
 #example species
-x <- filter(test_diel_long, Species_name == "Lagenorhynchus cruciger")
+#x <- filter(test_diel_long, Species_name == "Lagenorhynchus cruciger")
 
 # my method: take mode of mutliple level 4 sources if they exist, if not mode of Conf3 and Conf4
 #if unclear add in Conf5 data, if unclear use single level 4 source (if it exists), if still unclear call cathemeral-variable
@@ -664,8 +664,33 @@ dev.off()
 # Section 5: Tables -------------------------------------------------------
 data <- read.csv(here("cetacean_confidence_long_df.csv"))
 data$column <- substr(data$column, 5,5)
+data$value <- str_replace(data$value, "unclear/", "")
+data$value <- str_replace(data$value, "cathemeral/", "")
+#max crep, max cath
+data$value <- str_replace(data$value, "diurnal/", "")
+data$value <- str_replace(data$value, "nocturnal/", "")
+ggplot(data, aes(x = column, fill = value)) + geom_histogram(stat = "count")
 
+data$column <- as.numeric(data$column)
+test <- data %>% group_by(Species_name) %>% summarize(highest_conf = max(column))
 
+ggplot(test, aes(x = highest_conf)) + geom_histogram(stat = "count")
+
+#when only looking at species in final tree
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+test$tips <- str_replace(test$Species_name, " ", "_")
+test <- test[test$tips %in% mam.tree$tip.label, ]
+ggplot(test, aes(x = highest_conf, fill = tips)) + geom_histogram(stat = "count")
+
+#in the final tree only 2 species have a call made off of level 2 data, 6 have only level 1 data
+
+cetaceans_full <- read.csv(here("cetaceans_full.csv"))
+cetaceans_full <- cetaceans_full[!is.na(cetaceans_full$Diel_Pattern),]
+ggplot(cetaceans_full, aes(x = Confidence, fill = tips)) + geom_histogram(stat = "count")
+
+#with only species in final tree
+cetaceans_full <- cetaceans_full[cetaceans_full$tips %in% mam.tree$tip.label,]
+ggplot(cetaceans_full, aes(x = Confidence, fill = tips)) + geom_histogram(stat = "count")
 
 # Section 6: Cetacean confidence sankey ----------------------------------
 diel_full <- read.csv(here("cetacean_confidence_wide.csv"))
@@ -723,3 +748,28 @@ df$next_node <- str_replace_all(df$next_node, pattern = "nocturnal/cathemeral", 
 ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node))) + geom_sankey() + theme_sankey(base_size = 16)
 
 
+# Section X: Make a flowchart ---------------------------------------------
+
+install.packages("vtree")
+library(vtree)
+tree_data = data.frame(Context = c("urban", "rural", "urban", "urban", "rural", "rural"),
+                       Lighting = c("daylight", "dark", "dark", "daylight", "daylight", "dark"),
+                       Driver_age = c("Senior", "Adult", "Adult", "Adult", "Adult", "Senior"))
+
+vtree(tree_data, c("Context", "Lighting"))
+
+tree_data = data.frame(Decision_1 = c("Multiple level 4 sources?"),
+                       Decision_2 = c("Level 4 sources agree?", "Level 3 and 4 sources agree?"),
+                       Decision_3 = c("Return level 4", "Return level 3", "Level 3, 4 and 5 sources agree?", "Huh"),
+                       Decision_4 = c(""))
+
+vtree(tree_data, c("Decision_1", "Decision_2", "Decision_3"), vp = FALSE, prune = list(Decision_3 = c("")))
+
+tree_data = data.frame(Decision_1 = c("Consensus in multiple level 4 sources?"),
+                       Decision_2 = c("Return level 4 consensus", "Consensus in level 3 + 4 sources?"),
+                       Decision_3 = c("",  "Return level 3 +4 consensus","", "Consensus in level 3 +4 + 5?"),
+                       Decision_4 = c("", "", "", "Return level 4+5+3 consensus", "", "", "", "Consensus in single level 4?"),
+                       Decision_5 = c("", "", "", "", "", "", "", "Consensus in level 4+5+3+2+1?", "", "", "", "", "", "", "", "Return level 4"),
+                       Decision_6 = c("", "", "", "", "", "", "", "Return cathemeral-variable", "", "", "", "", "", "","", "", "", "", "", "", "", "", "", "Return consensus", "", "", "", "", "", "", "", ""))
+
+vtree(tree_data, c("Decision_1", "Decision_2", "Decision_3", "Decision_4", "Decision_5", "Decision_6"), vp = FALSE, prune = list(Decision_3 = c(""), Decision_4 = c(""), Decision_5 = c(""), Decision_6 = c("")))
