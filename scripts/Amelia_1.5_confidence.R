@@ -295,7 +295,6 @@ colnames(artio_full) <- c("Species_name", "Family", "Diel_Pattern", "tips")
 #add parvborder taxonomic info for future reference (to match with cetacean dataset)
 artio_full$Parvorder <- "non-cetacean"
 
-
 #rename the row names to be the tip names so it's easier to subset by the tree tip labels later
 row.names(artio_full) <- artio_full$tips
 
@@ -358,53 +357,13 @@ hippo <- artio_full[artio_full$Family == "Hippopotamidae", ]
 whippomorpha <- rbind(whippomorpha, hippo)
 write.csv(whippomorpha, file = here("whippomorpha.csv"), row.names = FALSE)
 
-# Section 4: Plot new vs old diel pattern comparison ------------------------
-#diel_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
-#diel_full <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv"))
-#diel_full <- read.csv(here("ruminants_full.csv"))
-diel_full <- read.csv(here("ruminants_high_conf.csv"))
-
-#compare to original data
-url <- 'https://docs.google.com/spreadsheets/d/1JGC7NZE_S36-IgUWpXBYyl2sgnBHb40DGnwPg2_F40M/edit?gid=562902012#gid=562902012'
-diel_full_old <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
-diel_full_old <- diel_full_old[, c("Species_name", "Diel_Pattern_2")]
-diel_full <- merge(diel_full, diel_full_old, by = "Species_name")
-
-diel_full$match <- tolower(diel_full$Diel_Pattern_2) == diel_full$Diel_Pattern
-
-trait.data <- diel_full[diel_full$tips %in% mam.tree$tip.label,]
-trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-
-#custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854", "red", "black", "blue", "grey","pink")
-custom.colours <- c("#dd8ae7", "peachpuff2","#FC8D62", "yellow", "#66C2A5", "green")
-custom.colours.2 <- c("#dd8ae7", "peachpuff2", "#FC8D62","yellow", "#66C2A5", "green","black","grey")
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "Diel_Pattern")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Diel_Pattern), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.2, name = "Tabulated activity pattern")
-diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
-diel.plot
-
-#with max crep designations
-trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, pattern = "Nocturnal/crepuscular", replacement = "Crepuscular")
-trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, pattern = "Diurnal/crepuscular", replacement = "Crepuscular")
-trait.data$Diel_Pattern_2 <- str_replace(trait.data$Diel_Pattern_2, pattern = "Cathemeral/crepuscular", replacement = "Crepuscular")
-
-custom.colours <- c("#dd8ae7","peachpuff2", "#FC8D62", "#66C2A5", "black", "grey")
-custom.colours.2 <- c("#dd8ae7", "peachpuff2", "#FC8D62", "#66C2A5","grey")
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "max_crep")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.2, name = "Tabulated activity pattern")
-diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
-diel.plot
-
-
-# Section 5: Concordance between confidence levels ---------------------------------------------
+# Section 4: Concordance between confidence levels ---------------------------------------------
 diel_full_long <- read.csv(here("confidence_artio_long.csv"))
 
 unique(diel_full_long$value)
 
 #remove unclear since it gives no new information
-diel_full_long$value <- str_replace(diel_full_long$value, pattern = "unclear/crepuscular", replacement = "crepuscular")
+diel_full_long$value <- str_replace(diel_full_long$value, pattern = "unclear/", replacement = "")
 diel_full_long[diel_full_long == "unclear"] <- NA
 diel_full_long <- diel_full_long[!is.na(diel_full_long$value),]
 
@@ -484,6 +443,74 @@ plot_countfreq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = 
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_minus_cet_btw_source_concordance.pdf", width = 7, height = 7, bg = "transparent")
 plot_countfreq
 dev.off() 
+
+
+# Section 5.5 artiodactyla overall btw source confidence ------------------
+diel_full_long1 <- read.csv(here("confidence_artio_long.csv"))
+diel_full_long1 <- diel_full_long1[, c("Species_name", "column", "value")]
+diel_full_long2 <- read.csv(here("cetacean_confidence_long_df.csv"))
+diel_full_long2 <- diel_full_long2[, c("Species_name", "column", "value")]
+
+diel_full_long <- rbind(diel_full_long1, diel_full_long2)
+
+unique(diel_full_long$value)
+
+#remove unclear since it gives no new information
+diel_full_long$value <- str_replace(diel_full_long$value, pattern = "unclear/", replacement = "")
+diel_full_long[diel_full_long == "unclear"] <- NA
+diel_full_long <- diel_full_long[!is.na(diel_full_long$value),]
+
+species_list <- table(diel_full_long$Species_name) #319 species
+species_list <- names(species_list[species_list > 1]) #192 species with multiple sources
+
+output <- lapply(species_list, function(species) {
+  
+  #filter for one species at a time
+  df <- diel_full_long[diel_full_long$Species_name == species,]
+  #rename the column names to be unique for every entry for this species (ie for multiple column 2 entries column 2.1, 2.2 etc)
+  df$column <- make.unique(df$column)
+  
+  #converts the dataframe so it compares every entry with each other (ie for A,B,C A-A, A-B, A-C, B-A, B-B, B-C, etc)
+  df_lists_comb <- expand(df, nesting(var = column, vector = value), nesting(var2 = column, vector2 = value), .name_repair = "universal")
+  
+  #??? idk
+  df_lists_comb <- df_lists_comb %>% filter(var != var2) %>% arrange(var, var2) %>% mutate(vars = paste0(var, ".", var2)) %>% select(contains("var"), everything())
+  
+  #evaluates the activity patterns for each of these sources and returns if they agree or not (TRUE or FALSE)
+  comparisons <- df_lists_comb %>% group_by(vars) %>% mutate(comp = compTwo(comp1 = vector, comp2 = vector2))
+  #manipulate the strings for both variable names to revert them back to the original name (back to column 2 from col 2.1)
+  comparisons$var <- str_sub(comparisons$var, start = 1, end = 5)
+  comparisons$var2 <- str_sub(comparisons$var2, start = 1, end = 5)
+  
+  #create a column returning the comparison being made (ie col2-col2, col1-col2, etc)
+  comparisons$var_final <- paste(comparisons$var, comparisons$var2, sep = "-")
+  
+  #return just the comparison result column (TRUE or FALSE match) and the comparison being made (ie col1 vs col1)
+  return(comparisons[,c("comp","var_final")])
+})
+
+#combine this list of results 
+output <- Reduce(rbind, output)
+
+table <- table(output$var_final)
+# prop.table(table, margin = 1)
+table2 <- as.data.frame(prop.table(table(output$var_final, output$comp), margin = 1))
+table2$Comp1 <- sapply(str_split(table2$Var1, "-"), `[`, 1)
+table2$Comp2 <- sapply(str_split(table2$Var1, "-"), `[`, 2)
+table2 <- table2[table2$Var2 == TRUE,]
+table2$count <- table
+
+#want to make a plot that has both the frequency and the counts
+table2$freq_count <- paste0(round(table2$Freq, 2), "\n", "(n=", table2$count, ")")
+plot_countfreq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = freq_count)) +
+  geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1)) + 
+  theme_minimal() + ylab("Primary source") + xlab("Secondary source") +
+  scale_x_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
+  scale_y_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E"))
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_btw_source_concordance.pdf", width = 7, height = 7, bg = "transparent")
+plot_countfreq
+dev.off()
 
 # Section 6: Concordance within confidence levels -------------------------
 diel_full_long <- read.csv(here("confidence_artio_long.csv"))
@@ -646,3 +673,78 @@ trait.data <- trait.data[!is.na(trait.data$max_crep), c("tips", "max_crep", "Ord
 trait.data[is.na(trait.data$Order), c("Order")] <- "Primates"
 
 write.csv(trait.data, here("Bennie_mam_data.csv"), row.names = FALSE)
+
+# Section 9: Comparison of artio data to Bennie and Maor data ---------------------------------------------
+
+#my data
+artio_df <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv")) #this seems too small
+#Maor dataset
+Maor_diel <- read.csv(here("Maor_artio_full.csv"))
+#Bennie dataset
+Bennie_diel <- read.csv(here("Bennie_mam_data.csv"))
+Bennie_diel <- Bennie_diel[Bennie_diel$tips %in% artio_df$tips, ]
+
+mammals_df <- merge(Maor_diel, Bennie_diel, by = "tips", all = TRUE) 
+#merge my artiodactyla data with the mammal data
+mammals_df <- merge(mammals_df, artio_df, by = "tips", all = TRUE) #leaves 149 species
+mammals_df <- mammals_df[, c("tips", "Diel_pattern", "max_crep.x", "Diel_Pattern")]
+colnames(mammals_df) <- c("tips", "Maor_diel", "Bennie_diel", "Amelia_diel")
+mammals_df$Maor_diel <- tolower(mammals_df$Maor_diel)
+#leaves 285 rows total??
+
+#classify partially cathemeral species as cathemeral
+mammals_df$Maor_diel <- str_replace(mammals_df$Maor_diel, pattern = "nocturnal/cathemeral", replacement = "cathemeral")
+mammals_df$Maor_diel <- str_replace(mammals_df$Maor_diel, pattern = "diurnal/cathemeral", replacement = "cathemeral")
+
+#only keep species that have entries in all three databases, leaves 190 species
+mammals_df <- mammals_df[complete.cases(mammals_df[ , c('Bennie_diel', 'Maor_diel', 'Amelia_diel')]), ]
+
+#from https://r-charts.com/flow/sankey-diagram-ggplot2/ 
+
+library(ggsankey)
+
+#creates plot based on the starting node and end node
+df <- mammals_df %>% make_long(Bennie_diel, Maor_diel)
+ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node))) + geom_sankey() + theme_sankey(base_size = 16)
+ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+  geom_sankey(flow.alpha= 0.5, node.color = 1) + geom_sankey_label(size = 3.5, color = 1, fill = "white") +
+  scale_fill_viridis_d(option = "D", alpha = 0.95) + theme_sankey(base_size = 16) + guides(fill = guide_legend(title = "Temporal activity pattern")) +
+  theme(legend.position = "none") + labs(x = NULL)
+
+#move my data to centre so its easier to compare my data to both existing datasets
+mammals_df <- mammals_df %>% relocate(Maor_diel, .after = last_col())
+
+#try with three data sources  
+mammals_df <- data.frame(lapply(mammals_df, function(x) {gsub("cathemeral/crepuscular", "crepuscular", x)}))
+mammals_df <- data.frame(lapply(mammals_df, function(x) {gsub("diurnal/crepuscular", "crepuscular", x)}))
+mammals_df <- data.frame(lapply(mammals_df, function(x) {gsub("nocturnal/crepuscular", "crepuscular", x)}))
+
+df <- mammals_df %>% make_long(Bennie_diel, Amelia_diel, Maor_diel,)
+
+test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+  geom_sankey(flow.alpha= 0.5, node.color = 1) + geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5")) +
+  theme_sankey(base_size = 16) + guides(fill = guide_legend(title = "Temporal activity pattern")) +
+  theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
+
+test
+
+#save out to figure folder
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "sankey_all.pdf"))
+test
+dev.off()
+
+#number of species not called crepuscular in two existing datasets that are now called crepuscular in my dataset (and vice versa)
+#use a confusion matrix
+concordance <- as.data.frame(table(mammals_df$Maor_diel, mammals_df$Amelia_diel))
+concordance <- as.data.frame(table(mammals_df$Bennie_diel, mammals_df$Amelia_diel))
+
+colnames(concordance) <- c("Existing_data", "Amelia_data", "freq")
+totals_df <- aggregate(concordance$freq, by=list(Category=concordance$Existing_data), FUN=sum)
+colnames(totals_df) <- c("Existing_data", "total")
+concordance <- merge(concordance, totals_df, by = "Existing_data")
+concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
+
+concordance$freq_count <- paste0(round(concordance$percent, 2), "\n", "(n=", concordance$freq, ")")
+ggplot(concordance, aes(Existing_data, Amelia_data, fill = percent)) + geom_tile() + geom_text(aes(label = freq_count)) +
+  scale_fill_gradient(low = "white", high = "dodgerblue") + 
+  theme_minimal() + ylab("Amelia (new) dataset") + xlab("Existing dataset")

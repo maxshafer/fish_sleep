@@ -297,11 +297,14 @@ abline(h=delta_diel,col="red")
 #p value is 0.04, so there is a phylogenetic signal for diel activity patterns in cetaceans
 
 
+# Section 8: alternative method to estimate phylogenetic signal ----------
+
+
 #alternative method for calculating phylogenetic signal of a discrete trait
 #install.packages("remotes")
 #remotes::install_github("stoufferlab/phyloint", force = TRUE)
 library(phyloint)
-install.packages('motmot.2.0')
+#install.packages('motmot.2.0')
 library(motmot.2.0)
 
 #requires a vector of the trait data in the same order as phy$tip.label and the tree
@@ -310,10 +313,12 @@ mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 #trait.data <- read.csv(here("cetaceans_full.csv"))
 
 trait.data <- read.csv(here("sleepy_artiodactyla_full.csv"))
-trait.data <- filter(trait.data, Suborder == "Whippomorpha")
+#trait.data <- filter(trait.data, Suborder == "Whippomorpha")
 #trait.data <- filter(trait.data, Suborder == "Ruminantia")
+#trait.data <- filter(trait.data, Suborder == "Tylopoda")
+#trait.data <- filter(trait.data, Suborder == "Suina")
 
-trait.data <- read.csv(here("Bennie_mam_data.csv"))
+#trait.data <- read.csv(here("Bennie_mam_data.csv"))
 #trait.data <- filter(trait.data, Order == "Eulipotyphla")
 
 #keep only necessary columns
@@ -368,6 +373,13 @@ signal <- phylo.signal(trait = trait, phy = mam.tree, rep = 999)
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 trait.data <- read.csv(here("Bennie_mam_data.csv"))
 trait.data <- trait.data[!duplicated(trait.data$tips), c("max_crep", "tips", "Order")]
+
+#to use my artio data instead
+trait.data <- filter(trait.data, Order != "Artiodactyla")
+trait.data.1 <- read.csv(here("sleepy_artiodactyla_full.csv"))
+trait.data.1 <- trait.data.1[!is.na(trait.data.1$max_crep), c("max_crep", "tips", "Order")]
+trait.data <- rbind(trait.data, trait.data.1)
+
 trait.data <- trait.data[trait.data$max_crep %in% c("cathemeral", "nocturnal", "diurnal", "crepuscular"), ]
 trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,] #4228 mammals in final tree
 mam.tree <- keep.tip(mam.tree, tip = trait.data$tips)
@@ -375,6 +387,7 @@ table(trait.data$Order)
 
 #filter for orders that have over 100 species
 trait.data <- trait.data %>% group_by(Order) %>% filter(n() > 100)
+trait.data <- filter(trait.data, Order != "Chiroptera")
 
 makeTraitVector <- function(trait.data = trait.data, Order_name = "Primates"){
   trait.data <- trait.data[trait.data$Order == Order_name,]

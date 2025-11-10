@@ -98,3 +98,8 @@ trait.data.2 %>% filter(Order %in% c("Amelia_artiodactyla", "Carnivora", "Didelp
   ggplot(., aes(x = mean_rates, y = proportion)) + 
   geom_jitter(size = 3, aes(colour = Order)) + geom_smooth(method = "lm") +
   stat_poly_eq() + facet_wrap(~max_crep)
+
+trait.data.2 %>% filter(Order %in% c("Amelia_artiodactyla", "Carnivora", "Didelphimorpha", "Lagomorpha", "Primates", "Rodentia")) %>% 
+  ggplot(., aes(x = rate, y = proportion)) + 
+  geom_jitter(size = 2, aes(colour = Order)) + geom_smooth(method = "lm") +
+  stat_poly_eq() + facet_wrap(~max_crep)

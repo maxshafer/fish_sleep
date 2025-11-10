@@ -166,7 +166,7 @@ test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "unclear
 #confidence level 2 data will be unclear/crepuscular since they don't show evidence of nocturnal or diurnal activity
 test_diel_long <- separate(test_diel_long, col = value, into = c("new_diel", "crepuscular"), sep = "/")
 #replace "unclear" with NA since it adds no new information
-test_diel_long[test_diel_long == "unclear"] <- NA
+test_diel_long[test_diel_long == "unclear"] <- NA #84 species with some data
 
 #a custom function to take the mode where x is a list of numbers corresponding to the number of times each diel pattern appears for a given species
 #if x = c(2,1,3) then for that species diurnal appeared twice, nocturnal appeared once and cathemeral appeared thrice
@@ -222,7 +222,7 @@ which.max.simple=function(x,na.rm=TRUE,tie_value="NA"){
 #example, diurnal appears twice, nocturnal appears once and cathemeral appears three times. So it returns cathemeral as the activity pattern
 
 #example species
-#x <- filter(test_diel_long, Species_name == "Lagenorhynchus cruciger")
+#x <- filter(test_diel_long, Species_name == "Balaenoptera borealis")
 
 # my method: take mode of mutliple level 4 sources if they exist, if not mode of Conf3 and Conf4
 #if unclear add in Conf5 data, if unclear use single level 4 source (if it exists), if still unclear call cathemeral-variable
@@ -232,41 +232,51 @@ which.max.simple=function(x,na.rm=TRUE,tie_value="NA"){
 tabulateFunc2 <- function(x) {
   #first check if there is multiple level 4 confidence entries
   if(x %>% filter(column == "Conf4") %>% nrow() > 1){
-    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA"))) {
-      if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
-        if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
-          activity_pattern <- "cathemeral-variable" #result if there is a tie between all confidence levels (case D)
+    if(is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA"))) {
+      if(is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
+        if(is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
+          activity_pattern <- "cathemeral-variable"
+          activity_pattern <- paste(activity_pattern, "D") #result if there is a tie between all confidence levels (case D)
         } else {
           activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
+          activity_pattern <- paste(activity_pattern, "C") 
           #result if level 4 and level 4+3 are inconclusive (case C)
         }
       } else {
         activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
+        activity_pattern <- paste(activity_pattern, "B") 
         #result if level 4 alone is inconclusive (case B)
       }
     } else {
       activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
+      activity_pattern <- paste(activity_pattern, "A") 
       #result if there is multiple level 4 evidence and it is not inconclusive (case A)
     }
   } else {
-    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
-      if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
+    if(is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
+      if(is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
         #if there is a tie use the single level 4 entry to make the call 
-        activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
-        #if there is no level 4 source it will return an NA and move on to here
-        if(NA %in% activity_pattern){
+        if(nrow(x[x$column %in% c("Conf4"),]) == 1){
+          activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
+          activity_pattern <- paste(activity_pattern, "G")
+        } else {
           #only use level 1 and 2 to make the call if that's the only confidence levels (and check if there is a tie, if its tied to go else, call it cathemeral variable)
           if(nrow(x[x$column %in% c("Conf1", "Conf2"),]) == nrow(x) & !is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf2", "Conf1")], unique(x$new_diel))), tie_value = "NA"))){
             activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf2", "Conf1")], unique(x$new_diel))), tie_value = "NA")]
-          } else {activity_pattern <- "cathemeral-variable"} #this is the case where there are multiple level 1,2,3 or 5 sources that are tied, so we can call it cathemeral-variable (case I)
-          }
-        } else {
+            activity_pattern <- paste(activity_pattern, "H")
+          } else {activity_pattern <- "cathemeral-variable I"} #this is the case where there are multiple level 1,2,3 or 5 sources that are tied, so we can call it cathemeral-variable (case I)
+        }
+        }
+      else {
           activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
-          #result if level 4 and level 4+3 are inconclusive (case F)
+          activity_pattern <- paste(activity_pattern, "F")
+          #result if level 4 and level 4+3 are inconclusive and there's only one level 4 source (case F)
           }
-      } else {
+      } 
+    else {
         activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
-        #result if level 4 alone is inconclusive (case E)
+        activity_pattern <- paste(activity_pattern, "E")
+        #result if level 4 alone is inconclusive and there is only one level 4 source (case E)
         } 
   } 
   
@@ -275,6 +285,9 @@ tabulateFunc2 <- function(x) {
 
 #run each species through this function, x species with activity pattern data (di, noc or cath)
 activity_pattern_df <- test_diel_long[!is.na(test_diel_long$new_diel),] %>% group_by(Species_name) %>% do(tabulated_diel_pattern = tabulateFunc2(.)) %>% unnest()
+
+activity_pattern_df <- separate(activity_pattern_df, col = "tabulated_diel_pattern", into = c("tabulated_diel_pattern", "level"), sep = " ")
+table(activity_pattern_df$level)
 
 unique(activity_pattern_df$tabulated_diel_pattern)
 
@@ -290,7 +303,7 @@ test_diel_long$crepuscular <- as.numeric(test_diel_long$crepuscular) #mark all c
 test_diel_long$total <- 1 #used to calculate the percentage of crepuscular species out of the total species
 
 #use to test function below
-x <- filter(test_diel_long, Species_name == "Stenella clymene")
+#x <- filter(test_diel_long, Species_name == "Stenella clymene")
 
 #if category 3 greater than 50%, category 4 higher than 0% and if category 2 higher than 75% then call this source crepuscular
 #if majority of evidence categories call it crepuscular then designate it crepuscular
@@ -360,46 +373,20 @@ current_dataset <- test
 all(previous_dataset == current_dataset)
 if(all(previous_dataset == current_dataset) == FALSE) stop("Dataset is not the same!")
 
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+test$tips <- str_replace(test$Species_name, pattern = " ", replacement = "_")
+test <- test[test$tips %in% mam.tree$tip.label, ]
+table(test$tabulated_diel)
+activity_pattern_df$tips <- str_replace(activity_pattern_df$Species_name, pattern = " ", replacement = "_")
+activity_pattern_df <- activity_pattern_df[activity_pattern_df$tips %in% mam.tree$tip.label, ]
+table(activity_pattern_df$level)
+
 #save out the new tabulated activity pattern dataframe
 write.csv(test, here("cetacean_tabulated_full.csv"), row.names = FALSE)
 
-diel_full_new <- merge(diel_full, test, by = "Species_name")
-#diel pattern 2 is all diel categories, diel pattern is maxcrep, new pattern is manually determined diel patterns, tabulated pattern is diel patterns determined from above function
-diel_full_new <- diel_full_new[, c("Species_name", "Parvorder", "Diel_Pattern_2", "Diel_Pattern","New_Pattern", "Confidence", "tips", "tabulated_diel")]
-
-# Section 3.5: Plot new vs old diel pattern comparison ------------------------
-
-trait.data <- diel_full_new[diel_full_new$tips %in% mam.tree$tip.label,]
-trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-
-#custom.colours <- c("#dd8ae7", "#FC8D62", "#fbbe30", "#66C2A5", "#A6D854", "red", "black", "blue", "grey","pink")
-custom.colours <- c("#dd8ae7","#FC8D62", "yellow", "#66C2A5", "green")
-custom.colours.2 <- c("#dd8ae7", "peachpuff2" ,"#FC8D62", "yellow", "#66C2A5","green","black","grey")
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern_2", "tabulated_diel")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern_2), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot +  new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = tabulated_diel), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.2, name = "Tabulated activity pattern")
-diel.plot <- diel.plot + geom_tiplab(size = 2, offset = 3)
-diel.plot
-
-#with max crep designations
-trait.data$tabulated_diel <- str_replace(trait.data$tabulated_diel, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
-trait.data$tabulated_diel <- str_replace(trait.data$tabulated_diel, pattern = "diurnal/crepuscular", replacement = "crepuscular")
-trait.data$tabulated_diel <- str_replace(trait.data$tabulated_diel, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
-
-custom.colours <- c("#dd8ae7","peachpuff2", "#FC8D62", "#66C2A5")
-custom.colours.2 <- c("#dd8ae7", "peachpuff2", "#FC8D62","#66C2A5")
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern", "tabulated_diel")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diel_Pattern), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot + new_scale_fill() + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = tabulated_diel), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours.2, name = "Tabulated activity pattern")
-diel.plot <- diel.plot + geom_tiplab(size = 3, offset = 3)
-diel.plot
-
-#what species are different
-trait.data.different <- trait.data[trait.data$Diel_Pattern!=trait.data$tabulated_diel, c("Species_name", "Diel_Pattern", "tabulated_diel")]
-
 # Section 3.5 Save out cetacean data frame with additional details -------
 #load in the dataframe with the tabulated activity patterns (objective calls based on source concordance)
-cetaceans_tabulated_full <- read.csv(here("cetacean_tabulated_full.csv")) #83 species with data
+cetaceans_tabulated_full <- read.csv(here("cetacean_tabulated_full.csv")) #84 species with data
 
 #load in full primary source dataframe, 98 species and subspecies
 url <- 'https://docs.google.com/spreadsheets/d/1-5vhk_YOV4reklKyM98G4MRWEnNbcu6mnmDDJkO4DlM/edit?usp=sharing'
@@ -448,7 +435,6 @@ cetaceans_full %>% filter(Confidence == 1)
 #two of these aren't in the final mammal tree - Inia boliviensis and Inia humboldtiana
 #Both lissodelphis species have evidence from their diet that they are probably nocturnal. Other dolphins 
 #Berardius arnuxii only has opportunistic sightings, mostly in the daytime with no additional data to infer activity.
-#better tod
 #Sister species has good evidence for cathemeral activity
 
 #note on 2 species with only level 2 evidence
@@ -509,7 +495,7 @@ diel_full_filtered <- diel_full_filtered[diel_full_filtered$tips %in% mam.tree$t
 
 #check to see if there is a difference in accuracy in mysticetes vs odontocetes
 #diel_full_filtered <- filter(diel_full_filtered, Parvorder == "Mysticeti")
-diel_full_filtered <- filter(diel_full_filtered, Parvorder == "Odontoceti")
+#diel_full_filtered <- filter(diel_full_filtered, Parvorder == "Odontoceti")
 
 concordance <- as.data.frame(table(diel_full_filtered$max_crep, diel_full_filtered$value))
 colnames(concordance) <- c("actual", "predicted", "freq")

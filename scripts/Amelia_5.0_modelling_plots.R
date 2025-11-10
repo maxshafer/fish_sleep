@@ -99,13 +99,17 @@ min(df_full$AIC_score)
 #returns a dataframe of the rates from each of the Mk models, for each of the 1k trees
 #rates_df <- plot1kTransitionRates(readRDS(here(filename)), 4, 5)
 
+filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+#filename <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+#filename <- "august_artiodactyla_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+
 rates_df <- plot1kTransitionRates4state(readRDS(here(filename)), 5)
 
 #plot as a violin plot
 #important note: the colours column doesn't line up with the correct solution in the df but if we plot the solutions in alphabetical order and then colouring them with the palette in the colours column is in the correct order
 ggplot(rates_df, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + geom_jitter(aes(alpha = 0.1)) + scale_color_manual(values = rates_df$colours) + geom_violin(color = "black", scale = "width") + theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  + scale_fill_manual(values = rates_df$colours) + theme(legend.position = "none") + labs(x = "Transition", y = "Log(rates)") + stat_summary(fun=median, geom="point", size=2, colour = "red") + ggtitle(filename) + facet_wrap(~fct_inorder(model), ncol = 3, nrow = 2) 
 
-model_selection <- "SYM"
+model_selection <- "Bridge_only"
 #pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", filename, "_violin_rate_plot_", model_selection, ".pdf"), width = 10, height = 7)
 rates_df1 <- rates_df %>% filter(model == model_selection) 
 ggplot(rates_df1, aes(x= solution, y = log(rates), group = solution, fill = solution, colour = solution)) + 
@@ -114,6 +118,7 @@ ggplot(rates_df1, aes(x= solution, y = log(rates), group = solution, fill = solu
   theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust=1, size =10), axis.text.y = element_text(size =10))  +
   scale_fill_manual(values = rates_df1$colours) + theme(legend.position = "none") +
   labs(x = "Transition", y = "Log(transition rate)") + stat_summary(fun=median, geom="point", size=2, colour = "red") +
+  stat_summary(geom = "point", fun.y = "mean") + stat_summary(aes(label=..y..), fun.y=mean, geom="text", size=2, colour = "black") +
   ggtitle(filename) 
 #dev.off()
 
@@ -187,163 +192,19 @@ ggplot(dat, aes(y = start_state, x = mean_rate_difference)) + geom_point(shape =
 ggplot(dat2, aes(y = end_state, x = mean_rate_difference)) + geom_point(shape = 18, size = 5) +  
   geom_vline(xintercept = 0, color = "red", linetype = "dashed", cex = 1, alpha = 0.5) 
 
-# Section 7: Ancestral reconstruction -----------------------------------
+# Section 8: Comparison of rate magnitude -------------------------------
 
-#load in model file
-
-#filename <- "artiodactyla_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models"
-filename <- "whippomorpha_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models"
-#filename <- "ruminants_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models"
-
-all_model_results <- readRDS(here(paste0(filename, ".rds")))
-
-
-#separate the results by the model types we want to use (ER, SYM, ARD, bridge_only)
-#uncomment the model you want to plot
-
-# model_results <- all_model_results$ER_model
-# model_name <- "ER"
-
-# model_results <- all_model_results$SYM_model
-# model_name <- "SYM"
-
-model_results <- all_model_results$CONSYM_model
-model_name <- "CONSYM"
-
-# model_results <- all_model_results$ARD_model
-# model_name <- "ARD"
-
-# model_results <- all_model_results$bridge_only
-# model_name <- "bridge_only"
-
-#option 2: use the most likely model + tree from 1k trees
-#filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
-filename <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
-
-model_results <- readRDS(here(filename))
-model_results <- model_results$bridge_only_model
-#model_results <- model_results[474] #whippomorpha
-model_results <- model_results[911] #ruminants
-model_results <- model_results$UNTITLED
-model_name <- "most_likely_bridge_only"
-
-#from the model results file, tip states describes the trait states at the tips, states describes the trait states at the nodes
-lik.anc <- as.data.frame(rbind(model_results$tip.states, model_results$states))
-#for max_crep cath/crep makes more sense, for max_dinoc cathemeral makes more sense
-colnames(lik.anc) <- c("cathemeral", "crepuscular", "diurnal", "nocturnal")
-phylo_tree <- model_results$phy
-
-ancestral_plot <- ggtree(phylo_tree, layout = "circular", size = 2) + geom_tiplab(color = "black", size = 2, offset = 0.5) + geom_text(aes(label=node, colour = "red"), hjust=-.2, size = 3)
-ancestral_plot
-#510 is the LCA of whippo, 511 is the LCA of cetaceans, 308 LC of ruminants in the artiodactyla tree
-lik.anc %>% filter(node %in% c(510, 511, 308))
-
-#in the whippomorpha tree the LCA node is 70, LCA of cetaceans is 79
-lik.anc %>% filter(node %in% c(78, 79))
-
-#in the ruminant tree the LCA node is 204
-lik.anc %>% filter(node %in% c(204))
-
-trait.data <- read.csv(here("ruminants_full.csv"))
-#trait.data <- read.csv(here("whippomorpha.csv"))
-trait.data <- trait.data[!is.na(trait.data$max_crep), c("tips", "max_crep")]
-phylo_trees <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-#subset trait data to only include species that are in the tree
-trait.data <- trait.data[trait.data$tips %in% phylo_trees$tip.label,]
-# this selects a tree that is only the subset with data (mutual exclusive)
-phylo_trees <- keep.tip(phylo_trees, tip = trait.data$tips)
-# bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = 1, rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4), node.states = "marginal")
-# bridge_only_crep_root <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = 1, rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4), node.states = "marginal", root.p = c(0.19,0.48,0.18,0.15))
-
-bridge_only_crep_root2 <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = 1, rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4), node.states = "marginal", root.p = c(0,1,0,0))
-bridge_only_di_root <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = 1, rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4), node.states = "marginal", root.p = c(0,0,1,0))
-bridge_only_cath_root <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = 1, rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4), node.states = "marginal", root.p = c(1,0,0,0))
-bridge_only_noc_root <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = 1, rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4), node.states = "marginal", root.p = c(0,0,0,1))
-
-#test_list <- list(bridge_only, bridge_only_crep_root, bridge_only_crep_root2)
-#names(test_list) <- c("yang_root", "crep_root_50", "crep_root_100")
-test_list <- list(bridge_only_crep_root2, bridge_only_di_root, bridge_only_cath_root, bridge_only_noc_root)
-names(test_list) <- c("crep_root", "di_root", "cath_root", "noc_root")
-likelihood_metrics <- max_clade_metrics(test_list)
-likelihood_metrics <- pivot_wider(likelihood_metrics, names_from = model_metric, values_from = model_value)
-likelihood_metrics$most_likely <- ""  
-likelihood_metrics[which(likelihood_metrics$AIC_scores == min(likelihood_metrics$AIC_scores)), "most_likely"] <- "**"
-
-#create the name of the file by pasting together ancestral recon, the diel state and the file_name 
-# pdf(paste("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "ancestral_recon_diurnal_", file_name, "_", model_name, ".pdf", sep = ""), width=17,height=16)
-# ancestral_plot_di
-# dev.off()
-# 
-# pdf(paste("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "ancestral_recon_nocturnal_", file_name, "_", model_name, ".pdf", sep = ""), width=17,height=16)
-# ancestral_plot_noc
-# dev.off()
-# 
-# pdf(paste("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "ancestral_recon_cathemeral_", file_name, "_", model_name,  ".pdf", sep = ""), width=17,height=16)
-# ancestral_plot_cath
-# dev.off()
-# 
-# pdf(paste("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "ancestral_recon_crepuscular_", file_name, "_", model_name,  ".pdf", sep = ""), width=17,height=16)
-# ancestral_plot_crep
-# dev.off()
-
-
-
-# Section 8: Compare old and new results ---------------------------------
-
-filename <- "whippomorpha_four_state_max_crep_ER_SYM_ARD_bridge_only_models.rds"
-model_results <- readRDS(here(paste0("finalized_1k_models/", filename)))
-df_full <- plot1kAIC(readRDS(here(paste0("finalized_1k_models/", filename))), 4)
-
-means <- aggregate(AIC_score ~  model, df_full, mean)
-means$AIC_score <- round(means$AIC_score, digits = 2)
-
-#plot 
-ggplot(df_full, aes(x = fct_inorder(model), y = AIC_score)) + geom_jitter(alpha = 0.6, color = "#6daaf8") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
-  labs(x = "Model", y = "AIC score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "CON-ARD", "CON-SYM")) + 
-  geom_text(data = means, aes(label = AIC_score, y = AIC_score, vjust = -0.5), parse = TRUE) +
-  ggtitle(filename) 
-
-model_1_500 <- readRDS(here("august_12__whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
-model_501_1000 <- readRDS(here("august_14__whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
-model_results <- c(model_1_500, model_501_1000)
-
-saveRDS(model_results, here("august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
-
-filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
-model_results <- readRDS(here(filename))
-df_full <- plot1kAIC(readRDS(here(filename)), 5)
-
-df_full1 <- plot1kAIC(model_1_500, 5)
-df_full2 <- plot1kAIC(model_501_1000, 5)
-df_full <- plot1kAIC(model_results, 5)
-
-df_full <- rbind(df_full1, df_full2)
-means <- aggregate(AIC_score ~  model, df_full, mean)
-means$AIC_score <- round(means$AIC_score, digits = 2)
-
-#plot 
-ggplot(df_full, aes(x = fct_inorder(model), y = AIC_score)) + geom_jitter(alpha = 0.6, color = "#6daaf8") + geom_boxplot(alpha = 0.5, outlier.shape = NA, colour = "black")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=0.95)) +
-  labs(x = "Model", y = "AICc score") + scale_x_discrete(labels = c("Equal rates", "Symmetrical rates", "All rates different", "CON-ARD", "CON-SYM")) + 
-  geom_text(data = means, aes(label = AIC_score, y = AIC_score, vjust = -0.5), parse = TRUE) +
-  ggtitle(filename) 
-
-
-# Section 9: Comparison of rate magnitude
-filename1 <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
-filename2 <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
-
-#requires the filename and the number of Mk models (3: ER, SYM, ARD or 4: ER, SYM, ARD, CONARD, 5: ER, SYM, ARD, bridge_only, CONSYM)
-#returns a df of the AIC scores for all 1k trees x number of Mk models
-rates_df1 <- plot1kTransitionRates4state(readRDS(here(filename1)), 5)
-rates_df1 <- filter(rates_df1, model == "ARD")
-rates_df2 <- plot1kTransitionRates4state(readRDS(here(filename2)), 5)
-rates_df2 <- filter(rates_df2, model == "ARD")
+#get rates
+rates_df1 <- plot1kTransitionRates4state(readRDS(here("august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds")), 5)
+rates_df1 <- filter(rates_df1, model == "Bridge_only")
+rates_df2 <- plot1kTransitionRates4state(readRDS(here("august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds")), 5)
+rates_df2 <- filter(rates_df2, model == "Bridge_only")
 
 #need to compare rates from the same trees 
 #each model has 12 rates, filter for one model (ARD), label each tree 
-rates_df1$tree_n <- rep(1:1000, each = 12)
+rates_df1$tree_n <- rep(1:1000, each = 10)
 #subtract the cetacean rate from the ruminant rate, is it faster (negative number) or slower (positive number)
-rates_df2$tree_n <- rep(1:1000, each = 12)
+rates_df2$tree_n <- rep(1:1000, each = 10)
 
 rates_df <- cbind(rates_df1, rates_df2)
 colnames(rates_df) <- c("whippo_rates", "model", "solution", "colours", "tree_n", "rumi_rates", "model", "solution", "colours", "tree_n")
@@ -357,3 +218,115 @@ ggplot(rates_df, aes(x = whippo_rates, fill = solution)) + geom_histogram() + fa
 
 rates_df %>% group_by(solution) %>% summarize(mean_rates = mean(whippo_rates)) %>% ggplot(., aes(x = mean_rates, y = solution)) + geom_point()
 rates_df %>% group_by(solution) %>% summarize(mean_rates = mean(rumi_rates)) %>% ggplot(., aes(x = mean_rates, y = solution)) + geom_point()
+
+rates_df %>% group_by(solution) %>% 
+  summarize(mean_whippo_rates = mean(whippo_rates), mean_rumi_rates = mean(rumi_rates)) %>% 
+  ggplot(., aes(y = solution)) + geom_point(aes(x=mean_whippo_rates), colour = "blue") +
+  geom_point(aes(x = mean_rumi_rates), colour = "red")
+
+#make a forest-ish plot
+ggplot(rates_df, aes(y = solution)) + geom_point(aes(x=whippo_rates), colour = "blue") +
+  geom_point(aes(x = rumi_rates), colour = "red")
+
+
+rates_df1 <- plot1kTransitionRates4state(readRDS(here("august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds")), 5)
+rates_df1 <- filter(rates_df1, model == "Bridge_only")
+rates_df2 <- plot1kTransitionRates4state(readRDS(here("august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds")), 5)
+rates_df2 <- filter(rates_df2, model == "Bridge_only")
+
+rates_df1$clade <- "whippomorpha"
+rates_df2$clade <- "ruminants"
+
+rates_df <- rbind(rates_df1, rates_df2)
+
+df <- rates_df %>% group_by(clade, solution) %>% summarize(mean_rates = mean(rates), 
+                                                           lci = t.test(rates, conf.level = 0.95)$conf.int[1],
+                                                           uci = t.test(rates, conf.level = 0.95)$conf.int[2])
+
+ggplot(df, aes(x = mean_rates, y = solution, colour = clade)) + geom_point() + geom_errorbar(aes(y = solution, xmin = lci, xmax =uci),width = 0.4)
+
+# Section 9: Comparing rates between different clades ---------------------
+
+rates_df1 <- plot1kTransitionRates4state(readRDS(here("august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds")), 5)
+
+#find the mean scores
+means_whippo <- aggregate(rates ~  model + solution, rates_df, mean)
+means_whippo$clade <- "whippomorpha"
+#means$AIC_score <- round(means$AIC_score, digits = 2)
+
+#repeat for ruminants
+rates_df2 <- plot1kTransitionRates4state(readRDS(here("august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds")), 5)
+means_rumi <- aggregate(rates ~  model + solution, rates_df, mean)
+means_rumi$clade <- "ruminantia"
+
+means <- rbind(means_whippo, means_rumi)
+
+ggplot(means, aes(y = rates, x = solution, colour = clade)) + geom_point() + facet_wrap(~model)
+
+
+# #Section 10: Total garbage test ------------------------------------------
+
+filename <- "whippomorpha_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models"
+model_results <- readRDS(here(paste0(filename, ".rds")))
+
+trait.data <- model_results$ER_model$data
+table(trait.data$max_crep)
+
+#since there are four trait states
+#likelihood <- ((factorial(n))/(factorial(n1) * factorial(n2) * factorial(n3) *factorial(n4))) * (p1^n1)  * (p2^n2)  * (p3^n3)  * (p4^n4) 
+
+#using the natural log
+n1 = 27
+n2 = 22
+n3 = 7
+n4 = 21
+n = 77
+
+lnL_garb = n1 * log(n1 / n) + n2 * log(n2 / n) + n3 * log(n3 / n) + n4 * log(n4 / n)
+#ln likelihood is -99.926
+
+#compared to the actual likelihood
+model_results$bridge_only_model$loglik #-91.0821
+model_results$ER_model$loglik #-105.561
+model_results$SYM_model$loglik #-97.924
+model_results$ARD_model$loglik #-91.025
+model_results$CONSYM_model$loglik # -97.46
+
+likelihood_metrics <- max_clade_metrics(readRDS(here(paste0(filename, ".rds"))))
+likelihood_metrics <- pivot_wider(likelihood_metrics, names_from = model_metric, values_from = model_value)
+likelihood_metrics <- rbind(likelihood_metrics, data.frame(model = "Total garbage", log_likelihoods = lnL_garb, AICc_scores = NA,  AIC_scores = NA))
+ggplot(likelihood_metrics, aes(y = log_likelihoods, x = model, fill = model))  + geom_bar(stat = "identity")
+
+#so the log likelihood is similar, but the actual model is more likely (higher log lik)
+
+#for ruminants
+filename <- "ruminants_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models"
+model_results <- readRDS(here(paste0(filename, ".rds")))
+
+trait.data <- model_results$ER_model$data
+table(trait.data$max_crep)
+
+n1 = 21
+n2 = 125
+n3 = 34
+n4 = 23
+n = 203
+
+lnL_garb = n1 * log(n1 / n) + n2 * log(n2 / n) + n3 * log(n3 / n) + n4 * log(n4 / n)
+
+#the garbage ln likelihood is -219 which is different than our most likely model (-199.78)
+
+model_results$bridge_only_model$loglik #-199.7884
+model_results$ER_model$loglik # -230.505
+model_results$SYM_model$loglik #-219.0621
+model_results$ARD_model$loglik #-199.8458
+model_results$CONSYM_model$loglik # -219.0807
+
+likelihood_metrics <- max_clade_metrics(readRDS(here(paste0(filename, ".rds"))))
+likelihood_metrics <- pivot_wider(likelihood_metrics, names_from = model_metric, values_from = model_value)
+likelihood_metrics <- rbind(likelihood_metrics, data.frame(model = "Total garbage", log_likelihoods = lnL_garb, AICc_scores = NA,  AIC_scores = NA))
+ggplot(likelihood_metrics, aes(y = log_likelihoods, x = model, fill = model))  + geom_bar(stat = "identity") + ggtitle(filename)
+
+likelihood_metrics$length <- 100
+ggplot(likelihood_metrics, aes(y = log_likelihoods, x = length, fill = model)) +
+  geom_line() + ggtitle(filename)

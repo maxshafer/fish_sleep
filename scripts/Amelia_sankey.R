@@ -24,7 +24,7 @@ library(tibble)
 
 source("scripts/Amelia_functions.R")
 
-# Section 1: Old sankey tutorial ----------------------------------------------
+# Section 1: Sankey tutorial ----------------------------------------------
 #tutorial from https://r-graph-gallery.com/321-introduction-to-interactive-sankey-diagram-2.html
 
 #example data, includes both a source and target column

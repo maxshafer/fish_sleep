@@ -261,7 +261,7 @@ colnames(church_qual) <- c("Habitat_2", "Prey_capture", "tips")
 
 write.csv(church_qual, here("churchill_habitat_prey_capture.csv"), row.names = FALSE)
 
-# Section 9: Churchill et al dataframe  -----------------------------------
+# Section 8: Churchill et al dataframe  -----------------------------------
 #to keep all data from one source can use just the churchill et al dataset 
 dive_depth <- read.csv(here("cetacean_dive_depth.csv")) #65 species
 orbit_ratio <- read.csv(here("cetacean_orbit_ratio.csv")) #99 species
@@ -274,7 +274,7 @@ colnames(trait.data) <- c("tips", "Body_mass", "Body_length", "Dive_depth", "Biz
 
 write.csv(trait.data, here("churchill_cetacean_dataset.csv"), row.names = FALSE)
 
-# Section 11: One cetacean dataframe to rule them all -------------------------------
+# Section 9: One cetacean dataframe to rule them all -------------------------------
 dive_depth <- read.csv(here("cetacean_dive_depth.csv")) #65 species
 orbit_ratio <- read.csv(here("cetacean_orbit_ratio.csv")) #99 species
 echo <- read.csv(here("cetacean_habitat_dentition_echo.csv")) #194 species
@@ -458,8 +458,8 @@ diel.plot
 trait.data <- merge(trait.data, trait.data.1[, c("tips", "Divetype_1")], all = TRUE)
 
 #keep only the relevant columns
-trait.data <- trait.data[, c("tips", "Body_length", "Body_mass_kg", "Dive_depth", "Orbit_ratio", "Diet", "Habitat", "Prey_capture", "Brain_mass", "Feeding_method", "Divetype_1")]
-colnames(trait.data) <- c("tips", "Body_length_m", "Body_mass_kg", "Dive_depth_m", "Orbit_ratio", "Diet", "Habitat", "Prey_capture", "Brain_mass_g", "Feeding_method", "Divetype")
+trait.data <- trait.data[, c("tips", "Body_length", "Body_mass_kg", "Dive_depth", "Bizygomatic_width", "Average_orbit_length", "Orbit_ratio", "Diet", "Habitat", "Prey_capture", "Brain_mass", "Feeding_method", "Divetype_1")]
+colnames(trait.data) <- c("tips", "Body_length_m", "Body_mass_kg", "Dive_depth_m", "Bizygomatic_width", "Average_orbit_length", "Orbit_ratio", "Diet", "Habitat", "Prey_capture", "Brain_mass_g", "Feeding_method", "Divetype")
 
 table(trait.data$Habitat, trait.data$Divetype)
 ggplot(trait.data, aes(x = Habitat, y = Dive_depth_m, colour = Divetype)) + geom_boxplot(outlier.shape = NA) + geom_jitter()
@@ -492,3 +492,94 @@ trait.data[trait.data$Family == "Platanistidae", c("fam_colours")] <- "turquoise
 
 
 write.csv(trait.data, here("cetacean_ecomorphology_dataset.csv"), row.names = FALSE)
+
+
+# Section 10: eye mass vs body mass ---------------------------------------
+eye_mass <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Burton_2006.xlsx")
+
+eye_mass <- separate(eye_mass, col = SpeciesBodymassBrainmassEyemass, into = c("Genus", "Species", "Body_mass_g", "Brain_mass_g", "Eye_mass_g"), sep = " ")
+eye_mass <- eye_mass %>% mutate(Eye_mass_g = as.numeric(Eye_mass_g), 
+                                Body_mass_g = as.numeric(Body_mass_g)* 1000, 
+                                Brain_mass_g = as.numeric(Brain_mass_g), 
+                                relative_eye_mass = Eye_mass_g/Body_mass_g)
+
+eye_mass$tips <- paste(eye_mass$Genus, eye_mass$Species, sep = "_")
+
+#fix species names
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Megaptera_nodosa", replacement = "Megaptera_novaeangliae")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Phocaena_phocaena", replacement = "Phocoena_phocoena")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Cervus_axis", replacement = "Axis_axis")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Gazella_thomsonii", replacement = "Eudorcas_thomsonii")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Rangifer_arcticus", replacement = "Rangifer_tarandus")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Cercopithecus_aethiops", replacement = "Chlorocebus_aethiops")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Sciurus_hudsonicus", replacement = "Tamiasciurus_hudsonicus")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Vulpes_fulvus", replacement = "Vulpes_vulpes")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Thos_mesomelas", replacement = "Canis_mesomelas")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Felis_leo", replacement = "Panthera_leo")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Felis_oregonensis", replacement = "Puma_concolor")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Claviglis_saturatus", replacement = "Graphiurus_murinus") #maybe
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Felis_capensis", replacement = "Leptailurus_serval")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Felis_onca", replacement = "Panthera_onca")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Felis_pardus", replacement = "Panthera_pardus")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Mustela_articus", replacement = "Mustela_erminea") #maybe
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Pecari_angulatus", replacement = "Dicotyles_tajacu")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Tapirella_bairdii", replacement = "Tapirus_bairdii")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Thalarctos_maritimus", replacement = "Ursus_maritimus")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Macaca_rhesus", replacement = "Macaca_mulatta")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Rhinocerus_bicornis", replacement = "Diceros_bicornis")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Equus_caballus", replacement = "Equus_ferus")
+eye_mass$tips <- str_replace(eye_mass$tips, pattern = "Citellus_parryii", replacement = "Spermophilus_citellus")
+
+#compare eye size across orders
+ggplot(eye_mass, aes(x = Order, y = log(relative_eye_mass), colour = Body_mass_g)) +geom_boxplot() + geom_jitter()
+
+#compare to activity patterns
+artio_df <- read.csv(here("Sleepy_artiodactyla_full.csv"))
+artio_df <- artio_df[artio_df$tips %in% eye_mass$tips, c("tips", "max_crep")]
+#16 of 84 species in artio database
+
+mammals_df <- read.csv(here("Bennie_mam_data.csv"))
+mammals_df <- mammals_df[mammals_df$tips %in% eye_mass$tips, c("tips", "max_crep")]
+#only 41 of 84 species have activity pattern data from Bennie et al
+#remove artios that I have data for (use my data)
+mammals_df <- mammals_df[!mammals_df$tips %in% artio_df$tips, ]
+#removes 10 artio sps
+
+mammals_df <- rbind(mammals_df, artio_df)
+
+eye_mass <- merge(eye_mass, mammals_df, all = TRUE)
+eye_mass[eye_mass$tips == "Homo_sapiens", c("max_crep")] <- "diurnal"
+eye_mass[eye_mass$tips == "Peromyscus_sp.", c("max_crep")] <- "nocturnal" #the entire genus is nocturnal
+
+#optional add in missing species, most are domestic 
+eye_mass[eye_mass$tips == "Felis_domesticus", c("max_crep")] <- "crepuscular" #https://doi.org/10.1007/s10530-017-1534-x
+eye_mass[eye_mass$tips == "Canis_familiaris", c("max_crep")] <- "crepuscular" #https://doi.org/10.1016/j.applanim.2021.105449
+eye_mass[eye_mass$tips == "Bos_taurus", c("max_crep")] <- "crepuscular" #https://doi.org/10.1371/journal.pone.0313086
+eye_mass[eye_mass$tips == "Capra_hircus", c("max_crep")] <- "crepuscular" #https://doi.org/10.1139/z03-055
+
+eye_mass <- eye_mass[!is.na(eye_mass$max_crep), ]
+
+eye_mass %>% filter(max_crep %in% c("diurnal", "nocturnal")) %>% ggplot(., aes(x = log(Body_mass_g), y = log(Eye_mass_g))) + geom_point(aes(colour = max_crep)) +
+  geom_smooth(method="lm", na.rm=T, se=F, formula=y~x, aes(color=max_crep)) 
+
+ggplot(eye_mass, aes(x = log(Body_mass_g), y = log(Eye_mass_g))) + geom_point(aes(colour = max_crep)) +
+  geom_smooth(method="lm", na.rm=T, se=F, formula=y~x, aes(color=max_crep)) 
+
+ggplot(eye_mass, aes(x = max_crep, y = log(relative_eye_mass))) +geom_boxplot(outlier.shape = NA) + 
+  geom_point(aes(colour = tips), size = 2) +
+  stat_compare_means(method = "anova") # + facet_wrap(~max_crep)
+
+eye_mass%>% filter(Order %in% c("Ungulates (Artiodactyla)", "Cetacea"), max_crep %in% c("diurnal", "nocturnal", "crepusuclar", "cathemeral")) %>%
+  ggplot(., aes(x = max_crep, y = log(relative_eye_mass))) +geom_boxplot(outlier.shape = NA) + geom_jitter(aes(colour = Order)) #+ facet_wrap(~Order)
+
+#pinnipeds have no activity pattern data so we can remove them 
+eye_mass%>% filter(max_crep %in% c("diurnal", "nocturnal", "crepuscular", "cathemeral")) %>%
+  ggplot(., aes(x = max_crep, y = log(relative_eye_mass))) +geom_boxplot(aes(fill = max_crep), outlier.shape = NA) + geom_point(aes(colour = Order), size =2) +
+  stat_compare_means(method = "anova") #+facet_wrap(~Order)
+
+eye_mass%>% filter(Order %in% c("Ungulates (Artiodactyla)", "Cetacea"), max_crep %in% c("diurnal", "nocturnal", "crepusuclar", "cathemeral")) %>%
+  ggplot(., aes(x = max_crep, y = log(relative_eye_mass))) +geom_boxplot(outlier.shape = NA) + geom_point(aes(colour = tips)) #+ facet_wrap(~Order)
+
+ggplot(eye_mass, aes(x = max_crep, y = log(Eye_mass_g))) +geom_boxplot(outlier.shape = NA, aes(fill = max_crep)) + 
+  geom_point(aes(colour = Order), size = 2) +
+  stat_compare_means(method = "anova") # + facet_wrap(~max_crep)

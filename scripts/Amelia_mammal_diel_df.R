@@ -59,15 +59,47 @@ maor_mam_data$Activity_pattern <- str_replace_all(maor_mam_data$Activity_pattern
 maor_mam_data$Activity_pattern <- str_replace_all(maor_mam_data$Activity_pattern, "Diurnal or Cathemeral", "Cathemeral")
 maor_mam_data$Activity_pattern <- str_replace_all(maor_mam_data$Activity_pattern, "Diurnal/Crepuscular", "Crepuscular")
 maor_mam_data$Activity_pattern <- str_replace_all(maor_mam_data$Activity_pattern, "Nocturnal - EXTINCT", "Nocturnal")
+maor_mam_data$Activity_pattern <- str_replace_all(maor_mam_data$Activity_pattern, "EXTINCT", "")
 
 #Don't add back alternative patterns for now
-# #add all the extra diel patterns, then sort the columns after since they're in a random order anyway
-# maor_mam_data <- merge(maor_mam_data, duplicates1, by='Species', all.x = TRUE, all.y = TRUE)
-# maor_full <- merge(maor_mam_data, duplicates2, by='Species', all.x = TRUE, all.y = TRUE)
-# maor_full <- maor_full[, c("Species", "Activity_pattern", "Activity_pattern.x", "Activity_pattern.y")]
-# maor_full <- relocate(maor_full, "Activity_pattern.x", .after = "Activity_pattern.y")
-# colnames(maor_full) <- c("Species", "alt_pattern_1", "alt_pattern_2", "Activity_pattern")
+#save out Maor dataframe
+write.csv(maor_full, here("maor_full.csv"), row.names  = FALSE)
 
+# #add all the extra diel patterns, then sort the columns after since they're in a random order anyway
+maor_mam_data <- merge(maor_mam_data, duplicates1, by='Species', all.x = TRUE, all.y = TRUE)
+maor_full <- merge(maor_mam_data, duplicates2, by='Species', all.x = TRUE, all.y = TRUE)
+maor_full <- maor_full[, c("Species", "Activity_pattern", "Activity_pattern.x", "Activity_pattern.y")]
+maor_full <- relocate(maor_full, "Activity_pattern.x", .after = "Activity_pattern.y")
+colnames(maor_full) <- c("Species", "alt_pattern_1", "alt_pattern_2", "Activity_pattern")
+maor_full$alt_pattern_1 <- str_replace(maor_full$alt_pattern_1, pattern = "Nocturnal / Arrhythmic", replacement = "Nocturnal/Cathemeral")
+maor_full$alt_pattern_2 <- str_replace(maor_full$alt_pattern_2, pattern = "Nocturnal / Arrhythmic", replacement = "Nocturnal/Cathemeral")
+maor_full$alt_pattern_2 <- str_replace(maor_full$alt_pattern_2, pattern = "Ultradian", replacement = "Cathemeral")
+
+#filter for just artiodactyls
+artio_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
+
+maor_full$tips <- str_replace(maor_full$Species, pattern = " ", replacement = "_")
+maor_full <- maor_full[maor_full$tips %in% artio_full$tips,] #leaves 200 species
+
+#lazy solution
+maor_full$Diel_pattern <- paste(maor_full$alt_pattern_1, maor_full$alt_pattern_2, maor_full$Activity_pattern, sep = "/")
+
+maor_full$Diel_pattern <- str_replace_all(maor_full$Diel_pattern, pattern = "NA/", replacement = "")
+maor_full$Diel_pattern <- str_replace_all(maor_full$Diel_pattern, pattern = "/NA", replacement = "")
+maor_full$Diel_pattern <- str_replace_all(maor_full$Diel_pattern, pattern = "NA", replacement = "")
+
+unique(maor_full$Diel_pattern)
+
+maor_full$Diel_pattern <- str_replace_all(maor_full$Diel_pattern, pattern = "Nocturnal/Crepuscular/Nocturnal", replacement = "Nocturnal/Crepuscular")
+maor_full$Diel_pattern <- str_replace_all(maor_full$Diel_pattern, pattern = "Crepuscular/Nocturnal", replacement = "Nocturnal/Crepuscular")
+maor_full$Diel_pattern <- str_replace_all(maor_full$Diel_pattern, pattern = "Nocturnal/Diurnal", replacement = "Cathemeral")
+maor_full$Diel_pattern <- str_replace_all(maor_full$Diel_pattern, pattern = "Diurnal/Crepuscular/Cathemeral", replacement = "Cathemeral/Crepuscular")
+maor_full$Diel_pattern <- str_replace_all(maor_full$Diel_pattern, pattern = "Crepuscular/Cathemeral", replacement = "Cathemeral/Crepuscular")
+
+maor_full <- maor_full[, c("Species", "Diel_pattern", "tips")]
+
+#save out Maor dataframe
+write.csv(maor_full, here("maor_artio_full.csv"), row.names  = FALSE)
 
 # Section 2: How well do these sources agree? -----------------------------
 diel_merge <- merge(Bennie_mam_data,maor_mam_data,by="Species")

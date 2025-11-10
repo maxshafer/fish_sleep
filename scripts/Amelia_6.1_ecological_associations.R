@@ -247,6 +247,9 @@ trait.data <- trait.data[!is.na(trait.data$Diel_Pattern),]
 #chose the variable we will look at
 trait.data.1 <- trait.data[!is.na(trait.data$Orbit_ratio),]
 
+ggplot(trait.data.1, aes(x = log(Bizygomatic_width), y = log(Average_orbit_length), colour = max_crep)) +
+  geom_point() + geom_smooth(method = "lm", na.rm = T, se = F, formula = y~x, aes(colour =max_crep))
+
 #perform the one-way anova
 orbit_model <- aov(Orbit_ratio ~ Diel_Pattern, data = trait.data.1)
 summary(orbit_model)
@@ -355,7 +358,7 @@ trait.data.art$Diel_Pattern <- str_replace(trait.data.art$Diel_Pattern, pattern 
 trait.data.art$Diel_Pattern <- str_replace(trait.data.art$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
 trait.data.art$Diel_Pattern <- str_replace(trait.data.art$Diel_Pattern, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
 #use below to remove 6 perissodactyla sps
-#trait.data.art <- filter(trait.data.art, Order == "Artiodactyla")
+trait.data.art <- filter(trait.data.art, Order == "Artiodactyla")
 trait.data.art <- trait.data.art[!is.na(trait.data.art$Orbit_ratio), c("tips", "Orbit_ratio", "Diel_Pattern", "Family", "fam_colours")]
 
 #perform the one-way anova
@@ -376,28 +379,23 @@ art_phylANOVA <- calculatePhylANOVA(trait.data.art, "Orbit_ratio")
 #add p values manually
 library(rstatix)
 #for artio
-# stat.test <- data.frame(group1 = c("crepuscular", "crepuscular", "diurnal"), 
-#                         group2 = c("diurnal", "nocturnal", "nocturnal"), 
-#                         p.adj = c(art_phylANOVA$Pt[2], art_phylANOVA$Pt[3], art_phylANOVA$Pt[6]),
-#                         y.position = c(0.95, 1.0, 0.994))
-#for artio + perisso
-stat.test <- data.frame(group1 = c("cathemeral", "cathemeral", "cathemeral", "crepuscular", "crepuscular", "diurnal"), 
-                        group2 = c("crepuscular", "diurnal", "nocturnal","diurnal", "nocturnal", "nocturnal"), 
-                        p.adj = c(art_phylANOVA$Pt[2], art_phylANOVA$Pt[3], art_phylANOVA$Pt[4], art_phylANOVA$Pt[7], art_phylANOVA$Pt[8], art_phylANOVA$Pt[12]),
-                        y.position = c(0.94, 0.96, 1.02, 0.95, 1.01, 1.0))
+stat.test <- data.frame(group1 = c("crepuscular", "crepuscular", "diurnal"),
+                        group2 = c("diurnal", "nocturnal", "nocturnal"),
+                        p.adj = c(art_phylANOVA$Pt[2], art_phylANOVA$Pt[3], art_phylANOVA$Pt[6]),
+                        y.position = c(0.95, 1.0, 0.994))
 
 stat.test <- stat.test %>% add_x_position(x = "Diel_Pattern")
 
 boxplot_art <- ggplot(trait.data.art, aes(x = Diel_Pattern, y = Orbit_ratio)) +
   geom_boxplot(aes(fill = Diel_Pattern), alpha=0.8) + scale_fill_manual(values = custom.colours) +
   new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
-  labs(x = "Temporal activity pattern", y = "Orbit ratio") + scale_fill_manual(values=unique(trait.data.art$fam_colours))  + 
+  labs(x = "Temporal activity pattern", y = "Corneal diameter: axial length") + scale_fill_manual(values=unique(trait.data.art$fam_colours))  + 
   theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
   stat_compare_means(label.y = 1.01, method = "anova") + annotate("text", x = 1.15, y = 1.007, label = paste("phylANOVA, p =", art_phylANOVA$Pf)) +
   stat_pvalue_manual(stat.test, label = "p.adj")
 boxplot_art
 
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Orbit_ratio", "_boxplots_anova_artio_perisso.pdf"), width = 8, height = 7)
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Orbit_ratio", "_boxplots_anova_artio.pdf"), width = 8, height = 7)
 boxplot_art
 dev.off()
 
