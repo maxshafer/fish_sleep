@@ -14,14 +14,11 @@ trait.data <- trait.data[!is.na(trait.data$Dive_depth_m),]
 # continuous_trait <- "Body_mass_kg"
 # trait.data <- trait.data[!is.na(trait.data$Body_mass_kg),]
 
-# continuous_trait <- "Body_length_m"
-# trait.data <- trait.data[!is.na(trait.data$Body_length_m),]
-
 #use below instead for artiodactyla orbit size
 # trait.data <- read.csv(here("artio_orbit_ratio.csv"))
 # continuous_trait <- "Orbit_ratio"
 # trait.data <- trait.data[!is.na(trait.data$Orbit_ratio),]
-#trait.data <- filter(trait.data, Order == "Artiodactyla")
+# trait.data <- filter(trait.data, Order == "Artiodactyla")
 
 #use below to rerun with max-crep four state model
 trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "diurnal/crepuscular", replacement = "crepuscular")
@@ -131,26 +128,26 @@ pairwise.t.test(trait.data$Orbit_ratio, trait.data$Diel_Pattern,  p.adj = "none"
 
 trait.data <- read.csv(here("cetacean_ecomorphology_dataset.csv"))
 
+#filter for species with activity pattern data
+trait.data <- trait.data[!is.na(trait.data$Diel_Pattern),]
+
 #chose the variable we will look at
 # discrete_trait <- "Habitat"
 # trait.data <- trait.data[!is.na(trait.data$Habitat),]
 
 # discrete_trait <- "Feeding_method"
 # trait.data <- trait.data[!is.na(trait.data$Feeding_method),]
-
-# discrete_trait <- "Prey_capture"
+# 
+# discrete_trait <- "Prey_capture" #less species than feeding method (60 vs 76) but come from one source (Churchill)
 # trait.data <- trait.data[!is.na(trait.data$Prey_capture),]
 
-# discrete_trait <- "Diet"
-# trait.data <- trait.data[!is.na(trait.data$Diet),]
+discrete_trait <- "Diet"
+trait.data <- trait.data[!is.na(trait.data$Diet),]
 
 #use below to rerun with max-crep four state model
 trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "diurnal/crepuscular", replacement = "crepuscular")
 trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
 trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
-
-#filter for species with activity pattern data
-trait.data <- trait.data[!is.na(trait.data$Diel_Pattern),]
 
 #filter for species in the final tree
 trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
@@ -172,6 +169,23 @@ mosaicplot(table(test_df), color = TRUE, main = paste0("Fischer's exact test: ",
 
 ggplot(trait.data, aes(x = Diel_Pattern, fill = trait.data[, c(discrete_trait)])) + geom_histogram(stat = "count", position = "dodge") + scale_fill_grey(name = discrete_trait) +theme_minimal()
 
+#test to see if aquatic lifestyle is associated with cathemerality
+artio_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
+artio_full <- artio_full[!is.na(artio_full$Diel_Pattern),]
+artio_full$enviro <- "aquatic"
+for(i in 1:nrow(artio_full)){
+  if(artio_full[i, "Parvorder"] == "non-cetacean"){
+    artio_full[i, "enviro"] <- "terrestrial"
+  }
+}
+
+discrete_trait <- "enviro"
+
+test_df <- artio_full[, c("max_crep", discrete_trait)]
+
+test <- fisher.test(table(test_df))
+mosaicplot(table(test_df), color = TRUE, main = paste0("Fischer's exact test: ", "p-value = ", round(test$p.value, 9))) 
+ggplot(artio_full, aes(x = max_crep, fill = artio_full[, c(discrete_trait)])) + geom_histogram(stat = "count", position = "dodge") + scale_fill_grey(name = discrete_trait) +theme_minimal()
 
 
 # Multivariate analysis ---------------------------------------------------

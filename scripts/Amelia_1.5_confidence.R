@@ -460,6 +460,10 @@ diel_full_long$value <- str_replace(diel_full_long$value, pattern = "unclear/", 
 diel_full_long[diel_full_long == "unclear"] <- NA
 diel_full_long <- diel_full_long[!is.na(diel_full_long$value),]
 
+#optional: look an concordance for only cath, di and noc (since the pipeline is used to call these)
+diel_full_long$value <- str_replace(diel_full_long$value, pattern = "/crepusuclar", replacement = "")
+diel_full_long <- diel_full_long[diel_full_long$value %in% c("diurnal", "cathemeral", "nocturnal", "nocturnal/cathemeral", "diurnal/cathemeral"), ]
+
 species_list <- table(diel_full_long$Species_name) #319 species
 species_list <- names(species_list[species_list > 1]) #192 species with multiple sources
 
@@ -748,3 +752,54 @@ concordance$freq_count <- paste0(round(concordance$percent, 2), "\n", "(n=", con
 ggplot(concordance, aes(Existing_data, Amelia_data, fill = percent)) + geom_tile() + geom_text(aes(label = freq_count)) +
   scale_fill_gradient(low = "white", high = "dodgerblue") + 
   theme_minimal() + ylab("Amelia (new) dataset") + xlab("Existing dataset")
+
+Bennie_freq_count <- concordance$freq_count
+
+#add the concordance values to the sankey diagram
+df <- mammals_df %>% make_long(Bennie_diel, Amelia_diel, Maor_diel,)
+
+test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+  geom_sankey(flow.alpha= 0.5, node.color = 1) + geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5")) +
+  theme_sankey(base_size = 16) + guides(fill = guide_legend(title = "Temporal activity pattern")) +
+  theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) + 
+  annotate("text", x = 1.2, y = c(-108,-98,-88,-84,-60,-49,-45,-31,0,40,49,65,84,98,108),
+                        label = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14, 15)) + 
+  annotate("text", x = 2.8, y = c(-108,-88,-72,-67,-52,-30,-2,5,20,35,62,72,87,96,103,109),
+           label = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16))
+test
+
+
+#with actual labels
+concordance <- as.data.frame(table(mammals_df$Bennie_diel, mammals_df$Amelia_diel))
+colnames(concordance) <- c("Bennie_data", "Amelia_data", "freq")
+totals_df <- aggregate(concordance$freq, by=list(Category=concordance$Bennie_data), FUN=sum)
+colnames(totals_df) <- c("Bennie_data", "total")
+concordance <- merge(concordance, totals_df, by = "Bennie_data")
+concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
+concordance$freq_count <- paste0(round(concordance$percent, 2), "%", " ", "(n=", concordance$freq, ")")
+Bennie_freq_count <- concordance$freq_count
+Bennie_freq_count <- Bennie_freq_count[-5] #remove zero for crep to cath
+
+concordance <- as.data.frame(table(mammals_df$Maor_diel, mammals_df$Amelia_diel))
+colnames(concordance) <- c("Maor_data", "Amelia_data", "freq")
+totals_df <- aggregate(concordance$freq, by=list(Category=concordance$Maor_data), FUN=sum)
+colnames(totals_df) <- c("Maor_data", "total")
+concordance <- merge(concordance, totals_df, by = "Maor_data")
+concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
+concordance$freq_count <- paste0(round(concordance$percent, 2), "%", " ", "(n=", concordance$freq, ")")
+Maor_freq_count <- concordance$freq_count
+
+test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+  geom_sankey(flow.alpha= 0.5, node.color = 1) + geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5")) +
+  theme_sankey(base_size = 16) + guides(fill = guide_legend(title = "Temporal activity pattern")) +
+  theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) + 
+  annotate("text", x = 1.27, y = c(-108,-98,-88,-84,-60,-49,-45,-31,0,40,49,65,84,98,108),
+           label = Bennie_freq_count, size = 3) + 
+  annotate("text", x = 2.75, y = c(-108,-88,-72,-67,-52,-30,-2,5,20,35,62,72,87,96,103,109),
+           label = Maor_freq_count, size =3)
+test
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "sankey_labelled.pdf"), width = 10, height = 8)
+test
+dev.off()
+

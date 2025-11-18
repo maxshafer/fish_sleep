@@ -389,7 +389,6 @@ trait.data.1$all <- str_replace(trait.data.1$all, "RaptorialSuction", "Suction/r
 trait.data.1$all <- str_replace(trait.data.1$all, "Raptorial/Suction", "Suction/raptorial")
 unique(trait.data.1$all)
 
-
 trait.data.1 <- trait.data.1[, c("tips", "all")]
 colnames(trait.data.1) <- c("tips", "Feeding_method")
 

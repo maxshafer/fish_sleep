@@ -57,7 +57,7 @@ library(kableExtra)
 library(webshot)
 library(forcats)
 library(ggpmisc)
-
+library(ggsankey)
 # Set the working directory and source the functions (not used yet)
 setwd(here())
 
@@ -157,10 +157,11 @@ test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "nocturn
 test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "diurnal/cathemeral", replacement = "cathemeral")
 
 #deal with unclear values which are all in confidence level 2
-#tested with including these as unclear or not and is does change the call on any activity pattern, it does not
-test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "unclear/diurnal", replacement = "diurnal")
-test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "unclear/cathemeral", replacement = "cathemeral")
-test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "unclear/nocturnal", replacement = "nocturnal")
+#tested with including these as unclear or not and is does change the call on any activity pattern
+#the 3 species it effects are not in the final mammal tree so we can exclude/keep as unclear (better to justify in methods)
+test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "unclear/diurnal", replacement = "unclear")
+test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "unclear/cathemeral", replacement = "unclear")
+test_diel_long$value <- str_replace_all(test_diel_long$value, pattern = "unclear/nocturnal", replacement = "unclear")
 
 #separate out crepuscularity into its own column
 #confidence level 2 data will be unclear/crepuscular since they don't show evidence of nocturnal or diurnal activity
@@ -262,7 +263,7 @@ tabulateFunc2 <- function(x) {
         } else {
           #only use level 1 and 2 to make the call if that's the only confidence levels (and check if there is a tie, if its tied to go else, call it cathemeral variable)
           if(nrow(x[x$column %in% c("Conf1", "Conf2"),]) == nrow(x) & !is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf2", "Conf1")], unique(x$new_diel))), tie_value = "NA"))){
-            activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf2", "Conf1")], unique(x$new_diel))), tie_value = "NA")]
+            activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf1")], unique(x$new_diel))), tie_value = "NA")]
             activity_pattern <- paste(activity_pattern, "H")
           } else {activity_pattern <- "cathemeral-variable I"} #this is the case where there are multiple level 1,2,3 or 5 sources that are tied, so we can call it cathemeral-variable (case I)
         }
@@ -366,23 +367,23 @@ for(i in 1:nrow(test)){
 unique(test$tabulated_diel)
 
 test <- test[, c("Species_name", "tabulated_diel")]
-
-#check that nothing about the data has changed since running it last 
 previous_dataset <- read.csv(here("cetacean_tabulated_full.csv"))
 current_dataset <- test
+
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+previous_dataset$tips <- str_replace(previous_dataset$Species_name, pattern = " ", replacement = "_")
+previous_dataset <- previous_dataset[previous_dataset$tips %in% mam.tree$tip.label, ]
+table(previous_dataset$tabulated_diel)
+current_dataset$tips <- str_replace(current_dataset$Species_name, pattern = " ", replacement = "_")
+current_dataset <- current_dataset[current_dataset$tips %in% mam.tree$tip.label, ]
+table(current_dataset$tabulated_diel)
+
+#check that nothing about the data has changed since running it last 
 all(previous_dataset == current_dataset)
 if(all(previous_dataset == current_dataset) == FALSE) stop("Dataset is not the same!")
 
-mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-test$tips <- str_replace(test$Species_name, pattern = " ", replacement = "_")
-test <- test[test$tips %in% mam.tree$tip.label, ]
-table(test$tabulated_diel)
-activity_pattern_df$tips <- str_replace(activity_pattern_df$Species_name, pattern = " ", replacement = "_")
-activity_pattern_df <- activity_pattern_df[activity_pattern_df$tips %in% mam.tree$tip.label, ]
-table(activity_pattern_df$level)
-
 #save out the new tabulated activity pattern dataframe
-write.csv(test, here("cetacean_tabulated_full.csv"), row.names = FALSE)
+write.csv(current_dataset, here("cetacean_tabulated_full.csv"), row.names = FALSE)
 
 # Section 3.5 Save out cetacean data frame with additional details -------
 #load in the dataframe with the tabulated activity patterns (objective calls based on source concordance)
@@ -685,7 +686,7 @@ diel_full <- read.csv(here("cetacean_confidence_wide.csv"))
 df <- diel_full %>% make_long(6:39)
 
 #use below for custom column selection
-#df <- diel_full %>% make_long(Conf1.1, Conf2.1, Conf3.1, Conf4.1, Conf5.1)
+df <- diel_full %>% make_long(Conf1.1, Conf2.1, Conf3.1, Conf4.1, Conf5.1)
 
 #for all the columns with level 5 data, how does it agree with other data sources?
 #df <- diel_full %>% make_long(Conf3.1, Conf3.2, Conf3.3, Conf3.4, Conf3.5)
@@ -759,3 +760,47 @@ tree_data = data.frame(Decision_1 = c("Consensus in multiple level 4 sources?"),
                        Decision_6 = c("", "", "", "", "", "", "", "Return cathemeral-variable", "", "", "", "", "", "","", "", "", "", "", "", "", "", "", "Return consensus", "", "", "", "", "", "", "", ""))
 
 vtree(tree_data, c("Decision_1", "Decision_2", "Decision_3", "Decision_4", "Decision_5", "Decision_6"), vp = FALSE, prune = list(Decision_3 = c(""), Decision_4 = c(""), Decision_5 = c(""), Decision_6 = c("")))
+
+
+# Section Y: Concordance flowchart ----------------------------------------
+
+library(networkD3)
+
+# A connection data frame is a list of flows with intensity for each flow
+links <- data.frame(
+  source=c("group_A","group_A", "group_B", "group_C", "group_C", "group_E"), 
+  target=c("group_C","group_D", "group_E", "group_F", "group_G", "group_H"), 
+  value=c(2,3, 2, 3, 1, 3)
+)
+
+links <- data.frame(
+  source=c("group_A","group_A", "group_B", "group_B", "group_D", "group_D", "group_F", "group_F", "group_J", "group_J"), 
+  target=c("group_B","group_C", "group_D", "group_E", "group_F", "group_H", "group_I", "group_J", "group_K", "group_L"), 
+  value=c(26,56,40,16,15,1,3,12,6,6)
+)
+
+
+# From these flows we need to create a node data frame: it lists every entities involved in the flow
+nodes <- data.frame(
+  name=c(as.character(links$source), 
+         as.character(links$target)) %>% unique()
+)
+
+# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
+links$IDsource <- match(links$source, nodes$name)-1 
+links$IDtarget <- match(links$target, nodes$name)-1
+
+# Make the Network
+sankeyNetwork(Links = links, Nodes = nodes,
+              Source = "IDsource", Target = "IDtarget",
+              Value = "value", NodeID = "name", 
+              sinksRight=FALSE, colourScale = JS("d3.scaleOrdinal([d3.color('#F00'), d3.color('#0F0'), d3.color('#00F')]);"))
+
+
+p <- sankeyNetwork(Links = links, Nodes = nodes,
+                   Source = "IDsource", Target = "IDtarget",
+                   Value = "value", NodeID = "name", 
+                   sinksRight=FALSE, colourScale = JS("d3.scaleOrdinal([d3.color('#F00'), d3.color('#0F0'), d3.color('#00F'), d3.color('#F00'), d3.color('#0F0'), d3.color('#00F'), d3.color('#F00'), d3.color('#0F0'), d3.color('#00F'), d3.color('#F00'), d3.color('#0F0')]);"))
+p 
+
+
