@@ -169,6 +169,8 @@ test_diel_long <- separate(test_diel_long, col = value, into = c("new_diel", "cr
 #replace "unclear" with NA since it adds no new information
 test_diel_long[test_diel_long == "unclear"] <- NA #84 species with some data
 
+write.csv(test_diel_long, here("cetacean_confidence_long_final.csv"), row.names = FALSE)
+
 #a custom function to take the mode where x is a list of numbers corresponding to the number of times each diel pattern appears for a given species
 #if x = c(2,1,3) then for that species diurnal appeared twice, nocturnal appeared once and cathemeral appeared thrice
 which.max.simple=function(x,na.rm=TRUE,tie_value="NA"){
@@ -223,7 +225,7 @@ which.max.simple=function(x,na.rm=TRUE,tie_value="NA"){
 #example, diurnal appears twice, nocturnal appears once and cathemeral appears three times. So it returns cathemeral as the activity pattern
 
 #example species
-#x <- filter(test_diel_long, Species_name == "Balaenoptera borealis")
+x <- filter(test_diel_long, Species_name == "Pontoporia blainvillei")
 
 # my method: take mode of mutliple level 4 sources if they exist, if not mode of Conf3 and Conf4
 #if unclear add in Conf5 data, if unclear use single level 4 source (if it exists), if still unclear call cathemeral-variable
@@ -283,12 +285,102 @@ tabulateFunc2 <- function(x) {
   
   return(activity_pattern)  
 }
+tabulateFunc4 <- function(x) {
+  #first check if there is multiple level 4 confidence entries
+  if(x %>% filter(column == "Conf4") %>% nrow() > 1){
+    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA"))) {
+      if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
+        if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
+          activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf1", "Conf3", "Conf4", "Conf5")], unique(x$new_diel))), tie_value = "NA")] #result if there is a tie between all confidence levels (case D)
+          activity_pattern <- paste(activity_pattern, "D")
+        } else {
+          activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
+          activity_pattern <- paste(activity_pattern, "C")
+          #result if level 4 and level 4+3 are inconclusive (case C)
+        }
+      } else {
+        activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
+        activity_pattern <- paste(activity_pattern, "B")
+        #result if level 4 alone is inconclusive (case B)
+      }
+    } else {
+      activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
+      activity_pattern <- paste(activity_pattern, "A")
+      #result if there is multiple level 4 evidence and it is not inconclusive (case A)
+    }
+  } else {
+    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))|(nrow(x[x$column %in% c("Conf3", "Conf4"),]) == 1)) {
+      if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))|(nrow(x[x$column %in% c("Conf3", "Conf4"),]) == 1)) {
+        #if there is a tie use the single level 4 entry to make the call
+        activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
+        #activity_pattern <- paste(activity_pattern, "G") can't actually label this with a G or it won't recognize NA for the next steps
+        #if there is no level 4 source it will return an NA and move on to here
+        if(NA %in% activity_pattern){ #if there is no level 4 data to use as the tiebreaker then add in the level 1 and 2 data
+          activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf3")], unique(x$new_diel))), tie_value = "NA")]
+          activity_pattern <- paste(activity_pattern, "H") #can't label case H because then below doesn't work
+          if("NA H" %in% activity_pattern){
+            if(is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf1")], unique(x$new_diel))), tie_value = "NA"))){
+              activity_pattern <- "cathemeral-variable J"}
+            else {activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf1")], unique(x$new_diel))), tie_value = "NA")]
+            activity_pattern <- paste(activity_pattern, "I")}
+          }
+        }
+      } else {activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
+      activity_pattern <- paste(activity_pattern, "F")}
+    } else {
+      activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
+      activity_pattern <- paste(activity_pattern, "E")
+      #result if level 4 alone is inconclusive (case E)
+    }
+  }
+  
+  return(activity_pattern) 
+}
+tabulateFuncCet <- function(x) {
+  if(x %>% filter(column == "Conf4") %>% nrow() > 1 & !is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA"))){
+    activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
+    activity_pattern <- paste(activity_pattern, "A")
+  } else {
+    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))|(nrow(x[x$column %in% c("Conf3", "Conf4"),]) == 1)){
+      if (nrow(x[x$column %in% c("Conf4"),]) < 1) {
+        if (nrow(x[x$column %in% c("Conf3"),]) != 1){
+          if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
+            if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf1")], unique(x$new_diel))), tie_value = "NA")) | nrow(x[x$column %in% c("Conf3", "Conf4", "Conf5"),]) > 0){
+              activity_pattern <- "cathemeral-variable J"
+            } else{
+              activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf1")], unique(x$new_diel))), tie_value = "NA")]
+              activity_pattern <- paste(activity_pattern, "I")
+            }
+          } else {
+            activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
+            activity_pattern <- paste(activity_pattern, "H")
+          }
+        } else {
+          activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf3")], unique(x$new_diel))), tie_value = "NA")]
+          activity_pattern <- paste(activity_pattern, "G")
+        }
+      } else {
+        activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
+        activity_pattern <- paste(activity_pattern, "F")
+      }
+    } else {
+      activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
+      activity_pattern <- paste(activity_pattern, "E")}
+  }
+  return(activity_pattern)
+}
 
 #run each species through this function, x species with activity pattern data (di, noc or cath)
-activity_pattern_df <- test_diel_long[!is.na(test_diel_long$new_diel),] %>% group_by(Species_name) %>% do(tabulated_diel_pattern = tabulateFunc2(.)) %>% unnest()
+activity_pattern_df <- test_diel_long[!is.na(test_diel_long$new_diel),] %>% group_by(Species_name) %>% do(tabulated_diel_pattern = tabulateFuncCet(.)) %>% unnest()
+activity_pattern_df1 <- test_diel_long[!is.na(test_diel_long$new_diel),] %>% group_by(Species_name) %>% do(tabulated_diel_pattern = tabulateFunc4(.)) %>% unnest()
 
 activity_pattern_df <- separate(activity_pattern_df, col = "tabulated_diel_pattern", into = c("tabulated_diel_pattern", "level"), sep = " ")
+activity_pattern_df$level <- activity_pattern_df$level %>% replace_na("G")
 table(activity_pattern_df$level)
+
+activity_pattern_df1 <- separate(activity_pattern_df1, col = "tabulated_diel_pattern", into = c("tabulated_diel_pattern", "level"), sep = " ")
+activity_pattern_df1$level <- activity_pattern_df1$level %>% replace_na("G")
+table(activity_pattern_df1$level)
 
 unique(activity_pattern_df$tabulated_diel_pattern)
 
@@ -383,7 +475,7 @@ all(previous_dataset == current_dataset)
 if(all(previous_dataset == current_dataset) == FALSE) stop("Dataset is not the same!")
 
 #save out the new tabulated activity pattern dataframe
-write.csv(current_dataset, here("cetacean_tabulated_full.csv"), row.names = FALSE)
+write.csv(test, here("cetacean_tabulated_full.csv"), row.names = FALSE)
 
 # Section 3.5 Save out cetacean data frame with additional details -------
 #load in the dataframe with the tabulated activity patterns (objective calls based on source concordance)
@@ -648,109 +740,9 @@ pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_s
 plot_countfreq
 dev.off() 
 
-# Section 5: Tables -------------------------------------------------------
-data <- read.csv(here("cetacean_confidence_long_df.csv"))
-data$column <- substr(data$column, 5,5)
-data$value <- str_replace(data$value, "unclear/", "")
-data$value <- str_replace(data$value, "cathemeral/", "")
-#max crep, max cath
-data$value <- str_replace(data$value, "diurnal/", "")
-data$value <- str_replace(data$value, "nocturnal/", "")
-ggplot(data, aes(x = column, fill = value)) + geom_histogram(stat = "count")
+# Section X: Make a flowchart old ---------------------------------------------
 
-data$column <- as.numeric(data$column)
-test <- data %>% group_by(Species_name) %>% summarize(highest_conf = max(column))
-
-ggplot(test, aes(x = highest_conf)) + geom_histogram(stat = "count")
-
-#when only looking at species in final tree
-mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-test$tips <- str_replace(test$Species_name, " ", "_")
-test <- test[test$tips %in% mam.tree$tip.label, ]
-ggplot(test, aes(x = highest_conf, fill = tips)) + geom_histogram(stat = "count")
-
-#in the final tree only 2 species have a call made off of level 2 data, 6 have only level 1 data
-
-cetaceans_full <- read.csv(here("cetaceans_full.csv"))
-cetaceans_full <- cetaceans_full[!is.na(cetaceans_full$Diel_Pattern),]
-ggplot(cetaceans_full, aes(x = Confidence, fill = tips)) + geom_histogram(stat = "count")
-
-#with only species in final tree
-cetaceans_full <- cetaceans_full[cetaceans_full$tips %in% mam.tree$tip.label,]
-ggplot(cetaceans_full, aes(x = Confidence, fill = tips)) + geom_histogram(stat = "count")
-
-# Section 6: Cetacean confidence sankey ----------------------------------
-diel_full <- read.csv(here("cetacean_confidence_wide.csv"))
-
-#use below for all columns
-df <- diel_full %>% make_long(6:39)
-
-#use below for custom column selection
-df <- diel_full %>% make_long(Conf1.1, Conf2.1, Conf3.1, Conf4.1, Conf5.1)
-
-#for all the columns with level 5 data, how does it agree with other data sources?
-#df <- diel_full %>% make_long(Conf3.1, Conf3.2, Conf3.3, Conf3.4, Conf3.5)
-#df <- diel_full %>% make_long(Conf5.1, Conf5.2, Conf5.3, Conf5.4)
-#df <- diel_full %>% make_long(Conf4.1, Conf4.2, Conf4.3, Conf4.4, Conf4.5)
-#df <- diel_full %>% make_long(Conf3.1, Conf4.1, Conf5.1)
-
-df$node <- tolower(df$node)
-df$node <- str_trim(df$node)
-unique(df$node)
-#calling these nocturnal, diurnal, cathemeral (removing unclear as an option)
-df$node <- str_replace_all(df$node, pattern = "unclear/nocturnal", replacement = "nocturnal")
-df$node <- str_replace_all(df$node, pattern = "unclear/diurnal", replacement = "diurnal")
-df$node <- str_replace_all(df$node, pattern = "unclear/cathemeral", replacement = "cathemeral")
-df$node <- str_replace_all(df$node, pattern = "unclear/crepuscular", replacement = "cathemeral")
-df$node <- str_replace_all(df$node, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
-
-df$next_node <- tolower(df$next_node)
-df$next_node <- str_trim(df$next_node)
-unique(df$next_node)
-
-#calling these nocturnal, diurnal, cathemeral (removing unclear as an option)
-df$next_node <- str_replace_all(df$next_node, pattern = "unclear/nocturnal", replacement = "nocturnal")
-df$next_node <- str_replace_all(df$next_node, pattern = "unclear/diurnal", replacement = "diurnal")
-df$next_node <- str_replace_all(df$next_node, pattern = "unclear/cathemeral", replacement = "cathemeral")
-df$next_node <- str_replace_all(df$next_node, pattern = "unclear/crepuscular", replacement = "cathemeral")
-df$next_node <- str_replace_all(df$next_node, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
-
-df[df == "unclear"] <- NA
-df[df == ""] <- NA
-
-#remove entries where both the starting and ending node are NA
-df <- df %>% filter_at(vars(node, next_node), any_vars(!is.na(.)))
-
-#optional: for four states
-df$node <- str_replace_all(df$node, pattern = "nocturnal/crepuscular", replacement = "nocturnal")
-df$node <- str_replace_all(df$node, pattern = "diurnal/crepuscular", replacement = "diurnal")
-df$next_node <- str_replace_all(df$next_node, pattern = "nocturnal/crepuscular", replacement = "nocturnal")
-df$next_node <- str_replace_all(df$next_node, pattern = "diurnal/crepuscular", replacement = "diurnal")
-df$node <- str_replace_all(df$node, pattern = "diurnal/cathemeral", replacement = "cathemeral")
-df$node <- str_replace_all(df$node, pattern = "nocturnal/cathemeral", replacement = "cathemeral")
-#not sure whether to call these cathemeral or di/noc
-df$next_node <- str_replace_all(df$next_node, pattern = "diurnal/cathemeral", replacement = "cathemeral")
-df$next_node <- str_replace_all(df$next_node, pattern = "nocturnal/cathemeral", replacement = "cathemeral")
-
-ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node))) + geom_sankey() + theme_sankey(base_size = 16)
-
-
-# Section X: Make a flowchart ---------------------------------------------
-
-install.packages("vtree")
 library(vtree)
-tree_data = data.frame(Context = c("urban", "rural", "urban", "urban", "rural", "rural"),
-                       Lighting = c("daylight", "dark", "dark", "daylight", "daylight", "dark"),
-                       Driver_age = c("Senior", "Adult", "Adult", "Adult", "Adult", "Senior"))
-
-vtree(tree_data, c("Context", "Lighting"))
-
-tree_data = data.frame(Decision_1 = c("Multiple level 4 sources?"),
-                       Decision_2 = c("Level 4 sources agree?", "Level 3 and 4 sources agree?"),
-                       Decision_3 = c("Return level 4", "Return level 3", "Level 3, 4 and 5 sources agree?", "Huh"),
-                       Decision_4 = c(""))
-
-vtree(tree_data, c("Decision_1", "Decision_2", "Decision_3"), vp = FALSE, prune = list(Decision_3 = c("")))
 
 tree_data = data.frame(Decision_1 = c("Consensus in multiple level 4 sources?"),
                        Decision_2 = c("Return level 4 consensus", "Consensus in level 3 + 4 sources?"),
@@ -762,7 +754,7 @@ tree_data = data.frame(Decision_1 = c("Consensus in multiple level 4 sources?"),
 vtree(tree_data, c("Decision_1", "Decision_2", "Decision_3", "Decision_4", "Decision_5", "Decision_6"), vp = FALSE, prune = list(Decision_3 = c(""), Decision_4 = c(""), Decision_5 = c(""), Decision_6 = c("")))
 
 
-# Section Y: Concordance flowchart ----------------------------------------
+# Section Y: Flowchart old ----------------------------------------
 
 library(networkD3)
 
@@ -804,3 +796,35 @@ p <- sankeyNetwork(Links = links, Nodes = nodes,
 p 
 
 
+
+
+# Section Z: Concordance sankey -------------------------------------------
+
+#create dataframe of the number of species that had activity patterns determined at each step
+df <- data.frame(
+  step_0 = c(rep("A. Multiple cateory D \n concordance?",82)),
+  step_1 = c(rep("B. Return category D \n concordance (n = 26)", 26), rep("C. Category D + C \n concordance?", 56)),
+  step_2 = c(rep(NA, 26), rep("D. Return category D + C \n concordance (n = 25)", 25), rep("E. Single category D source?", 31)),
+  step_3 = c(rep(NA, 51), rep("F. Return single cateory D  \n source (n = 5)", 5), rep("G. Single category C source?", 26)),
+  step_4 = c(rep(NA, 56), rep("H. Return single category C \n source (n = 13)", 13), rep("I. Category E + D + C \n concordance?", 13)),
+  step_5 = c(rep(NA, 69), rep("J. Return category E + D \n + C concordance (n = 1)", 1), rep("K. Multiple category C, D, or E \n sources in disagreement?", 12)),
+  step_6 = c(rep(NA, 70), rep("L. Return category A \n concordance (n = 7)", 7), rep("M. Return cathemeral \n (n = 5)", 5))
+)
+
+#convert to long format for geomsankey
+df <- df %>% make_long(step_0, step_1, step_2, step_3, step_4, step_5, step_6)
+df <- df[!is.na(df$node), ]
+
+blues <- c("#010661", "#070E8A","#070E8A", "#0044A3","#0044A3", "#0070D1","#0070D1","#2E9DFF","#2E9DFF","#8AC8FF","#8AC8FF","#B8DEFF","#B8DEFF")
+
+test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = node, label = node)) +
+  geom_sankey(flow.alpha= 0.5, node.color = 0.5) + geom_sankey_label(size = 3.5, color = 1, fill = "white")  + 
+  theme_sankey(base_size = 16) + scale_fill_manual(values = blues) +
+  theme(legend.position = "none", axis.text.x = element_blank(), panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
+
+test
+
+#save out to figure folder
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "cetacean_flowchart.pdf"), height = 7, width = 14)
+test
+dev.off()
