@@ -180,14 +180,15 @@ rtrait <- function(tree,R,nstates) {
 #trait: trait vector 
 delta <- function(trait, tree,lambda0,se,sim,thin,burn) {
   
-  ar <- ace(trait,tree,type="discret",method="ML",model="ARD")$lik.anc
+  #returns the likelihood of each trait state at each internal node
+  ar <- ace(trait,tree,type="discret",method="ML",model="ARD", marginal = T)$lik.anc
   
   # deletes the complex part whenever it pops up
   if (class(ar[1,1]) == "complex"){
     ar <- Re(ar)
   }
   
-  x  <- nentropy(ar)
+  x  <- nentropy(ar) #calculates the entropy of each internal node
   mc1    <- emcmc(rexp(1),rexp(1),x,lambda0,se,sim,thin,burn)
   mc2    <- emcmc(rexp(1),rexp(1),x,lambda0,se,sim,thin,burn)
   mchain <- rbind(mc1,mc2)
@@ -196,3 +197,65 @@ delta <- function(trait, tree,lambda0,se,sim,thin,burn) {
   return(deltaA)
 }
 
+
+
+# Example code ------------------------------------------------------------
+
+#SOME PARAMETERS... 
+lambda0 <- 0.1   #rate parameter of the proposal 
+se      <- 0.5   #standard deviation of the proposal
+sim     <- 10000 #number of iterations
+thin    <- 10    #we kept only each 10th iterate 
+burn    <- 100   #100 iterates are burned-in
+
+#RANDOM TREE: 
+#same for both examples, only the trait vector varies.
+set.seed(25)
+ns   <- 20        #20 species
+tree <- rtree(ns)
+
+##########
+# CASE A # : with phylogenetic signal
+##########
+trait <- c(2,1,3,1,1,3,1,3,2,1,1,2,2,2,2,1,1,3,1,1)
+
+#CALCULATE DELTA A
+deltaA <- delta(trait,tree,lambda0,se,sim,thin,burn)
+print(deltaA)
+
+#DRAW THE TREE...
+par(mfrow=c(1,2))
+tree$tip.label <- rep("",ns)
+plot(tree,main="SCENARIO A")
+ar <- ace(trait,tree,type="discret",method="ML",model="ARD")$lik.anc
+nodelabels(pie = ar, cex = 1,frame="n") 
+mtrait <- matrix(0,ncol=3,nrow=ns)
+for ( i in 1:ns) {
+  mtrait[i,trait[i]] <- 1
+}
+tiplabels(pie=mtrait,cex=0.5)
+
+
+
+##########
+# CASE B # : no phylogenetic signal
+##########
+trait <- c(2,3,1,3,3,3,3,2,2,3,1,2,1,2,3,1,2,3,1,2) 
+
+#CALCULATE DELTA B
+deltaB <-  delta(trait,tree,lambda0,se,sim,thin,burn)
+print(deltaB)
+
+#DRAW THE TREE...
+ar <- ace(trait,tree,type="discret",method="ML",model="ARD")$lik.anc
+plot(tree,main="SCENARIO B")
+nodelabels(pie = Re(ar), cex = 1) 
+mtrait <- matrix(0,ncol=3,nrow=ns)
+for ( i in 1:ns) {  mtrait[i,trait[i]] <- 1 }
+tiplabels(pie=mtrait,cex=0.5)
+
+
+# in scenario A the nodes are informative (ie the reconstruction is more definite)
+# therefore there is low entropy and high phylogenetic signal. DeltaA = 1.3
+# in scenario B the nodes are uninformative and therefore the entropy is high and signal low
+# DeltaB = 1.00

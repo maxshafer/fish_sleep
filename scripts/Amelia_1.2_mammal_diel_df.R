@@ -10,10 +10,11 @@ Bennie_mam_data$SpeciesBehaviourReference <- str_replace(string = Bennie_mam_dat
 Bennie_mam_data <- separate(Bennie_mam_data, col = SpeciesBehaviourReference, into = c("tips", "max_crep", "Reference"), sep = " ")
 Bennie_mam_data$max_crep <- tolower(Bennie_mam_data$max_crep)
 Bennie_mam_data$Species_name <- str_replace(string = Bennie_mam_data$tips, pattern = "_", replacement  = " ")
-trait.data <- Bennie_mam_data[1:4478, ]
+trait.data <- Bennie_mam_data[1:4477, c("tips", "max_crep", "Species_name") ]
 
-resolved_names <- tnrs_match_names(names = trait.data$Species_name, context_name = "Vertebrates", do_approximate_matching = FALSE)
-resolved_names <- resolved_names[!is.na(resolved_names$ott_id), ]
+resolved_names <- tnrs_match_names(names = trait.data$Species_name, context_name = "Vertebrates", do_approximate_matching = TRUE)
+missing_names <- resolved_names[is.na(resolved_names$ott_id), ] #40 names not found
+resolved_names <- resolved_names[!is.na(resolved_names$ott_id), ] #returns 4437 names 
 
 get_rank <- function(tax_info, rank_name) {
   lineage <- tax_lineage(tax_info)[[1]]
@@ -40,7 +41,7 @@ df3 <- resolved_names[2001:3000,] %>% rowwise() %>% mutate(
   family = get_rank(tax_info, "family"),
   genus = get_rank(tax_info, "genus")) %>% ungroup() %>% select(-tax_info)
 
-df4 <- resolved_names[3001:4407,] %>% rowwise() %>% mutate(
+df4 <- resolved_names[3001:4437,] %>% rowwise() %>% mutate(
   tax_info = list(taxonomy_taxon_info(ott_id, include_lineage = TRUE)),
   order = get_rank(tax_info, "order"),
   family = get_rank(tax_info, "family"),
@@ -48,15 +49,68 @@ df4 <- resolved_names[3001:4407,] %>% rowwise() %>% mutate(
 
 df <- rbind(df1, df2, df3, df4)
 
-df <- df[, c("unique_name", "order", "family", "genus")]
-colnames(df) <- c("Species_name", "Order", "Family", "Genus")
+df <- df[, c("search_string", "order", "family", "genus")]
+df$search_string <- str_to_sentence(df$search_string)
+colnames(df) <- c("Species_name","Order", "Family", "Genus")
 
+#fill in missing info
+df[df$Family %in% c("Aotidae", "Atelidae", "Cebidae", "Cercopithecidae", "Cheirogaleidae", "Cynocephalidae", "Daubentoniidae", "Galagidae", "Hominidae", "Hylobatidae", "Indriidae", "Lemuridae", "Lepilemuridae", "Lorisidae", "Pitheciidae", "Tarsiidae"), c("Order")] <- "Primates"
+df[df$Genus %in% c("Microgale", "Tenrec", "Hemicentetes", "Oryzorictes", "Echinops", "Geogale", "Limnogale", "Setifer"), "Family"] <- "Tenrecidae"
+df[df$Genus %in% c("Micropotamogale", "Potamogale"), "Family"] <- "Potamogalidae"
+df[df$Family %in% c("Tenrecidae", "Potamogalidae"), "Order"] <- "Afrosoricida"
+
+test2 <- cbind(trait.data, df)  
 trait.data <- merge(trait.data, df, by = "Species_name", all = TRUE)
-trait.data <- trait.data[!is.na(trait.data$max_crep), c("tips", "max_crep", "Order", "Family", "Genus")]
 
-#trait.data[is.na(trait.data$Order), c("Order")] <- "Primates"
+#40 (39?) species weren't found in the otl and so won't have taxonomic info
+trait.data[is.na(trait.data$Genus), "Genus"] <- sub(" .*", "", trait.data[is.na(trait.data$Genus), "Species_name"])
 
+#use existing taxonomic info to fill in those species by matching by genus
+#this finds info for all but three
+for(i in 1:nrow(trait.data)){
+  if(is.na(trait.data[i, "Order"])){
+    for(j in 1:nrow(trait.data)){
+      if(trait.data[i, "Genus"] == trait.data[j, "Genus"] & !is.na(trait.data[j, "Order"])){
+        trait.data[i, "Order"] <- trait.data[j, "Order"]
+        trait.data[i, "Family"] <- trait.data[j, "Family"]
+        break
+      }
+    }
+  }
+}
+
+#species with no match, fill in manually (this is more than we need since setting approximate_match = TRUE found a lot of these already but keeping in case)
+trait.data[trait.data$Genus %in% c("Smutsia", "Uromanis", "Phataginus"), "Family"] <- "Manidae"
+trait.data[trait.data$Family %in% c("Manidae"), "Order"] <- "Pholidota"
+trait.data[trait.data$Genus %in% c("Sphiggurus", "Echinoprocta"), "Family"] <- "Erethizontidae"
+trait.data[trait.data$Genus %in% c("Loxodontomys", "Phaiomys"), "Family"] <- "Cricetidae"
+trait.data[trait.data$Genus %in% c("Megadendromus"), "Family"] <- "Nesomyidae"
+trait.data[trait.data$Family %in% c("Erethizontidae", "Cricetidae", "Nesomyidae"), "Order"] <- "Rodentia"
+trait.data[trait.data$Genus %in% c("Pseudalopex", "Alopex"), "Family"] <- "Canidae"
+trait.data[trait.data$Family %in% c("Canidae"), "Order"] <- "Carnivora"
+trait.data[trait.data$Genus %in% c("Enchisthenes", "Lampronycteris", "Trinycteris"), "Family"] <- "Phyllostomidae"
+trait.data[trait.data$Genus %in% c("Lissonycteris"), "Family"] <- "Pteropodidae"
+trait.data[trait.data$Genus %in% c("Paracoelops"), "Family"] <- "Hipposideridae"
+trait.data[trait.data$Genus %in% c("Vespadelus", "Bauerus"), "Family"] <- "Vespertilionidae"
+trait.data[trait.data$Family %in% c("Vespertilionidae", "Phyllostomidae", "Pteropodidae", "Hipposideridae"), "Order"] <- "Chiroptera"
+trait.data[trait.data$Genus %in% c("Cebuella"), "Family"] <- "Callitrichidae"
+trait.data[trait.data$Genus %in% c("Oreonax"), "Family"] <- "Atelidae"
+trait.data[trait.data$Family %in% c("Atelidae"), "Order"] <- "Primates"
+trait.data[trait.data$Genus %in% c("Choeropsis"), "Family"] <- "Hippopotamidae"
+trait.data[trait.data$Genus %in% c("Nesotragus", "Nilgiritragus"), "Family"] <- "Bovidae"
+trait.data[trait.data$Family %in% c("Hippopotamidae" ,"Bovidae"), "Order"] <- "Artiodactyla"
+trait.data[trait.data$Genus %in% c("Dactylonax"), "Family"] <- "Petauridae"
+trait.data[trait.data$Family %in% c("Petauridae"), "Order"] <- "Diprotodontia"
+
+#this species gets mislabeled as a gobi so fix it now
+trait.data[trait.data$tips == "Tadarida_sarasinorum", "Family"] <- "Molossidae"
+trait.data[trait.data$tips == "Tadarida_sarasinorum", "Order"] <- "Chiroptera"
+  
+#should have 4477 species
 write.csv(trait.data, here("Bennie_mam_data.csv"), row.names = FALSE)
+
+#trait.data <- read.csv(here("Bennie_mam_data.csv"))
+
 
 # Section 2: Maor dataframe -----------------------------------------------
 #read in the Maor diel activity patterns
@@ -187,4 +241,4 @@ diel_merge <- diel_merge[!duplicated(diel_merge$tips),] #remove duplicates, back
 
 #save out the final 
 colnames(diel_merge) <- c("tips", "Bennie_diel", "Bennie_source", "Maor_diel", "Maor_source", "match", "Order", "Family")
-write.csv(diel_merge, here("sleepy_mammals_old.csv"))
+#write.csv(diel_merge, here("sleepy_mammals_old.csv"))
