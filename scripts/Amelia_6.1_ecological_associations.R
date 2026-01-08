@@ -20,6 +20,11 @@ trait.data <- trait.data[!is.na(trait.data$Dive_depth_m),]
 # trait.data <- trait.data[!is.na(trait.data$Orbit_ratio),]
 # trait.data <- filter(trait.data, Order == "Artiodactyla")
 
+#artiodactyla body mass 
+trait.data <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
+continuous_trait <- "AdultBodyMass_g"
+trait.data <- trait.data[!is.na(trait.data$AdultBodyMass_g),]
+
 #use below to rerun with max-crep four state model
 trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "diurnal/crepuscular", replacement = "crepuscular")
 trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "nocturnal/crepuscular", replacement = "crepuscular")
@@ -29,7 +34,7 @@ trait.data$Diel_Pattern <- str_replace(trait.data$Diel_Pattern, pattern = "cathe
 trait.data <- trait.data[!is.na(trait.data$Diel_Pattern),]
 
 #use below for just one Parvorder
-trait.data <- trait.data %>% filter(Parvorder == "Odontoceti")
+# trait.data <- trait.data %>% filter(Parvorder == "Odontoceti")
 # trait.data <- trait.data %>% filter(Parvorder == "Mysticeti")
 
 #filter for species in the final tree
@@ -68,12 +73,6 @@ diel.plot
 
 comparison_list <- list(c("cathemeral", "crepuscular"), c("crepuscular", "diurnal"), c("diurnal", "nocturnal"), c("cathemeral", "diurnal"), c("cathemeral", "nocturnal"),  c("crepuscular", "nocturnal"))
 
-#plot out  orbit ratio vs activity pattern (NOT phylogenetically collected)
-# boxplot_KW <- ggplot(trait.data, aes(x = Diel_Pattern, y = trait.data[,c(continuous_trait)])) + geom_boxplot(outlier.shape = NA) +  
-#   geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
-#   labs(x = "Temporal activity pattern", y = continuous_trait) + scale_fill_manual(values=unique(trait.data$fam_colours)) +
-#   stat_compare_means(comparisons = comparison_list) + stat_compare_means(label.y = 0) #+ facet_wrap(~Parvorder)
-# boxplot_KW
 
 #phylogenetically corrected ANOVA
 phylANOVA <- phylANOVA(trpy_n, trait.x, trait.y, nsim=1000, posthoc=TRUE, p.adj="holm")
@@ -88,23 +87,19 @@ boxplot_anova <- ggplot(trait.data, aes(x = Diel_Pattern, y = trait.data[,c(cont
   stat_compare_means(label.y = 3200, method = "anova") +annotate("text", x = 1.15, y = 3500, label = paste("phylANOVA, p =", phylANOVA$Pf)) #+ facet_wrap(~Parvorder)
 boxplot_anova
 
-#cet orbit ratio: label.y = 
 #save out the plots
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", continuous_trait, "_vs_diel_cetaceans.pdf"))
 diel.plot
 dev.off()
 
-# pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", continuous_trait, "_boxplots_KW_cetaceans.pdf"))
-# boxplot_KW
-# dev.off()
 
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", continuous_trait, "_boxplots_anova_cetaceans.pdf"), width = 8, height = 7)
-boxplot_anova
-dev.off()
-
-# pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", continuous_trait, "_boxplots_anova_artio.pdf"))
+# pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", continuous_trait, "_boxplots_anova_cetaceans.pdf"), width = 8, height = 7)
 # boxplot_anova
 # dev.off()
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", continuous_trait, "_boxplots_anova_artio.pdf"))
+boxplot_anova
+dev.off()
 
 #check for association between response variable y (orbit size) and categorical variable x (diel pattern)
 #regular one way ANOVA

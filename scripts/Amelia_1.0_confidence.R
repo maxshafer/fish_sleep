@@ -30,9 +30,8 @@ library(tidyr)
 library(viridis)
 #sankey diagram
 # install.packages("ggsankey")
-# library(ggsankey)
+library(ggsankey)
 library(ggpubr)
-
 ## Packages for phylogenetic analysis in R (overlapping uses)
 ## They aren't all used here, but you should have them all
 library(ape) 
@@ -58,13 +57,12 @@ library(webshot)
 library(forcats)
 library(ggpmisc)
 library(ggsankey)
+library(phyloint)
 # Set the working directory and source the functions (not used yet)
 setwd(here())
 
 source("scripts/fish_sleep_functions.R")
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-
-
 
 # Section 1: Transform cetacean data into wide format -------------------------------
 url <- 'https://docs.google.com/spreadsheets/d/1eG_WIbhDzSv_g-PY90qpTMteESgPZZZt772g13v-H1o/edit?usp=sharing'
@@ -601,9 +599,9 @@ ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom
   scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") 
 #since there are four diel categories, anything above 25% is better than chance?
 
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/all_conf_levels_confusion_matrix.pdf")
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacean_all_conf_levels_confusion_matrix.pdf")
 ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
-  scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") 
+  scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") + theme_minimal()
 dev.off()
 
 #function to plot the concordance for each of the confidence levels
@@ -623,13 +621,14 @@ plotConcordance = function(set_column = "Conf2"){
 
 concordance_list <- lapply(sort(unique(diel_full$column)), function(x){plotConcordance(x)})
 
-for(i in seq_along(concordance_list)){
-  pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "confidence", i, "_confusion_matrix.pdf"))
-  print(ggplot(as.data.frame(concordance_list[i]), aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
-    scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") +
-    ggtitle(paste("Confidence level ", i, " concordance"))) 
-  dev.off()
-}
+#use this to save out concordance for individual confidence levels (1-5)
+# for(i in seq_along(concordance_list)){
+#   pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "confidence", i, "_confusion_matrix.pdf"))
+#   print(ggplot(as.data.frame(concordance_list[i]), aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
+#     scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") +
+#     ggtitle(paste("Confidence level ", i, " concordance"))) 
+#   dev.off()
+# }
 
 # Section 4.5: Concordance between confidence levels ----------------------
 diel_full_long <- read.csv(here("cetacean_confidence_long_df.csv"))
@@ -740,65 +739,7 @@ pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_s
 plot_countfreq
 dev.off() 
 
-# Section X: Make a flowchart old ---------------------------------------------
-
-library(vtree)
-
-tree_data = data.frame(Decision_1 = c("Consensus in multiple level 4 sources?"),
-                       Decision_2 = c("Return level 4 consensus", "Consensus in level 3 + 4 sources?"),
-                       Decision_3 = c("",  "Return level 3 +4 consensus","", "Consensus in level 3 +4 + 5?"),
-                       Decision_4 = c("", "", "", "Return level 4+5+3 consensus", "", "", "", "Consensus in single level 4?"),
-                       Decision_5 = c("", "", "", "", "", "", "", "Consensus in level 4+5+3+2+1?", "", "", "", "", "", "", "", "Return level 4"),
-                       Decision_6 = c("", "", "", "", "", "", "", "Return cathemeral-variable", "", "", "", "", "", "","", "", "", "", "", "", "", "", "", "Return consensus", "", "", "", "", "", "", "", ""))
-
-vtree(tree_data, c("Decision_1", "Decision_2", "Decision_3", "Decision_4", "Decision_5", "Decision_6"), vp = FALSE, prune = list(Decision_3 = c(""), Decision_4 = c(""), Decision_5 = c(""), Decision_6 = c("")))
-
-
-# Section Y: Flowchart old ----------------------------------------
-
-library(networkD3)
-
-# A connection data frame is a list of flows with intensity for each flow
-links <- data.frame(
-  source=c("group_A","group_A", "group_B", "group_C", "group_C", "group_E"), 
-  target=c("group_C","group_D", "group_E", "group_F", "group_G", "group_H"), 
-  value=c(2,3, 2, 3, 1, 3)
-)
-
-links <- data.frame(
-  source=c("group_A","group_A", "group_B", "group_B", "group_D", "group_D", "group_F", "group_F", "group_J", "group_J"), 
-  target=c("group_B","group_C", "group_D", "group_E", "group_F", "group_H", "group_I", "group_J", "group_K", "group_L"), 
-  value=c(26,56,40,16,15,1,3,12,6,6)
-)
-
-
-# From these flows we need to create a node data frame: it lists every entities involved in the flow
-nodes <- data.frame(
-  name=c(as.character(links$source), 
-         as.character(links$target)) %>% unique()
-)
-
-# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
-links$IDsource <- match(links$source, nodes$name)-1 
-links$IDtarget <- match(links$target, nodes$name)-1
-
-# Make the Network
-sankeyNetwork(Links = links, Nodes = nodes,
-              Source = "IDsource", Target = "IDtarget",
-              Value = "value", NodeID = "name", 
-              sinksRight=FALSE, colourScale = JS("d3.scaleOrdinal([d3.color('#F00'), d3.color('#0F0'), d3.color('#00F')]);"))
-
-
-p <- sankeyNetwork(Links = links, Nodes = nodes,
-                   Source = "IDsource", Target = "IDtarget",
-                   Value = "value", NodeID = "name", 
-                   sinksRight=FALSE, colourScale = JS("d3.scaleOrdinal([d3.color('#F00'), d3.color('#0F0'), d3.color('#00F'), d3.color('#F00'), d3.color('#0F0'), d3.color('#00F'), d3.color('#F00'), d3.color('#0F0'), d3.color('#00F'), d3.color('#F00'), d3.color('#0F0')]);"))
-p 
-
-
-
-
-# Section Z: Concordance sankey -------------------------------------------
+# Section 5: Concordance sankey -------------------------------------------
 
 #create dataframe of the number of species that had activity patterns determined at each step
 df <- data.frame(

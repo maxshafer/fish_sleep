@@ -10,7 +10,7 @@ mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 #clade_name <- "cetaceans_full"
 #clade_name <- "sleepy_artiodactyla_full"
 #clade_name <- "ruminants_full"
-#clade_name <- "whippomorpha"
+clade_name <- "whippomorpha"
 #clade_name <- "whippomorpha_high_conf"
 # clade_name <- "sleepy_artiodactyla_minus_cetaceans"
 
@@ -348,16 +348,19 @@ e <- calculateDelta2(trait.data, order_name = "Lagomorpha")
 f <- calculateDelta2(trait.data, order_name = "Primates")
 g <- calculateDelta2(trait.data, order_name = "Rodentia")
 h <- calculateDelta2(trait.data, order_name = "Perissodactyla")
+i <- calculateDelta2(trait.data, order_name = "Carnivora")
 
-delta_list <- list(a,b,c,d,e,f,g, h)
+delta_list <- list(a,b,c,d,e,f,g,h,i)
 delta_df <- do.call(rbind.data.frame, delta_list)
 colnames(delta_df) <- c("delta_statistic", "p_value")
-delta_df$clade <- c("Cingulata", "Amelia_artiodactyla", "Artiodcatyla", "Dedelphimorphia", "Lagomorpha", "Primates", "Rodentia")
+delta_df$clade <- c("Cingulata", "Amelia_artiodactyla", "Artiodactyla", "Didelphimorphia", "Lagomorpha", "Primates", "Rodentia", "Perissodactyla")
+
+write.csv(delta_df, here("delta_df.csv"), row.names = FALSE)
 
 trait.data <- trait.data %>% group_by(Order) %>% filter(length(unique(max_crep)) ==4) %>% filter(n() > 20) %>% filter()
 delta_list <- lapply(unique(trait.data$Order), function(x) calculateDelta2(trait.data, order_name = x))
 delta_df <- do.call(rbind.data.frame, delta_list)
-delta_df$clade <- c("Cingulata", "Amelia_artiodactyla", "Artiodcatyla", "Dedelphimorphia", "Lagomorpha", "Primates", "Rodentia")
+delta_df$clade <- c("Cingulata", "Amelia_artiodactyla", "Artiodcatyla", "Didelphimorphia", "Lagomorpha", "Primates", "Rodentia")
 
 # Section 9: Phylogenetic signal lambda -wrong  ----------
 
@@ -512,6 +515,8 @@ names(signal_list) <- unique(trait.data$Order)
 signal_list_df <- do.call(rbind.data.frame, signal_list)
 signal_list_df$clade <- row.names(signal_list_df)
 
+write.csv(signal_list_df, here("M_statistic_df.csv"), row.names = FALSE)
+
 #calculate for artio
 trait.data <- read.csv(here("sleepy_artiodactyla_full.csv"))
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
@@ -541,6 +546,15 @@ trait_df <- data.frame(B1 = as.factor(trait.data$max_crep), row.names = trait.da
 trait_dist <- gower_dist(x = trait_df, type = list(factor = 1))
 ruminant_signal <- phylosignal_M(trait_dist, mam.tree, reps = 99) # reps=999 better
 
+#save out table of phylogenetic signal
+delta_df <- read.csv(here("delta_df.csv"))
+M_stat_df <- read.csv(here("M_statistic_df.csv"))
+
+final_signal_df <- merge(M_stat_df, delta_df, by = "clade", all = TRUE) 
+colnames(final_signal_df) <- c("Order", "M statistic", "p-value", "Delta statistic", "p-value ")
+
+knitr::kable(final_signal_df, format = "html", digits = 3, caption = "Table X") %>%  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F) %>% save_kable("phylosig_table_final.html")
+webshot("phylosig_table_final.html", file = "C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/phylogenetic_signal_final.pdf")
 
 # Section 10: artio tree with whippo collapsed -----------------------------
 
@@ -626,3 +640,56 @@ diel.plot
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/mammals_collapsed.pdf", bg = "transparent", width = 10, height = 10)
 diel.plot
 dev.off()
+
+
+# Section 12: Full table of activity patterns (supplemental) --------------
+
+artio_full <- read.csv(here("sleepy_artiodactyla_full.csv"),)
+artio_full <- artio_full[, c("Species_name", "Suborder", "Diel_Pattern")]
+
+#add in NA artio species since they got removed in the previous step
+url <- 'https://docs.google.com/spreadsheets/d/1JGC7NZE_S36-IgUWpXBYyl2sgnBHb40DGnwPg2_F40M/edit?gid=562902012#gid=562902012'
+diel_full <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
+diel_full <- diel_full[is.na(diel_full$Confidence_primary_source), c("Species_name", "Diel_Pattern_primary")]
+diel_full[diel_full == ""] <- NA
+diel_full$Suborder <- "Ruminantia" #they are all ruminants
+colnames(diel_full) <- c("Species_name", "Diel_Pattern", "Suborder")
+diel_full <- diel_full %>% relocate(Diel_Pattern, .after = Suborder)
+
+artio_full <- rbind(artio_full, diel_full)
+artio_full$Diel_Pattern <- str_to_title(artio_full$Diel_Pattern)
+
+test <- artio_full %>% count(Diel_Pattern)
+test1 <- artio_full %>% filter(Suborder == "Whippomorpha") %>% count(Diel_Pattern)
+test2 <- artio_full %>% filter(Suborder == "Ruminantia") %>% count(Diel_Pattern)
+test3 <- artio_full %>% filter(Suborder == "Suina") %>% count(Diel_Pattern) #there are only 20sps
+test4 <- artio_full %>% filter(Suborder == "Tylopoda") %>% count(Diel_Pattern) #there are only 6sps
+
+test <- rbind(test, test1, test2, test3, test4)
+test$Clade <- c(rep("All artiodactyla", 7), rep("Whippomorpha", 7), rep("Ruminantia", 7), rep("Suina", 6), rep("Tylopoda", 2))
+test[is.na(test)] <- "Unknown"
+test <- test %>% pivot_wider(names_from = Diel_Pattern, values_from = n)
+test[is.na(test)] <- 0
+
+knitr::kable(test, format = "html", digits = 3, caption = "Table 1") %>%  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F) %>% save_kable("table_final.html")
+webshot("table_final.html", file = "C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/Supplemental_diel_pattern_chart.pdf")
+
+#with max crep categories
+artio_full$Diel_Pattern <- str_replace(artio_full$Diel_Pattern, pattern = "Diurnal/Crepuscular", replacement = "Crepuscular")
+artio_full$Diel_Pattern <- str_replace(artio_full$Diel_Pattern, pattern = "Cathemeral/Crepuscular", replacement = "Crepuscular")
+artio_full$Diel_Pattern <- str_replace(artio_full$Diel_Pattern, pattern = "Nocturnal/Crepuscular", replacement = "Crepuscular")
+
+test <- artio_full %>% count(Diel_Pattern)
+test1 <- artio_full %>% filter(Suborder == "Whippomorpha") %>% count(Diel_Pattern)
+test2 <- artio_full %>% filter(Suborder == "Ruminantia") %>% count(Diel_Pattern)
+test3 <- artio_full %>% filter(Suborder == "Suina") %>% count(Diel_Pattern) #there are only 20sps
+test4 <- artio_full %>% filter(Suborder == "Tylopoda") %>% count(Diel_Pattern) #there are only 6sps
+
+test <- rbind(test, test1, test2, test3, test4)
+test$Clade <- c(rep("All artiodactyla", 5), rep("Whippomorpha", 5), rep("Ruminantia", 5), rep("Suina", 4), rep("Tylopoda", 2))
+test[is.na(test)] <- "Unknown"
+test <- test %>% pivot_wider(names_from = Diel_Pattern, values_from = n)
+test[is.na(test)] <- 0
+
+knitr::kable(test, format = "html", digits = 3, caption = "Table 1") %>%  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F) %>% save_kable("table_final.html")
+webshot("table_final.html", file = "C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/Diel_pattern_chart.pdf")

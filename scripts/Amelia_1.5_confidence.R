@@ -623,7 +623,7 @@ plot_countfreq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = 
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_btw_source_concordance.pdf", width = 7, height = 7, bg = "transparent")
 plot_countfreq
 dev.off()
-# Section 7: Concordance within confidence levels -------------------------
+# Section 7: Concordance within confidence levels artio -------------------------
 diel_full_long <- read.csv(here("confidence_artio_long.csv"))
 #this is cheating but read in the tabulated activity patterns
 diel_full <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv"))
@@ -664,6 +664,80 @@ ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom
 #since there are four diel categories, anything above 25% is better than chance?
 
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_minus_cet_all_conf_levels_confusion_matrix.pdf")
+ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
+  scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") + theme_minimal()
+dev.off()
+
+#function to plot the concordance for each of the confidence levels
+plotConcordance = function(set_column = "Conf2"){
+  diel_full_filtered <- diel_full %>% filter(column == set_column)
+  #need to filter for species with more than one entry or else concordance will always be 100%
+  mulitple_sources <- diel_full_filtered %>% count(Species_name) %>% filter(n>1)
+  diel_full_filtered <- diel_full_filtered[diel_full_filtered$Species_name %in% mulitple_sources$Species_name,]
+  concordance <- as.data.frame(table(diel_full_filtered$max_crep, diel_full_filtered$value))
+  colnames(concordance) <- c("actual", "predicted", "freq")
+  totals_df <- aggregate(concordance$freq, by=list(Category=concordance$actual), FUN=sum)
+  colnames(totals_df) <- c("actual", "total")
+  concordance <- merge(concordance, totals_df, by = "actual")
+  concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
+  return(concordance)
+}
+
+concordance_list <- lapply(sort(unique(diel_full$column)), function(x){plotConcordance(x)})
+
+#use below if 
+# for(i in seq_along(concordance_list)){
+#   pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "artio", "confidence", i, "_confusion_matrix.pdf"))
+#   print(ggplot(as.data.frame(concordance_list[i]), aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
+#           scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") +
+#           ggtitle(paste("Confidence level ", i, " concordance"))) 
+#   dev.off()
+# }
+
+
+
+# Section 7: Concordance within confidence levels ruminants -------------------------
+diel_full_long <- read.csv(here("confidence_artio_long.csv"))
+#this is cheating but read in the tabulated activity patterns
+diel_full <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv"))
+diel_full <- diel_full %>% filter(Suborder == "Ruminantia")
+diel_full <- merge(diel_full[, c("Species_name", "Diel_Pattern", "max_crep", "max_dinoc")], diel_full_long[c("Species_name", "column", "value")])
+
+diel_full$column <- substr(diel_full$column, 1,5)
+
+#for max crep dataset
+diel_full <- data.frame(lapply(diel_full, function(x) {gsub("cathemeral/crepuscular", "crepuscular", x)}))
+diel_full <- data.frame(lapply(diel_full, function(x) {gsub("diurnal/crepuscular", "crepuscular", x)}))
+diel_full <- data.frame(lapply(diel_full, function(x) {gsub("nocturnal/crepuscular", "crepuscular", x)}))
+diel_full <- data.frame(lapply(diel_full, function(x) {gsub("unclear/crepuscular", "crepuscular", x)}))
+diel_full <- data.frame(lapply(diel_full, function(x) {gsub("unclear/crepuscular", "crepuscular", x)}))
+diel_full[diel_full == "unclear"] <- NA
+
+diel_full <- diel_full[!is.na(diel_full$value),]
+
+#filter
+mulitple_sources <- diel_full %>% count(Species_name) %>% filter(n>1)
+diel_full_filtered <- diel_full[diel_full$Species_name %in% mulitple_sources$Species_name,]
+#this removes 115 species without an informative second source (120 out of 235 have a second source)
+
+#to include only species in the final tree, is this necessary? If so I should do it consistently 
+diel_full_filtered$tips <- str_replace(diel_full_filtered$Species_name, pattern = " ", replacement = "_")
+#of the 121 species, 111 are in the final tree
+diel_full_filtered <- diel_full_filtered[diel_full_filtered$tips %in% mam.tree$tip.label,]
+
+concordance <- as.data.frame(table(diel_full_filtered$max_crep, diel_full_filtered$value))
+colnames(concordance) <- c("actual", "predicted", "freq")
+totals_df <- aggregate(concordance$freq, by=list(Category=concordance$actual), FUN=sum)
+colnames(totals_df) <- c("actual", "total")
+concordance <- merge(concordance, totals_df, by = "actual")
+concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
+
+#this is heavily skewed since so many species are crepuscular
+ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
+  scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") 
+#since there are four diel categories, anything above 25% is better than chance?
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/ruminants_all_conf_levels_confusion_matrix.pdf")
 ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
   scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") + theme_minimal()
 dev.off()

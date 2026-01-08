@@ -7,10 +7,15 @@ library(pak)
 #with the pkg_install function from pak install the traitdata database from github
 pkg_install("RS-eco/traitdata")
 
-#load library
+#load library and data
 library(traitdata)
-test <-data(pantheria)
+data(pantheria)
 
+#filter for artoidactyla
+pantheria <- pantheria %>% filter(Order == "Artiodactyla")
+
+#filter for the trait data we're interested in
+pantheria <- pantheria[, c("Order", "Family", "Genus", "Species", "ActivityCycle", "AdultBodyMass_g", "AdultHeadBodyLen_mm", "DietBreadth", "HabitatBreadth", "HomeRange_km2", "SocialGrpSize", "Terrestriality", "TrophicLevel", "GR_Area_km2", "GR_MidRangeLat_dd", "GR_MaxLat_dd", "GR_MinLat_dd", "GR_MaxLong_dd", "GR_MinLong_dd", "GR_MidRangeLong_dd")]
 
 
 # Section 2:  phylacine database ------------------------------------------

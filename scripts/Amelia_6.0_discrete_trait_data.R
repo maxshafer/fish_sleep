@@ -582,3 +582,32 @@ eye_mass%>% filter(Order %in% c("Ungulates (Artiodactyla)", "Cetacea"), max_crep
 ggplot(eye_mass, aes(x = max_crep, y = log(Eye_mass_g))) +geom_boxplot(outlier.shape = NA, aes(fill = max_crep)) + 
   geom_point(aes(colour = Order), size = 2) +
   stat_compare_means(method = "anova") # + facet_wrap(~max_crep)
+
+
+# Section 11: Artiodactyla pantheria data ---------------------------------
+
+# library(pak)
+# pkg_install("RS-eco/traitdata")
+#load library and data
+library(traitdata)
+data(pantheria)
+
+#filter for artoidactyla
+pantheria <- pantheria %>% filter(Order == "Artiodactyla")
+
+#filter for the trait data we're interested in
+pantheria <- pantheria[, c("Order", "Family", "Genus", "Species", "ActivityCycle", "AdultBodyMass_g", "AdultHeadBodyLen_mm", "DietBreadth", "HabitatBreadth", "HomeRange_km2", "SocialGrpSize", "Terrestriality", "TrophicLevel", "GR_Area_km2", "GR_MidRangeLat_dd", "GR_MaxLat_dd", "GR_MinLat_dd", "GR_MaxLong_dd", "GR_MinLong_dd", "GR_MidRangeLong_dd")]
+
+#add in diel pattern data
+sleepy_artio <- read.csv(here("sleepy_artiodactyla_full.csv"))
+
+#check for misspellings
+pantheria[!pantheria$tips %in% mam.tree$tip.label,]
+
+pantheria$tips <- paste(pantheria$Genus, pantheria$Species, sep = "_")
+  
+sleepy_artio <- sleepy_artio[sleepy_artio$tips %in% pantheria$tips, c("tips", "Diel_Pattern")]
+pantheria <- merge(sleepy_artio, pantheria, by = "tips", all = TRUE)
+
+#save out 
+write.csv(pantheria, here("artiodactyla_ecomorphology_dataset.csv"), row.names = FALSE)
