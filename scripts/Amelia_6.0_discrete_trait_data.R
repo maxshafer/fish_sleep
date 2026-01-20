@@ -104,60 +104,7 @@ church_pt1 <- church_pt1[!duplicated(church_pt1$tips),]
 
 write.csv(church_pt1, here("cetacean_orbit_ratio.csv"), row.names = FALSE)
 
-# Section 3: Baker et al artiodactyla orbit ratio -----------------------------------
-artio_eyes <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Baker_2019.xlsx")
-artio_eyes <- artio_eyes[2: nrow(artio_eyes),]
-colnames(artio_eyes) <- c("tips", "Order", "Corneal_diameter", "Axial_length", "Activity_pattern", "Source")
-artio_eyes <- filter(artio_eyes, Order %in% c("Artiodactyla", "Perissodactyla"))
-
-artio_eyes <- artio_eyes[artio_eyes$Corneal_diameter != "n/a", c("tips", "Corneal_diameter", "Axial_length", "Activity_pattern", "Order") ]
-artio_eyes$Axial_length <- as.numeric(artio_eyes$Axial_length)
-artio_eyes$Corneal_diameter <- as.numeric(artio_eyes$Corneal_diameter)
-
-#we can look at the ratio of corneal diameter to axial length
-#From Hall et al: https://doi.org/10.1098/rspb.2012.2258
-#The ratio of corneal diameter to axial length of the eye is a useful measure of relative sensitivity 
-#and relative visual acuity that has been used in previous studies as a way to compare animals of disparate size
-artio_eyes$Orbit_ratio <- artio_eyes$Corneal_diameter/artio_eyes$Axial_length
-
-sleepy_artio <- read.csv(here("sleepy_artiodactyla_full.csv"))
-
-#check for misspellings
-artio_eyes[!artio_eyes$tips %in% mam.tree$tip.label,]
-
-sleepy_artio <- sleepy_artio[sleepy_artio$tips %in% artio_eyes$tips, c("Family", "tips", "Diel_Pattern")]
-artio_eyes <- merge(sleepy_artio, artio_eyes, by = "tips", all = TRUE)
-
-#use the activity patterns from Baker et al, they're all cathemeral 
-artio_eyes[artio_eyes$Order == "Perissodactyla", c("Diel_Pattern")] <- "cathemeral"
-artio_eyes[artio_eyes$tips == "Diceros_bicornis", c("Family")] <- "Rhinocerotidae"
-artio_eyes[artio_eyes$tips == "Equus_africanus", c("Family")] <- "Equidae"
-artio_eyes[artio_eyes$tips == "Equus_burchellii", c("Family")] <- "Equidae"
-artio_eyes[artio_eyes$tips == "Equus_caballus", c("Family")] <- "Equidae"
-artio_eyes[artio_eyes$tips == "Equus_zebra", c("Family")] <- "Equidae"
-artio_eyes[artio_eyes$tips == "Equus_asinus", c("Family")] <- "Equidae"
-artio_eyes[artio_eyes$tips == "Tapirus_terrestris", c("Family")] <- "Tapiridae"
-
-#add to keep colours consistent for each family
-artio_eyes$fam_colours <- "Unknown"
-artio_eyes[artio_eyes$Family == "Cervidae", c("fam_colours")] <- "maroon"
-artio_eyes[artio_eyes$Family == "Bovidae", c("fam_colours")] <- "red"
-artio_eyes[artio_eyes$Family == "Camelidae", c("fam_colours")] <- "salmon1"
-artio_eyes[artio_eyes$Family == "Rhinocerotidae", c("fam_colours")] <- "grey80"
-artio_eyes[artio_eyes$Family == "Equidae", c("fam_colours")] <- "chocolate4"
-artio_eyes[artio_eyes$Family == "Tragulidae", c("fam_colours")] <- "dimgrey"
-artio_eyes[artio_eyes$Family == "Giraffidae", c("fam_colours")] <- "black"
-artio_eyes[artio_eyes$Family == "Tayassuidae", c("fam_colours")] <- "moccasin"
-artio_eyes[artio_eyes$Family == "Tapiridae", c("fam_colours")] <- "darkgoldenrod"
-
-ggplot(artio_eyes, aes(x = Diel_Pattern, y = Orbit_ratio)) + geom_boxplot(outlier.shape = NA) + 
-  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
-  labs(x = "Temporal activity pattern", y = continuous_trait) + scale_fill_manual(values=unique(artio_eyes$fam_colours))+
-  facet_wrap(~Order)
-
-write.csv(artio_eyes, here("artio_orbit_ratio.csv"), row.names = FALSE)
-
-# Section 4: Coombs et al habitat, diet, dentition, echo ------------------------------------------------------
+# Section 3: Coombs et al habitat, diet, dentition, echo ------------------------------------------------------
 
 echo <- read_xlsx("C:/Users/ameli/OneDrive/Documents/R_projects/cetacean_discrete_traits/Coombs_et_al_2021.xlsx")
 echo$tips <- str_replace(echo$`Museum ID`, " ", "_")
@@ -171,7 +118,7 @@ echo[!echo$tips %in% mam.tree$tip.label,]
 
 write.csv(echo, here("cetacean_habitat_dentition_echo.csv"), row.names = FALSE)
 
-# Section 5: Travis Park et al, 2019 -----------------------------------------------
+# Section 4: Travis Park et al, 2019 -----------------------------------------------
 #https://doi.org/10.1186/s12862-019-1525-x
 
 dive <- read.csv("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\resource.csv")
@@ -197,7 +144,7 @@ dive$Feeding.behaviour <- str_to_title(dive$Feeding.behaviour)
 
 write.csv(dive, here("cetacean_Park_dive.csv"), row.names = FALSE)
 
-# Section 6: Manger et al mass, brain size, sociality, longevity, feeding strategy-------------------------------------------------
+# Section 5: Manger et al mass, brain size, sociality, longevity, feeding strategy-------------------------------------------------
 Manger <- read.csv("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Manger_2013_discrete_cet.csv")
 #body mass, encephalization quotient, group size, social dynamics, longevity, feeding strategy
 #of these, body mass is probably the most relevant to activity patterns (ie are whales with large body size cathemeral)
@@ -230,7 +177,7 @@ Manger$tips <- str_replace(Manger$tips, pattern = "Lagenirhynchus_obliquidens", 
 
 write.csv(Manger, here("cetacean_manger_et_al.csv"), row.names = FALSE)
 
-# Section 7: Groot et al ignore for now --------------------------------------------------
+# Section 6: Groot et al ignore for now --------------------------------------------------
 
 groot <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Groot_et_al_2023.xlsx")
 #this data is coded so need to decode it with the original paper
@@ -261,7 +208,38 @@ colnames(church_qual) <- c("Habitat_2", "Prey_capture", "tips")
 
 write.csv(church_qual, here("churchill_habitat_prey_capture.csv"), row.names = FALSE)
 
-# Section 8: Churchill et al dataframe  -----------------------------------
+
+# Section 7: McCurry et al latitude ---------------------------------------
+McCurry <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\McCurry_2023.xlsx")
+
+McCurry <- as.data.frame(McCurry[, c(6, 8:51)])
+
+test <- McCurry %>% pivot_longer(cols = !`Absolute latitude`, names_to = "Species", values_to = "count")
+
+test <- test %>% filter(count > 0)
+test$Species <- str_replace_all(test$Species, pattern = "'", replacement = "")
+test$Species <- str_replace_all(test$Species, pattern = " ", replacement = "_")
+colnames(test) <- c("Absolute_latitude", "Species", "count")
+
+test <- test %>% group_by(Species) %>% summarize(max_lat = max(Absolute_latitude), mean_lat = mean(Absolute_latitude), min_lat = min(Absolute_latitude))
+names <- read.csv(here("cetaceans_full.csv"))
+
+names <- names %>% separate(col = tips, into = c("Genus", "Species"), sep = "_")
+test <- test %>% separate(col = Species, into = c("Genus", "Species"), sep = "_")
+
+test <- merge(names, test, by = "Species", all.y =TRUE)
+#two species have the species name attentuata, glacialis, australis and hectori. Drop the duplicates
+latitude_df <- test[-c(5,8,9,11,31), ]
+
+latitude_df %>% filter(!is.na(max_crep)) %>% ggplot(., aes(x = max_crep, y = max_lat)) + geom_boxplot() + stat_compare_means(method = "anova")
+
+latitude_df$tips <- str_replace(latitude_df$Species_name, pattern = " ", replacement = "_")
+latitude_df <- latitude_df[, c("tips", "max_lat", "mean_lat", "min_lat")]
+
+#save out 
+write.csv(latitude_df, here("cetacean_latitude_df.csv"), row.names = FALSE)
+
+# Section 7: Churchill et al dataframe  -----------------------------------
 #to keep all data from one source can use just the churchill et al dataset 
 dive_depth <- read.csv(here("cetacean_dive_depth.csv")) #65 species
 orbit_ratio <- read.csv(here("cetacean_orbit_ratio.csv")) #99 species
@@ -274,7 +252,32 @@ colnames(trait.data) <- c("tips", "Body_mass", "Body_length", "Dive_depth", "Biz
 
 write.csv(trait.data, here("churchill_cetacean_dataset.csv"), row.names = FALSE)
 
-# Section 9: One cetacean dataframe to rule them all -------------------------------
+
+# Section 8: Chen et al cetacean data -------------------------------------
+Chen <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Chen_2022.xlsx")
+
+#Contains active region (AR: 1 = inland water, 2 = coastal waters, 3 = oceanic waters), range size in km2(RS)
+#maximum school size (MSS), maximum dive depth in m (MDD), body weight in tonnes (MBW), maximum reproductive cycle (MRC).
+# Each threat comprises four impact levels: no = 0, low = 1, moderate = 2 and high = 3.
+Chen <- Chen[1:80, c("Species", "IUCN", "AR", "MDD", "MBW")]
+
+#replace codes 
+Chen$AR[which(Chen$AR == 1)] <- "inland"
+Chen$AR[which(Chen$AR == 2)] <- "coastal"
+Chen$AR[which(Chen$AR == 3)] <- "oceanic"
+
+Chen$IUCN[which(Chen$IUCN == 0)] <- "least_concern"
+Chen$IUCN[which(Chen$IUCN == 1)] <- "near_threatened"
+Chen$IUCN[which(Chen$IUCN == 2)] <- "vulnerable"
+Chen$IUCN[which(Chen$IUCN == 3)] <- "endangered"
+Chen$IUCN[which(Chen$IUCN == 4)] <- "critically_endangered"
+
+#change columm names
+Chen$tips <- str_replace(Chen$Species, pattern = " ", replacement = "_")
+
+colnames(Chen) <- c("Species_name", "IUCN","Active_range", "max_dive_depth", "body_weight", "tips")
+
+# Section 8: One cetacean dataframe to rule them all -------------------------------
 dive_depth <- read.csv(here("cetacean_dive_depth.csv")) #65 species
 orbit_ratio <- read.csv(here("cetacean_orbit_ratio.csv")) #99 species
 echo <- read.csv(here("cetacean_habitat_dentition_echo.csv")) #194 species
@@ -460,10 +463,10 @@ trait.data <- merge(trait.data, trait.data.1[, c("tips", "Divetype_1")], all = T
 trait.data <- trait.data[, c("tips", "Body_length", "Body_mass_kg", "Dive_depth", "Bizygomatic_width", "Average_orbit_length", "Orbit_ratio", "Diet", "Habitat", "Prey_capture", "Brain_mass", "Feeding_method", "Divetype_1")]
 colnames(trait.data) <- c("tips", "Body_length_m", "Body_mass_kg", "Dive_depth_m", "Bizygomatic_width", "Average_orbit_length", "Orbit_ratio", "Diet", "Habitat", "Prey_capture", "Brain_mass_g", "Feeding_method", "Divetype")
 
-table(trait.data$Habitat, trait.data$Divetype)
-ggplot(trait.data, aes(x = Habitat, y = Dive_depth_m, colour = Divetype)) + geom_boxplot(outlier.shape = NA) + geom_jitter()
-ggplot(trait.data, aes(x = Habitat, y = Dive_depth_m)) + geom_boxplot(outlier.shape = NA) + geom_jitter()
-ggplot(trait.data, aes(x = Divetype, y = Dive_depth_m)) + geom_boxplot(outlier.shape = NA) + geom_jitter()
+#add in latitude data for odontocetes
+latitude_df <- read.csv(here("cetacean_latitude_df.csv"))
+
+trait.data <- merge(trait.data, latitude_df, by = "tips", all = TRUE)
 
 #lastly add in the activity patterns
 cetaceans_full <- read.csv(here("cetaceans_full.csv"))
@@ -488,12 +491,11 @@ trait.data[trait.data$Family == "Lipotidae", c("fam_colours")] <-  "gold"
 trait.data[trait.data$Family == "Phocoenidae", c("fam_colours")] <- "orange2"
 trait.data[trait.data$Family == "Physeteridae", c("fam_colours")] <- "green4"
 trait.data[trait.data$Family == "Platanistidae", c("fam_colours")] <- "turquoise1"
-
+trait.data[trait.data$Family == "Pontoporiidae", c("fam_colours")] <- "grey30"
 
 write.csv(trait.data, here("cetacean_ecomorphology_dataset.csv"), row.names = FALSE)
 
-
-# Section 10: eye mass vs body mass ---------------------------------------
+# Section 9: eye mass vs body mass ---------------------------------------
 eye_mass <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Burton_2006.xlsx")
 
 eye_mass <- separate(eye_mass, col = SpeciesBodymassBrainmassEyemass, into = c("Genus", "Species", "Body_mass_g", "Brain_mass_g", "Eye_mass_g"), sep = " ")
@@ -584,6 +586,25 @@ ggplot(eye_mass, aes(x = max_crep, y = log(Eye_mass_g))) +geom_boxplot(outlier.s
   stat_compare_means(method = "anova") # + facet_wrap(~max_crep)
 
 
+# Section 10: Baker et al artiodactyla orbit ratio -----------------------------------
+artio_eyes <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Baker_2019.xlsx")
+artio_eyes <- artio_eyes[2: nrow(artio_eyes),]
+colnames(artio_eyes) <- c("tips", "Order", "Corneal_diameter", "Axial_length", "Activity_pattern", "Source")
+artio_eyes <- filter(artio_eyes, Order %in% c("Artiodactyla"))
+
+artio_eyes <- artio_eyes[artio_eyes$Corneal_diameter != "n/a", c("tips", "Corneal_diameter", "Axial_length", "Activity_pattern", "Order") ]
+artio_eyes$Axial_length <- as.numeric(artio_eyes$Axial_length)
+artio_eyes$Corneal_diameter <- as.numeric(artio_eyes$Corneal_diameter)
+
+#we can look at the ratio of corneal diameter to axial length
+#From Hall et al: https://doi.org/10.1098/rspb.2012.2258
+#The ratio of corneal diameter to axial length of the eye is a useful measure of relative sensitivity 
+#and relative visual acuity that has been used in previous studies as a way to compare animals of disparate size
+artio_eyes$Orbit_ratio <- artio_eyes$Corneal_diameter/artio_eyes$Axial_length
+
+#drop unnecessary columns
+artio_eyes <- artio_eyes[, c("tips", "Orbit_ratio")]
+
 # Section 11: Artiodactyla pantheria data ---------------------------------
 
 # library(pak)
@@ -594,20 +615,60 @@ data(pantheria)
 
 #filter for artoidactyla
 pantheria <- pantheria %>% filter(Order == "Artiodactyla")
+pantheria$tips <- paste(pantheria$Genus, pantheria$Species, sep = "_")
 
 #filter for the trait data we're interested in
-pantheria <- pantheria[, c("Order", "Family", "Genus", "Species", "ActivityCycle", "AdultBodyMass_g", "AdultHeadBodyLen_mm", "DietBreadth", "HabitatBreadth", "HomeRange_km2", "SocialGrpSize", "Terrestriality", "TrophicLevel", "GR_Area_km2", "GR_MidRangeLat_dd", "GR_MaxLat_dd", "GR_MinLat_dd", "GR_MaxLong_dd", "GR_MinLong_dd", "GR_MidRangeLong_dd")]
+pantheria <- pantheria[, c("Order", "Family", "AdultBodyMass_g", "AdultHeadBodyLen_mm", "DietBreadth", "HabitatBreadth", "HomeRange_km2", "SocialGrpSize", "Terrestriality", "TrophicLevel", "GR_Area_km2", "GR_MidRangeLat_dd", "GR_MaxLat_dd", "GR_MinLat_dd", "GR_MaxLong_dd", "GR_MinLong_dd", "GR_MidRangeLong_dd", "tips")]
 
 #add in diel pattern data
 sleepy_artio <- read.csv(here("sleepy_artiodactyla_full.csv"))
 
 #check for misspellings
-pantheria[!pantheria$tips %in% mam.tree$tip.label,]
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+pantheria[!pantheria$tips %in% mam.tree$tip.label, "tips"]
 
-pantheria$tips <- paste(pantheria$Genus, pantheria$Species, sep = "_")
-  
-sleepy_artio <- sleepy_artio[sleepy_artio$tips %in% pantheria$tips, c("tips", "Diel_Pattern")]
+#fix alternative spellings
+pantheria[pantheria$tips == "Hemitragus_hylocrius", "tips"] <- "Nilgiritragus_hylocrius"
+pantheria[pantheria$tips == "Hemitragus_jayakari", "tips"] <- "Arabitragus_jayakari"
+pantheria[pantheria$tips == "Hexaprotodon_liberiensis", "tips"] <- "Choeropsis_liberiensis"
+pantheria[pantheria$tips == "Neotragus_moschatus", "tips"] <- "Nesotragus_moschatus"
+pantheria[pantheria$tips == "Przewalskium_albirostris", "tips"] <- "Cervus_albirostris"
+pantheria[pantheria$tips == "Pseudois_schaeferi", "tips"] <- "Pseudois_nayaur"
+pantheria[pantheria$tips == "Saiga_borealis", "tips"] <- "Saiga_tatarica"
+pantheria[pantheria$tips == "Sus_salvanius", "tips"] <- "Porcula_salvania"
+pantheria[pantheria$tips == "Alces_americanus", "tips"] <- "Alces_alces"
+pantheria[pantheria$tips == "Taurotragus_derbianus", "tips"] <- "Tragelaphus_derbianus"
+pantheria[pantheria$tips == "Taurotragus_oryx", "tips"] <- "Tragelaphus_oryx"
+
+#domesticated animals not in mam tree: bos frontalis, bos grunniens, camelus bactrianus, bos taurus, lama glama, ovis aries, capra hircus, bubalus bubalis
+#C brookei only recently (?) upgraded to species status from C ogilbyi subspecies
+#gazella arabica is an invalid species, synonymous with G erlangeri
+#Damaliscus korrigum and Damaliscus superstes are subspecies of D lunatus
+#Muntiacus puhoatensis poorly known, thought to be conspecific with M rooseveltorum
+# Alcelaphus_caama and Alcelaphus_lichtensteinii are subspecies of Alcelaphus buselaphus
+#Babyrousa_bolabatuensis only known from subfossil remains, may be a subspecies
+
+sleepy_artio <- sleepy_artio[sleepy_artio$tips %in% pantheria$tips, c("tips", "max_crep")]
 pantheria <- merge(sleepy_artio, pantheria, by = "tips", all = TRUE)
 
+#add in eye size data
+artio_eyes <- merge(pantheria, artio_eyes, by = "tips", all = TRUE)
+
+#add to keep colours consistent for each family
+artio_eyes$fam_colours <- "Unknown"
+artio_eyes[artio_eyes$Family == "Cervidae", c("fam_colours")] <- "maroon"
+artio_eyes[artio_eyes$Family == "Bovidae", c("fam_colours")] <- "red"
+artio_eyes[artio_eyes$Family == "Camelidae", c("fam_colours")] <- "salmon1"
+artio_eyes[artio_eyes$Family == "Rhinocerotidae", c("fam_colours")] <- "grey80"
+artio_eyes[artio_eyes$Family == "Equidae", c("fam_colours")] <- "chocolate4"
+artio_eyes[artio_eyes$Family == "Tragulidae", c("fam_colours")] <- "dimgrey"
+artio_eyes[artio_eyes$Family == "Giraffidae", c("fam_colours")] <- "black"
+artio_eyes[artio_eyes$Family == "Tayassuidae", c("fam_colours")] <- "moccasin"
+artio_eyes[artio_eyes$Family == "Tapiridae", c("fam_colours")] <- "darkgoldenrod"
+artio_eyes[artio_eyes$Family == "Suidae", c("fam_colours")] <- "brown4"
+artio_eyes[artio_eyes$Family == "Moschidae", c("fam_colours")] <- "tan1"
+artio_eyes[artio_eyes$Family == "Hippopotamidae", c("fam_colours")] <- "skyblue"
+artio_eyes[artio_eyes$Family == "Antilocapridae", c("fam_colours")] <- "white"
+
 #save out 
-write.csv(pantheria, here("artiodactyla_ecomorphology_dataset.csv"), row.names = FALSE)
+write.csv(artio_eyes, here("artiodactyla_ecomorphology_dataset.csv"), row.names = FALSE)
