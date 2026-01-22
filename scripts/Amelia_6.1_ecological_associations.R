@@ -68,9 +68,6 @@ trait.data <- trait.data[!is.na(trait.data$max_crep),]
 
 trait.data.1 <- trait.data[!is.na(trait.data$Orbit_ratio),]
 
-ggplot(trait.data.1, aes(x = log(Bizygomatic_width), y = log(Average_orbit_length), colour = max_crep)) +
-  geom_point() + geom_smooth(method = "lm", na.rm = T, se = F, formula = y~x, aes(colour =max_crep))
-
 #perform the one-way anova
 orbit_model <- aov(Orbit_ratio ~ max_crep, data = trait.data.1)
 summary(orbit_model)
@@ -123,6 +120,10 @@ pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Body
 boxplot_mass
 dev.off()
 
+#body mass separated by parvorder
+trait.data %>% filter(!is.na(Body_mass_kg)) %>% ggplot(., aes(x = max_crep, y = log(Body_mass_kg))) +
+  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + facet_wrap(~ Parvorder)
+
 ### Cetacean dive depth
 trait.data.1 <- trait.data[!is.na(trait.data$Dive_depth_m),]
 
@@ -141,7 +142,7 @@ boxplot_dive <- ggplot(trait.data.1, aes(x = max_crep, y = Dive_depth_m)) +
   new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
   labs(x = "Temporal activity pattern", y = "Maximum dive depth (m)") + scale_fill_manual(values=unique(trait.data.1$fam_colours))  + 
   theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
-   stat_compare_means(label.y = 3400, method = "anova") +annotate("text", x = 1.15, y = 3300, label = paste("phylANOVA, p =", dive_phylANOVA$Pf)) + facet_wrap(~Parvorder)
+   stat_compare_means(label.y = 3400, method = "anova") +annotate("text", x = 1.15, y = 3300, label = paste("phylANOVA, p =", dive_phylANOVA$Pf))
 boxplot_dive
 
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Dive_depth", "_boxplots_anova_cetaceans.pdf"), width = 8, height = 7)
@@ -171,7 +172,7 @@ boxplot_dive <- ggplot(trait.data.1, aes(x = max_crep, y = Dive_depth_m)) +
   facet_wrap(~Parvorder, scales = "free_x")
 boxplot_dive
 
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Dive_depth", "_boxplots_anova_parvorder.pdf"), width = 12, height = 7)
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Dive_depth_by_Parvorder", "_boxplots_anova_parvorder.pdf"), width = 12, height = 7)
 boxplot_dive
 dev.off()
 
@@ -192,7 +193,7 @@ TukeyHSD(model, conf.level = .95)
 phylANOVA <- calculatePhylANOVA(trait.data.1, "mean_lat")
 
 boxplot <- ggplot(trait.data.1, aes(x = max_crep, y = mean_lat)) +
-  geom_boxplot(aes(fill = max_crep, alpha = 0.8)) + scale_fill_manual(values = custom.colours) +
+  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
   new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
   labs(x = "Temporal activity pattern", y = "Mean latitude") + scale_fill_manual(values=unique(trait.data.1$fam_colours))  + 
   theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
@@ -220,7 +221,7 @@ TukeyHSD(model, conf.level = .95)
 phylANOVA <- calculatePhylANOVA(trait.data.1, "mean_lat")
 
 boxplot <- ggplot(trait.data.1, aes(x = max_crep, y = max_lat)) +
-  geom_boxplot(aes(fill = max_crep, alpha = 0.8)) + scale_fill_manual(values = custom.colours) +
+  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
   new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
   labs(x = "Temporal activity pattern", y = "Mean latitude") + scale_fill_manual(values=unique(trait.data.1$fam_colours))  + 
   theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
@@ -230,7 +231,6 @@ boxplot
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "max_latitude", "_boxplots_anova_cetaceans.pdf"), width = 8, height = 7)
 boxplot
 dev.off()
-
 
 ### Artiodactyla orbit size
 trait.data.art <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
@@ -274,6 +274,16 @@ pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Orbi
 boxplot_art
 dev.off()
 
+#only ruminants
+trait.data.art %>% filter(Family %in% c("Bovidae", "Cervidae", "Giraffidae", "Tragulidae")) %>% 
+  ggplot(., aes(x = max_crep, y = Orbit_ratio)) +
+  geom_boxplot(aes(fill = max_crep), alpha=0.8) + scale_fill_manual(values = custom.colours) +
+  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Corneal diameter: axial length") + scale_fill_manual(values=unique(trait.data.art$fam_colours))  + 
+  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
+  stat_compare_means(label.y = 1.01, method = "anova") + annotate("text", x = 1.15, y = 1.007, label = paste("phylANOVA, p =", art_phylANOVA$Pf)) +
+  stat_pvalue_manual(stat.test, label = "p.adj")
+
 ### Artiodactyla body mass 
 trait.data.art <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
 trait.data.art <- trait.data.art[!is.na(trait.data.art$AdultBodyMass_g), c("tips", "AdultBodyMass_g", "max_crep", "Family", "fam_colours")]
@@ -296,6 +306,10 @@ boxplot_art <- ggplot(trait.data.art, aes(x = max_crep, y = log(AdultBodyMass_g)
   theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
   stat_compare_means(label.y = 14, method = "anova") + annotate("text", x = 1.15, y = 14.5, label = paste("phylANOVA, p =", art_phylANOVA$Pf))
 boxplot_art   
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Body_mass", "_boxplots_anova_artio.pdf"), width = 8, height = 7)
+boxplot_art
+dev.off()
 
 ### Artiodactyla latitude
 trait.data.art <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
@@ -320,6 +334,10 @@ boxplot_art <- ggplot(trait.data.art, aes(x = max_crep, y = log(GR_MidRangeLat_d
   stat_compare_means(label.y = 5, method = "anova") + annotate("text", x = 1.15, y = 5.5, label = paste("phylANOVA, p =", art_phylANOVA$Pf))
 boxplot_art   
 
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "mean_latitude", "_boxplots_anova_artio.pdf"), width = 8, height = 7)
+boxplot_art
+dev.off()
+
 ### Artiodactyla max latitude
 trait.data.art <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
 trait.data.art <- trait.data.art[!is.na(trait.data.art$GR_MaxLat_dd), c("tips", "GR_MaxLat_dd", "max_crep", "Family", "fam_colours")]
@@ -343,6 +361,10 @@ boxplot_art <- ggplot(trait.data.art, aes(x = max_crep, y = log(GR_MaxLat_dd))) 
   stat_compare_means(label.y = 5, method = "anova") + annotate("text", x = 1.15, y = 5.5, label = paste("phylANOVA, p =", art_phylANOVA$Pf))
 boxplot_art   
 
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "max_latitude", "_boxplots_anova_artio.pdf"), width = 8, height = 7)
+boxplot_art
+dev.off()
+
 # Save out all discrete traits plots ---------------------------------------------------------
 
 #### Cetacean diet
@@ -352,17 +374,17 @@ trait.data <- read.csv(here("cetacean_ecomorphology_dataset.csv"))
 trait.data <- trait.data[!is.na(trait.data$max_crep),]
 trait.data <- trait.data[!is.na(trait.data$Diet),]
 
-#filter for species in the final tree
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-
-custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
-#custom.colours.2 <- c( "grey90", "grey40", "grey66", "black", "red")
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep", "Diet")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot +  new_scale_fill() +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Diet), inherit.aes = FALSE, colour = "transparent") + scale_fill_grey(name = Diet)
-diel.plot <- diel.plot
-diel.plot
+# #filter for species in the final tree
+# trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+# 
+# custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
+# #custom.colours.2 <- c( "grey90", "grey40", "grey66", "black", "red")
+# diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep", "Diet")]
+# diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+# diel.plot <- diel.plot +  new_scale_fill() +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Diet), inherit.aes = FALSE, colour = "transparent") + scale_fill_grey(name = Diet)
+# diel.plot <- diel.plot
+# diel.plot
 
 test_df <- trait.data[, c("max_crep", "Diet")]
 test <- fisher.test(table(test_df))
@@ -376,17 +398,17 @@ trait.data <- read.csv(here("cetacean_ecomorphology_dataset.csv"))
 trait.data <- trait.data[!is.na(trait.data$max_crep),]
 trait.data <- trait.data[!is.na(trait.data$Habitat),]
 
-#filter for species in the final tree
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-
-custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
-#custom.colours.2 <- c( "grey90", "grey40", "grey66", "black", "red")
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep", "Habitat")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot +  new_scale_fill() +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Habitat), inherit.aes = FALSE, colour = "transparent") + scale_fill_grey(name = "Habitat")
-diel.plot <- diel.plot
-diel.plot
+# #filter for species in the final tree
+# trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+# 
+# custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
+# #custom.colours.2 <- c( "grey90", "grey40", "grey66", "black", "red")
+# diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep", "Habitat")]
+# diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+# diel.plot <- diel.plot +  new_scale_fill() +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Habitat), inherit.aes = FALSE, colour = "transparent") + scale_fill_grey(name = "Habitat")
+# diel.plot <- diel.plot
+# diel.plot
 
 test_df <- trait.data[, c("max_crep", "Habitat")]
 test <- fisher.test(table(test_df))
@@ -403,17 +425,17 @@ trait.data <- read.csv(here("cetacean_ecomorphology_dataset.csv"))
 trait.data <- trait.data[!is.na(trait.data$max_crep),]
 trait.data <- trait.data[!is.na(trait.data$Feeding_method),]
 
-#filter for species in the final tree
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-
-custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
-#custom.colours.2 <- c( "grey90", "grey40", "grey66", "black", "red")
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep", "Feeding_method")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-diel.plot <- diel.plot +  new_scale_fill() +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Feeding_method), inherit.aes = FALSE, colour = "transparent") + scale_fill_grey(name = "Feeding method")
-diel.plot <- diel.plot
-diel.plot
+# #filter for species in the final tree
+# trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+# 
+# custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
+# #custom.colours.2 <- c( "grey90", "grey40", "grey66", "black", "red")
+# diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep", "Feeding_method")]
+# diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+# diel.plot <- diel.plot +  new_scale_fill() +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = Feeding_method), inherit.aes = FALSE, colour = "transparent") + scale_fill_grey(name = "Feeding method")
+# diel.plot <- diel.plot
+# diel.plot
 
 test_df <- trait.data[, c("max_crep", "Feeding_method")]
 test <- fisher.test(table(test_df))
@@ -437,3 +459,21 @@ test <- fisher.test(table(test_df))
 mosaicplot(table(test_df), color = TRUE, main = paste0("Fischer's exact test: ", "p-value = ", round(test$p.value, 9)))
 
 
+#### Habitat and diet terrestrial artiodactyla
+
+trait.data.art <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
+trait.data.art <- trait.data.art[!is.na(trait.data.art$max_crep),]
+
+trait.data.1 <- trait.data.art[!is.na(trait.data.art$TrophicLevel),]
+test_df <- trait.data.1[, c("max_crep", "TrophicLevel")]
+test <- fisher.test(table(test_df))
+mosaicplot(table(test_df), color = TRUE, main = paste0("Fischer's exact test: ", "p-value = ", round(test$p.value, 9)))
+
+trait.data.1 <- trait.data.art[!is.na(trait.data.art$DietBreadth),]
+test_df <- trait.data.1[, c("max_crep", "DietBreadth")]
+test <- fisher.test(table(test_df))
+mosaicplot(table(test_df), color = TRUE, main = paste0("Fischer's exact test: ", "p-value = ", round(test$p.value, 9)))
+
+### Possible multivariate associations
+
+ggplot(trait.data.art, aes(x = max_crep, y = log(AdultBodyMass_g))) + geom_boxplot() + facet_wrap(~TrophicLevel)
