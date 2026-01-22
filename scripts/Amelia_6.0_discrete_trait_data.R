@@ -81,6 +81,9 @@ write.csv(Dive_depth, here("cetacean_dive_depth.csv"), row.names = FALSE)
 church_pt1 <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Churchill_Baltz_2021_pt1.xlsx")
 colnames(church_pt1) <- c("Species", "Family", "Specimen_number", "Left_orbit_length", "Right_orbit_length", "Bizygomatic_width", "Average_orbit_length", "Orbit_ratio")
 
+#only keep extant species
+church_pt1 <- church_pt1 %>% filter(Family %in% c("Balaenidae", "Neobalaenidae", "Balaenopteridae", "Physeteridae", "Kogiidae", "Platanistidae", "Ziphiidae", "Lipotidae", "Pontoporiidae", "Iniidae", "Monodontidae", "Phocoenidae", "Delphinidae"))
+
 church_pt1$tips <- str_replace(church_pt1$Species, " ", "_")
 church_pt1 <- church_pt1[!(is.na(church_pt1$Orbit_ratio)), c("Bizygomatic_width", "Average_orbit_length", "Orbit_ratio", "tips")]
 
@@ -100,7 +103,7 @@ church_pt1$tips <- str_replace(church_pt1$tips, pattern = "Mesoplodon_layardi", 
 church_pt1 <- church_pt1 %>% group_by(tips) %>% mutate(Orbit_ratio = mean(Orbit_ratio),  Bizygomatic_width = mean( Bizygomatic_width), Average_orbit_length = mean(Average_orbit_length))
 
 #remove duplicates
-church_pt1 <- church_pt1[!duplicated(church_pt1$tips),]
+church_pt1 <- church_pt1[!duplicated(church_pt1$tips), c("Orbit_ratio", "tips")]
 
 write.csv(church_pt1, here("cetacean_orbit_ratio.csv"), row.names = FALSE)
 
@@ -113,8 +116,13 @@ echo <- echo[!(is.na(echo$Echo)), c("Age", "Echo", "Diet", "Dentition", "FM", "H
 
 echo <- echo[!duplicated(echo$tips),]
 
+#filter for just extant species
+echo <- echo %>% filter(Age == "Extant")
+
 #check for misspellings
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 echo[!echo$tips %in% mam.tree$tip.label,]
+echo$tips <- str_replace(echo$tips, pattern = "Kogia_simus", replacement = "Kogia_sima")
 
 write.csv(echo, here("cetacean_habitat_dentition_echo.csv"), row.names = FALSE)
 
@@ -150,12 +158,8 @@ Manger <- read.csv("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_
 #of these, body mass is probably the most relevant to activity patterns (ie are whales with large body size cathemeral)
 colnames(Manger) <- c("Genus_species", "Male_mass", "Female_mass", "Average_body_mass", "Brain_mass", "Encephalization_quotient", "Longevity_days", "Sexual_maturity_days", "Group_size", "Group_size_range", "Group_social_dynamics", "Feeding_strategy")
 Manger$tips <- str_replace(Manger$Genus_species, " ", "_")
-Manger <- Manger[, c("Male_mass", "Female_mass", "Average_body_mass", "Brain_mass", "Encephalization_quotient", "Longevity_days", "Sexual_maturity_days", "Group_size", "Group_social_dynamics", "Feeding_strategy", "tips")]
 
 Manger[Manger == ""]  <- NA
-
-#delete the rows with no information (from 84 rows to 73)
-#Manger <- Manger %>% filter(!is.na(Feeding_strategy) & !is.na(Group_size))
 
 #replace feeding strategy codes with actual strings
 Manger$Feeding_strategy <- str_replace_all(Manger$Feeding_strategy, "SK", "Skim")
@@ -168,12 +172,22 @@ Manger$Feeding_strategy <- str_replace_all(Manger$Feeding_strategy, "/CO", "")
 Manger$Feeding_strategy <- str_replace_all(Manger$Feeding_strategy, "SuF", "Suction")
 
 Manger[!Manger$tips %in% mam.tree$tip.label,]
+
 #fix spelling
 Manger$tips <- str_replace(Manger$tips, pattern = "Cephalorhynchus_commersoni", replacement = "Cephalorhynchus_commersonii")
 Manger$tips <- str_replace(Manger$tips, pattern = "Deplhinus_delphis", replacement = "Delphinus_delphis")
 Manger$tips <- str_replace(Manger$tips, pattern = "Kogia_simus", replacement = "Kogia_sima")
 Manger$tips <- str_replace(Manger$tips, pattern = "Mesoplodon_ginkodens", replacement = "Mesoplodon_ginkgodens")
 Manger$tips <- str_replace(Manger$tips, pattern = "Lagenirhynchus_obliquidens", replacement = "Lagenorhynchus_obliquidens")
+
+#Lagenorhynchus_australis has only female body mass data and no male, will use this for average body mass
+Manger[Manger$tips == "Lagenorhynchus_australis", c("Average_body_mass")] <- Manger[Manger$tips == "Lagenorhynchus_australis", c("Female_mass")]
+
+#delete the rows with no information (from 84 rows to 73)
+Manger <- Manger %>% filter_at(vars(Feeding_strategy,Group_size, Average_body_mass),any_vars(!is.na(.)))
+
+#keep only relevant columns
+Manger <- Manger[, c("Average_body_mass", "Brain_mass", "Encephalization_quotient", "Longevity_days", "Sexual_maturity_days", "Group_size", "Group_social_dynamics", "Feeding_strategy", "tips")]
 
 write.csv(Manger, here("cetacean_manger_et_al.csv"), row.names = FALSE)
 
@@ -236,6 +250,9 @@ latitude_df %>% filter(!is.na(max_crep)) %>% ggplot(., aes(x = max_crep, y = max
 latitude_df$tips <- str_replace(latitude_df$Species_name, pattern = " ", replacement = "_")
 latitude_df <- latitude_df[, c("tips", "max_lat", "mean_lat", "min_lat")]
 
+#check if species names are spelled correctly
+latitude_df[!latitude_df$tips %in% mam.tree$tip.label,]
+
 #save out 
 write.csv(latitude_df, here("cetacean_latitude_df.csv"), row.names = FALSE)
 
@@ -248,10 +265,9 @@ habitat <- read.csv(here("churchill_habitat_prey_capture.csv")) #70 species
 trait.data <- merge(dive_depth, orbit_ratio, by = "tips", all = TRUE)
 trait.data <- merge(trait.data, habitat, all = TRUE)
 
-colnames(trait.data) <- c("tips", "Body_mass", "Body_length", "Dive_depth", "Bizygomatic_width", "Average_orbit_length", "Orbit_ratio", "Habitat", "Prey_capture")
+colnames(trait.data) <- c("tips", "Body_mass", "Body_length", "Dive_depth", "Orbit_ratio", "Habitat", "Prey_capture")
 
 write.csv(trait.data, here("churchill_cetacean_dataset.csv"), row.names = FALSE)
-
 
 # Section 8: Chen et al cetacean data -------------------------------------
 Chen <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Chen_2022.xlsx")
@@ -276,6 +292,9 @@ Chen$IUCN[which(Chen$IUCN == 4)] <- "critically_endangered"
 Chen$tips <- str_replace(Chen$Species, pattern = " ", replacement = "_")
 
 colnames(Chen) <- c("Species_name", "IUCN","Active_range", "max_dive_depth", "body_weight", "tips")
+Chen <- Chen[, -1]
+
+write.csv(Chen, here("Chen_cetacean_traits.csv"), row.names = FALSE)
 
 # Section 8: One cetacean dataframe to rule them all -------------------------------
 dive_depth <- read.csv(here("cetacean_dive_depth.csv")) #65 species
@@ -295,21 +314,21 @@ colnames(Parker) <- c("tips", "Body.size", "Diet1", "Divetype", "Feeding.behavio
 
 trait.data <- merge(trait.data, Parker, all = TRUE)
 
-#filter for only extant species
-#sleepy_artio <- read.csv(here("sleepy_artiodactyla_full.csv"))
-
-#93 extant species with some data
-#trait.data <- trait.data %>% filter(tips %in% sleepy_artio$tips)
+#add in Chen et al data
+Chen <- read.csv(here("Chen_cetacean_traits.csv"))
+trait.data <- merge(trait.data, Chen, by = "tips", all = TRUE)
 
 #combine the mass data into one column
-trait.data.1 <- trait.data[, c("tips","Mass", "Average_body_mass", "Body.size")]
+trait.data.1 <- trait.data[, c("tips","Mass", "Average_body_mass", "Body.size", "body_weight")]
 trait.data.1$Average_body_mass <- str_replace_all(trait.data.1$Average_body_mass, "\\,", "")
 trait.data.1[is.na(trait.data.1)] <- 0
 trait.data.1$Average_body_mass <- as.numeric(trait.data.1$Average_body_mass)
 
-#Manger et al mass  mass is in grams and Churchill and Parker et al mass is in KG.
+#Manger et al mass is in grams and Churchill and Parker et al mass is in KG.
 #Convert Manger to kg by dividing by 1000
 trait.data.1$Average_body_mass <- as.numeric(trait.data.1$Average_body_mass)/1000
+#Chen et al mass is in tonnes (?), convert to kg by multiplying by 1000
+trait.data.1$body_weight <- trait.data.1$body_weight * 1000
 #take the largest number as the mass
 trait.data.1$Body_mass_kg <- pmax(trait.data.1$Mass, trait.data.1$Average_body_mass, trait.data.1$Body.size)
 trait.data.1[trait.data.1 == 0] <- NA
@@ -395,12 +414,12 @@ unique(trait.data.1$all)
 trait.data.1 <- trait.data.1[, c("tips", "all")]
 colnames(trait.data.1) <- c("tips", "Feeding_method")
 
-trait.data.1 <- trait.data.1[trait.data.1$tips %in% mam.tree$tip.label,]
-trpy_n <- keep.tip(mam.tree, tip = trait.data.1$tips)
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data.1[,c("tips", "Feeding_method")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Feeding_method), inherit.aes = FALSE, colour = "transparent")
-diel.plot <- diel.plot + geom_tiplab()
-diel.plot
+# trait.data.1 <- trait.data.1[trait.data.1$tips %in% mam.tree$tip.label,]
+# trpy_n <- keep.tip(mam.tree, tip = trait.data.1$tips)
+# diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data.1[,c("tips", "Feeding_method")]
+# diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Feeding_method), inherit.aes = FALSE, colour = "transparent")
+# diel.plot <- diel.plot + geom_tiplab()
+# diel.plot
 
 #merge with full dataset
 trait.data <- merge(trait.data, trait.data.1, all = TRUE)
@@ -417,12 +436,12 @@ trait.data[trait.data$tips == "Stenella_frontalis", c("Diet")] <- "cephalopods +
 trait.data[trait.data$tips == "Balaenoptera_bonaerensis", c("Diet")] <- "zooplankton + fish"
 trait.data[trait.data$tips == "Stenella_clymene", c("Diet")] <- "cephalopods + fish"
 
-trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
-trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diet")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diet), inherit.aes = FALSE, colour = "transparent")
-diel.plot <- diel.plot + geom_tiplab()
-diel.plot
+# trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+# diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diet")]
+# diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Diet), inherit.aes = FALSE, colour = "transparent")
+# diel.plot <- diel.plot + geom_tiplab()
+# diel.plot
 
 #divetype information
 #dive type (shallow (estimated max dive depth <100m), 
@@ -450,12 +469,12 @@ trait.data.1[trait.data.1$Divetype_1 == "undetermined", c("Divetype_1")] <- trai
 
 trait.data.1[trait.data.1 == 0] <- NA
 
-trait.data.1 <- trait.data.1[trait.data$tips %in% mam.tree$tip.label,]
-trpy_n <- keep.tip(mam.tree, tip = trait.data.1$tips)
-diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data.1[,c("tips", "Divetype_1")]
-diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Divetype_1), inherit.aes = FALSE, colour = "transparent")
-diel.plot <- diel.plot + geom_tiplab()
-diel.plot
+# trait.data.1 <- trait.data.1[trait.data$tips %in% mam.tree$tip.label,]
+# trpy_n <- keep.tip(mam.tree, tip = trait.data.1$tips)
+# diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data.1[,c("tips", "Divetype_1")]
+# diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = Divetype_1), inherit.aes = FALSE, colour = "transparent")
+# diel.plot <- diel.plot + geom_tiplab()
+# diel.plot
 
 trait.data <- merge(trait.data, trait.data.1[, c("tips", "Divetype_1")], all = TRUE)
 
@@ -467,6 +486,14 @@ colnames(trait.data) <- c("tips", "Body_length_m", "Body_mass_kg", "Dive_depth_m
 latitude_df <- read.csv(here("cetacean_latitude_df.csv"))
 
 trait.data <- merge(trait.data, latitude_df, by = "tips", all = TRUE)
+
+
+#filter for only extant species
+#sleepy_artio <- read.csv(here("sleepy_artiodactyla_full.csv"))
+
+#93 extant species with some data
+#trait.data <- trait.data %>% filter(tips %in% sleepy_artio$tips)
+
 
 #lastly add in the activity patterns
 cetaceans_full <- read.csv(here("cetaceans_full.csv"))
