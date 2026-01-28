@@ -277,10 +277,11 @@ Chen <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_d
 # Each threat comprises four impact levels: no = 0, low = 1, moderate = 2 and high = 3.
 Chen <- Chen[1:80, c("Species", "IUCN", "AR", "MDD", "MBW")]
 
-#replace codes 
-Chen$AR[which(Chen$AR == 1)] <- "inland"
+#replace codes:1 = inland water, 2 = coastal waters, 3 = oceanic waters
+#but use the same language as other databases (inland = riverine, oceanic = pelagic)
+Chen$AR[which(Chen$AR == 1)] <- "riverine"
 Chen$AR[which(Chen$AR == 2)] <- "coastal"
-Chen$AR[which(Chen$AR == 3)] <- "oceanic"
+Chen$AR[which(Chen$AR == 3)] <- "pelagic"
 
 Chen$IUCN[which(Chen$IUCN == 0)] <- "least_concern"
 Chen$IUCN[which(Chen$IUCN == 1)] <- "near_threatened"
@@ -326,11 +327,11 @@ trait.data.1$Average_body_mass <- as.numeric(trait.data.1$Average_body_mass)
 
 #Manger et al mass is in grams and Churchill and Parker et al mass is in KG.
 #Convert Manger to kg by dividing by 1000
-trait.data.1$Average_body_mass <- as.numeric(trait.data.1$Average_body_mass)/1000
+trait.data.1$Average_body_mass <- trait.data.1$Average_body_mass/1000
 #Chen et al mass is in tonnes (?), convert to kg by multiplying by 1000
 trait.data.1$body_weight <- trait.data.1$body_weight * 1000
 #take the largest number as the mass
-trait.data.1$Body_mass_kg <- pmax(trait.data.1$Mass, trait.data.1$Average_body_mass, trait.data.1$Body.size)
+trait.data.1$Body_mass_kg <- pmax(trait.data.1$Mass, trait.data.1$Average_body_mass, trait.data.1$Body.size, trait.data.1$body_weight)
 trait.data.1[trait.data.1 == 0] <- NA
 trait.data <- merge(trait.data, trait.data.1[, c("tips", "Body_mass_kg")], all =TRUE)
 
@@ -338,6 +339,17 @@ trait.data <- merge(trait.data, trait.data.1[, c("tips", "Body_mass_kg")], all =
 trait.data$Habitat_2 <- str_replace(trait.data$Habitat_2, "Freshwater", "riverine")
 trait.data$Habitat_2 <- str_replace(trait.data$Habitat_2, "Nearshore", "coastal")
 trait.data$Habitat_2 <- str_replace(trait.data$Habitat_2, "Offshore", "pelagic")
+
+#compare habitat data
+trait.data.1 <- trait.data[, c("tips", "Habitat", "Habitat_2", "Habitat_1", "Active_range")]
+
+trait.data.1$Final_habitat <- "Unknown"
+
+for(i in 1:nrow(trait.data.1)){
+  if(trait.data.1[i, "Habitat"] == trait.data.1[i, "Habitat_2"]){
+    trait.data.1[i, "Final_habitat"] <- trait.data.1[i, "Habitat"]
+  }
+}
 
 #combine all habitat rows and manually check for concordance
 trait.data$Habitat_3 <- paste(trait.data$Habitat, trait.data$Habitat_2, trait.data$Habitat_1, sep = "")
@@ -497,7 +509,6 @@ trait.data <- merge(trait.data, latitude_df, by = "tips", all = TRUE)
 
 #lastly add in the activity patterns
 cetaceans_full <- read.csv(here("cetaceans_full.csv"))
-
 cetaceans_full <- cetaceans_full[, c("Parvorder", "Family", "Diel_Pattern", "max_crep", "Confidence", "tips")]
 
 trait.data <- merge(cetaceans_full, trait.data)
