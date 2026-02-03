@@ -39,6 +39,7 @@ library(phytools)
 library(geiger)
 library(corHMM)
 library(phangorn)
+library(DescTools)
 
 #extra packages
 library(lubridate)
