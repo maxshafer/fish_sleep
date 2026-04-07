@@ -1,41 +1,8 @@
 source("scripts/fish_sleep_functions.R")
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 
-# Multivariate analysis ---------------------------------------------------
 
-trait.data <- read.csv(here("cetacean_ecomorphology_dataset.csv"))
-
-trait.data <- trait.data[!is.na(trait.data$max_crep),]
-
-trait.data <- trait.data[!is.na(trait.data$Habitat),]
-
-#we do not have dive depth data for any riverine species
-#given them a small dive depth (50m)
-#trait.data[trait.data$Habitat == "riverine", c("Dive_depth_m")] <- 50
-
-trait.data <- trait.data[!is.na(trait.data$Dive_depth_m),]
-
-
-ggplot(trait.data, aes(x = Habitat, y = Dive_depth_m)) + geom_boxplot(outlier.shape = NA) + 
-  geom_jitter(aes(fill = max_crep), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + scale_fill_manual(values=custom.colours) +
-  stat_compare_means(label = "p.format", method = "t.test",ref.group = ".all.") + stat_compare_means(label.y = 2000, method = "anova") + facet_wrap(~ max_crep)
-
-
-ggplot(trait.data, aes(x = max_crep, y = Dive_depth_m)) + geom_boxplot(outlier.shape = NA) + 
-  geom_jitter(aes(fill = Habitat), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + scale_fill_manual(values=custom.colours) +
-  stat_compare_means(label = "p.format", method = "t.test",ref.group = ".all.") + stat_compare_means(label.y = 2000, method = "anova") + facet_wrap(~ Habitat)
-
-#two way ANOVA of habitat and diel pattern on dive depth
-
-aggregate(Dive_depth_m ~ Habitat + max_crep, data = trait.data, FUN = mean)
-
-ggplot(trait.data, aes(x = max_crep, y = Dive_depth_m, fill = Habitat)) + geom_boxplot(outlier.shape = NA) + scale_fill_manual(values=custom.colours)
- 
-model <- aov(Dive_depth_m ~ Habitat + max_crep, data = trait.data)
-summary(model)
-
-
-# # Function to create trait vector for phylANOVA -------------------------
+# Function to create trait vector for phylANOVA -------------------------
 
 calculatePhylANOVA <- function(trait.data = trait.data, continuous_trait = "Orbit_ratio"){
   trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
@@ -52,7 +19,7 @@ calculatePhylANOVA <- function(trait.data = trait.data, continuous_trait = "Orbi
   #x trait is the categorical variable 
   trait.x <- test$max_crep
   names(trait.x) <- test$tips
-  phylANOVA <- phylANOVA(trpy_n, trait.x, trait.y, nsim=1000, posthoc=TRUE, p.adj="holm")
+  phylANOVA <- phytools::phylANOVA(trpy_n, trait.x, trait.y, nsim=1000, posthoc=TRUE, p.adj="holm")
   return(phylANOVA)
 }
 
@@ -311,6 +278,45 @@ pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Body
 boxplot_art
 dev.off()
 
+### Ruminant body mass 
+trait.data.art <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
+trait.data.art <- trait.data.art[!is.na(trait.data.art$AdultBodyMass_g), c("tips", "AdultBodyMass_g", "max_crep", "Family", "fam_colours")]
+trait.data.art <- trait.data.art[!is.na(trait.data.art$max_crep), ] %>% filter(Family %in% c("Bovidae", "Cervidae", "Antilocapridae", "Giraffidae", "Tragulidae", "Moschidae"))
+
+#perform the one-way anova
+art_model <- aov(AdultBodyMass_g ~ max_crep, data = trait.data.art)
+summary(art_model)
+
+#perform the post-hoc tukey test
+TukeyHSD(art_model, conf.level = .95)
+
+#perform the phylogenetically corrected one-way anova
+art_phylANOVA <- calculatePhylANOVA(trait.data.art, "AdultBodyMass_g")
+
+boxplot_art <- ggplot(trait.data.art, aes(x = max_crep, y = log(AdultBodyMass_g))) +
+  geom_boxplot(aes(fill = max_crep), alpha=0.8, outlier.shape = NA) + scale_fill_manual(values = custom.colours) +
+  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Body mass (g)") + scale_fill_manual(values=unique(trait.data.art$fam_colours))  + 
+  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
+  stat_compare_means(label.y = 14, method = "anova") + annotate("text", x = 1.15, y = 14.5, label = paste("phylANOVA, p =", art_phylANOVA$Pf))
+boxplot_art   
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Body_mass", "_boxplots_anova_ruminants.pdf"), width = 8, height = 7)
+boxplot_art
+dev.off()
+
+#filter for species in the final tree
+# trait.data <- trait.data.art[trait.data.art$tips %in% mam.tree$tip.label,]
+# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+# 
+# custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
+# diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep", "AdultBodyMass_g")]
+# diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+# diel.plot <- diel.plot +  new_scale_fill() +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = log(AdultBodyMass_g)), inherit.aes = FALSE, colour = "transparent") + scale_fill_viridis_c(option = "magma")
+# diel.plot <- diel.plot + geom_tiplab(size = 3, offset = 4) 
+# diel.plot
+
+
 ### Artiodactyla latitude
 trait.data.art <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
 trait.data.art <- trait.data.art[!is.na(trait.data.art$GR_MidRangeLat_dd), c("tips", "GR_MidRangeLat_dd", "max_crep", "Family", "fam_colours")]
@@ -362,6 +368,60 @@ boxplot_art <- ggplot(trait.data.art, aes(x = max_crep, y = log(GR_MaxLat_dd))) 
 boxplot_art   
 
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "max_latitude", "_boxplots_anova_artio.pdf"), width = 8, height = 7)
+boxplot_art
+dev.off()
+
+### Ruminant latitude
+trait.data.art <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
+trait.data.art <- trait.data.art[!is.na(trait.data.art$GR_MidRangeLat_dd), c("tips", "GR_MidRangeLat_dd", "max_crep", "Family", "fam_colours")]
+trait.data.art <- trait.data.art[!is.na(trait.data.art$max_crep), ] %>% filter(Family %in% c("Bovidae", "Cervidae", "Antilocapridae", "Giraffidae", "Tragulidae", "Moschidae"))
+
+#perform the one-way anova
+art_model <- aov(GR_MidRangeLat_dd ~ max_crep, data = trait.data.art)
+summary(art_model)
+
+#perform the post-hoc tukey test
+TukeyHSD(art_model, conf.level = .95)
+
+#perform the phylogenetically corrected one-way anova
+art_phylANOVA <- calculatePhylANOVA(trait.data.art, "GR_MidRangeLat_dd")
+
+boxplot_art <- ggplot(trait.data.art, aes(x = max_crep, y = log(GR_MidRangeLat_dd))) +
+  geom_boxplot(aes(fill = max_crep), alpha=0.8, outlier.shape = NA) + scale_fill_manual(values = custom.colours) +
+  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Mid latitude range") + scale_fill_manual(values=unique(trait.data.art$fam_colours))  + 
+  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
+  stat_compare_means(label.y = 5, method = "anova") + annotate("text", x = 1.15, y = 5.5, label = paste("phylANOVA, p =", art_phylANOVA$Pf))
+boxplot_art   
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "mean_latitude", "_boxplots_anova_ruminant.pdf"), width = 8, height = 7)
+boxplot_art
+dev.off()
+
+### Ruminant max latitude
+trait.data.art <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
+trait.data.art <- trait.data.art[!is.na(trait.data.art$GR_MaxLat_dd), c("tips", "GR_MaxLat_dd", "max_crep", "Family", "fam_colours")]
+trait.data.art <- trait.data.art[!is.na(trait.data.art$max_crep), ] %>% filter(Family %in% c("Bovidae", "Cervidae", "Antilocapridae", "Giraffidae", "Tragulidae", "Moschidae"))
+
+#perform the one-way anova
+art_model <- aov(GR_MaxLat_dd ~ max_crep, data = trait.data.art)
+summary(art_model)
+
+#perform the post-hoc tukey test
+TukeyHSD(art_model, conf.level = .95)
+
+#perform the phylogenetically corrected one-way anova
+art_phylANOVA <- calculatePhylANOVA(trait.data.art, "GR_MaxLat_dd")
+
+boxplot_art <- ggplot(trait.data.art, aes(x = max_crep, y = log(GR_MaxLat_dd))) +
+  geom_boxplot(aes(fill = max_crep), alpha=0.8, outlier.shape = NA) + scale_fill_manual(values = custom.colours) +
+  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "GR_MaxLat_dd") + scale_fill_manual(values=unique(trait.data.art$fam_colours))  + 
+  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
+  stat_compare_means(label.y = 5, method = "anova") + annotate("text", x = 1.15, y = 5.5, label = paste("phylANOVA, p =", art_phylANOVA$Pf))
+boxplot_art   
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "max_latitude", "_boxplots_anova_ruminant.pdf"), width = 8, height = 7)
 boxplot_art
 dev.off()
 
@@ -477,3 +537,139 @@ mosaicplot(table(test_df), color = TRUE, main = paste0("Fischer's exact test: ",
 ### Possible multivariate associations
 
 ggplot(trait.data.art, aes(x = max_crep, y = log(AdultBodyMass_g))) + geom_boxplot() + facet_wrap(~TrophicLevel)
+
+
+# Dive data in detail ---------------------------------------------------
+
+dive.data <- read.csv(here("cetacean_dive_depth_all_sources.csv"))
+trait.data <- read.csv(here("cetacean_ecomorphology_dataset.csv"))
+
+dive.data <- merge(dive.data, trait.data[, -c(14)], by = "tips", all = TRUE)
+
+dive.data %>% ggplot(., aes(x = Diel_Pattern, y = Final_dive_depth)) + geom_boxplot() + geom_point() + facet_wrap(~Parvorder)
+
+#remove riverine species - pelagic species will be more affected by DVM
+
+dive.data %>% filter(Habitat != "riverine" & Parvorder == "Odontoceti") %>% filter(!is.na(max_crep)) %>%
+  ggplot(., aes(x = max_crep, y = Mean_dive_depth)) + geom_boxplot() +
+  geom_point() + facet_wrap(~Habitat) + stat_compare_means(method = "anova")
+
+#how deep is the deep scattering layer? 
+#Wikipedia says they rise to 100m at night and descend to 800-1000m during day
+#coastal species also wouldn't be involved in this since they aren't diving that deep
+
+dive.data %>% filter(Habitat %in% c("coastal/pelagic", "pelagic")) %>% filter(!is.na(max_crep)) %>%
+  ggplot(., aes(x = max_crep, y = Mean_dive_depth)) + geom_boxplot() +
+  geom_point() + facet_wrap(~Parvorder) + stat_compare_means(method = "anova")
+
+dive.data %>% filter(Habitat %in% c("coastal/pelagic", "pelagic")) %>% filter(!is.na(max_crep)) %>%
+  ggplot(., aes(x = max_crep, y = Final_dive_depth)) + geom_boxplot() +
+  geom_point() + facet_wrap(~Parvorder) + stat_compare_means(method = "anova")
+
+#final dive depth (with chen)
+trait.data <- filter(dive.data, Habitat %in% c("coastal/pelagic", "pelagic") & !is.na(max_crep))
+
+trait.data.od <- filter(trait.data, Parvorder == "Odontoceti")
+trait.data.od <- trait.data.od[!is.na(trait.data.od$Final_dive_depth),]
+
+#perform the phylogenetically corrected one-way anova
+odonto_phylANOVA <- calculatePhylANOVA(trait.data.od, "Final_dive_depth")
+
+boxplot_dive <- ggplot(trait.data.od, aes(x = max_crep, y = Final_dive_depth)) +
+  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
+  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Final_dive_depth") + scale_fill_manual(values=unique(trait.data$fam_colours))  + 
+  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
+  stat_compare_means(label.x = 0.8, label.y = 3400, method = "anova") + 
+  annotate("text", x = 1.15, y = 3300, label = paste("phylANOVA, p =", odonto_phylANOVA$Pf))
+boxplot_dive
+
+#with mean dive depth (with chen)
+trait.data.od <- filter(trait.data, Parvorder == "Odontoceti")
+trait.data.od <- trait.data.od[!is.na(trait.data.od$Mean_dive_depth),]
+
+#perform the phylogenetically corrected one-way anova
+odonto_phylANOVA <- calculatePhylANOVA(trait.data.od, "Mean_dive_depth")
+
+boxplot_dive <- ggplot(trait.data.od, aes(x = max_crep, y = Mean_dive_depth)) +
+  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
+  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Mean_dive_depth") + scale_fill_manual(values=unique(trait.data$fam_colours))  + 
+  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
+  stat_compare_means(label.x = 0.8, label.y = 3400, method = "anova") + 
+  annotate("text", x = 1.15, y = 3300, label = paste("phylANOVA, p =", odonto_phylANOVA$Pf))
+boxplot_dive
+
+#final and mean dive data minus Chen et al data
+dive.data[is.na(dive.data)] <- 0
+dive.data$Final_dive_depth <- pmax(dive.data$Dive_depth, dive.data$Max_dive_depth_m, dive.data$Dive_depth_Laeta)
+dive.data[dive.data == 0] <- NA
+dive.data <- dive.data %>% mutate(., Mean_dive_depth = rowMeans(select(., 2:4), na.rm = TRUE))
+
+dive.data %>% filter(Habitat %in% c("coastal/pelagic", "pelagic")) %>% filter(!is.na(max_crep)) %>%
+  ggplot(., aes(x = max_crep, y = Mean_dive_depth)) + geom_boxplot() +
+  geom_point() + facet_wrap(~Parvorder) + stat_compare_means(method = "anova")
+
+dive.data %>% filter(Habitat %in% c("coastal/pelagic", "pelagic")) %>% filter(!is.na(max_crep)) %>%
+  ggplot(., aes(x = max_crep, y = Final_dive_depth)) + geom_boxplot() +
+  geom_point() + facet_wrap(~Parvorder) + stat_compare_means(method = "anova")
+
+#check for phylogenetic significance
+
+#final dive depth (minus chen)
+trait.data <- filter(dive.data, Habitat %in% c("coastal/pelagic", "pelagic"))
+
+trait.data.od <- filter(trait.data, Parvorder == "Odontoceti")
+trait.data.od <- trait.data.od[!is.na(trait.data.od$Final_dive_depth),]
+
+#perform the phylogenetically corrected one-way anova
+odonto_phylANOVA <- calculatePhylANOVA(trait.data.od, "Final_dive_depth")
+
+boxplot_dive <- ggplot(trait.data.od, aes(x = max_crep, y = Final_dive_depth)) +
+  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
+  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Final_dive_depth") + scale_fill_manual(values=unique(trait.data$fam_colours))  + 
+  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
+  stat_compare_means(label.x = 0.8, label.y = 3400, method = "anova") + 
+  annotate("text", x = 1.15, y = 3300, label = paste("phylANOVA, p =", odonto_phylANOVA$Pf))
+boxplot_dive
+
+#with mean dive depth (minus chen)
+trait.data.od <- filter(trait.data, Parvorder == "Odontoceti")
+trait.data.od <- trait.data.od[!is.na(trait.data.od$Mean_dive_depth),]
+
+#perform the phylogenetically corrected one-way anova
+odonto_phylANOVA <- calculatePhylANOVA(trait.data.od, "Mean_dive_depth")
+
+boxplot_dive <- ggplot(trait.data.od, aes(x = max_crep, y = Mean_dive_depth)) +
+  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
+  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Mean_dive_depth") + scale_fill_manual(values=unique(trait.data$fam_colours))  + 
+  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
+  stat_compare_means(label.x = 0.8, label.y = 3400, method = "anova") + 
+  annotate("text", x = 1.15, y = 3300, label = paste("phylANOVA, p =", odonto_phylANOVA$Pf))
+boxplot_dive
+
+# Multivariate analysis ---------------------------------------------------
+
+trait.data <- read.csv(here("cetacean_ecomorphology_dataset.csv"))
+
+trait.data <- trait.data %>% filter(!is.na(max_crep) & !is.na(Habitat) & !is.na(Dive_depth_m))
+
+ggplot(trait.data, aes(x = Habitat, y = Dive_depth_m)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = max_crep), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + scale_fill_manual(values=custom.colours) +
+  stat_compare_means(label = "p.format", method = "t.test",ref.group = ".all.") + stat_compare_means(label.y = 2000, method = "anova") + facet_wrap(~ max_crep)
+
+ggplot(trait.data, aes(x = max_crep, y = Dive_depth_m)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(fill = Habitat), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + scale_fill_manual(values=custom.colours) +
+  stat_compare_means(label = "p.format", method = "t.test",ref.group = ".all.") + stat_compare_means(label.y = 2000, method = "anova") + facet_wrap(~ Habitat)
+
+#two way ANOVA of habitat and diel pattern on dive depth
+
+aggregate(Dive_depth_m ~ Habitat + max_crep, data = trait.data, FUN = mean)
+
+ggplot(trait.data, aes(x = max_crep, y = Dive_depth_m, fill = Habitat)) + geom_boxplot(outlier.shape = NA) + scale_fill_manual(values=custom.colours)
+ 
+model <- aov(Dive_depth_m ~ Habitat + max_crep, data = trait.data)
+summary(model)
+

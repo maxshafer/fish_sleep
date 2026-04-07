@@ -65,10 +65,10 @@ echo <- separate(echo, tips, into = c("tips", "museum_id"), sep = " ")
 #filter for just extant species
 echo <- echo %>% filter(Age == "Extant")
 
-echo <- echo[!(is.na(echo$Echo)), c("Echo", "Diet", "Dentition", "FM", "Habitat", "tips")]
+echo <- echo[!(is.na(echo$Echo)), c("Diet", "Dentition", "FM", "Habitat", "tips")]
 
 #remove duplicates because all information is identical
-echo <- echo[duplicated(echo$tips),]
+echo <- echo[!duplicated(echo$tips),]
 
 #check for misspellings
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
@@ -100,6 +100,8 @@ dive$Habitat <- str_replace(dive$Habitat, "nearshore", "coastal")
 
 dive$Habitat <- tolower(dive$Habitat)
 dive$Feeding.behaviour <- str_to_title(dive$Feeding.behaviour)
+
+colnames(dive) <- c("tips", "Body.size", "Diet1", "Divetype", "Feeding.behaviour", "Habitat_1")
 
 write.csv(dive, here("cetacean_Park_dive.csv"), row.names = FALSE)
 
@@ -215,7 +217,7 @@ colnames(church_qual) <- c("Habitat_2", "Prey_capture", "tips")
 write.csv(church_qual, here("churchill_habitat_prey_capture.csv"), row.names = FALSE)
 
 
-# Section 8: Churchill et al full dataframe  -----------------------------------
+# Section 9: Churchill et al full dataframe  -----------------------------------
 #to keep all data from one source can use just the churchill et al dataset 
 dive_depth <- read.csv(here("Churchill_dive_body_length.csv")) #28 species
 orbit_ratio <- read.csv(here("cetacean_orbit_ratio.csv")) #70 species
@@ -228,7 +230,7 @@ colnames(trait.data) <- c("tips", "Body_mass", "Body_length", "Dive_depth", "Orb
 
 write.csv(trait.data, here("churchill_cetacean_dataset.csv"), row.names = FALSE)
 
-# Section 9: Chen et al cetacean data -------------------------------------
+# Section 10: Chen et al cetacean data -------------------------------------
 #https://doi.org/10.1111/gcb.16385
 Chen <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Chen_2022.xlsx")
 
@@ -257,7 +259,7 @@ Chen <- Chen[, -1]
 
 write.csv(Chen, here("Chen_cetacean_traits.csv"), row.names = FALSE)
 
-# Section 10: Primary literature + Churchill + Laeta + Chen dive depth data --------------------------
+# Section 11: Primary literature + Churchill + Laeta + Chen dive depth data --------------------------
 
 #read in the additional dive data I collected
 url <- 'https://docs.google.com/spreadsheets/d/1_0ZS_tbddOCckkcKn9H5HpVRDZty4jhkUU20Nc0YYQY/edit?usp=sharing'
@@ -290,49 +292,35 @@ Laeta_data$Dive_depth_Laeta <- as.integer(Laeta_data$Dive_depth_Laeta)
 
 dive.data <- merge(dive.data, Laeta_data, all = TRUE, by = "tips")
 
-#combine Chen et al dive data with my dive data
-Chen <- read.csv(here("Chen_cetacean_traits.csv"))
+#Dive data from Chen et al seems to overestimate dive depth significantly (1000s of m) so do not include
 
-dive.data <- merge(dive.data, Chen[, c("tips", "max_dive_depth")], all = TRUE, by = "tips")
+#take the mean and the maximum
 dive.data[is.na(dive.data)] <- 0
-
-dive.data$Final_dive_depth <- pmax(dive.data$Dive_depth, dive.data$max_dive_depth, dive.data$Max_dive_depth_m, dive.data$Dive_depth_Laeta)
-
+dive.data$Final_dive_depth <- pmax(dive.data$Dive_depth, dive.data$Max_dive_depth_m, dive.data$Dive_depth_Laeta)
 dive.data[dive.data == 0] <- NA
-
 dive.data <- dive.data %>% mutate(., Mean_dive_depth = rowMeans(select(., 2:5), na.rm = TRUE))
 dive.data[dive.data == "NaN"] <- NA
-
-cetaceans_full <- read.csv(here("cetaceans_full.csv"))
-cetaceans_full <- cetaceans_full[, c("Parvorder", "Family", "max_crep", "tips")]
-dive.data <- merge(cetaceans_full, dive.data, by = "tips", all = TRUE)
-
-#does anything associate with activity patterns...anything at all
-dive.data %>% filter(!is.na(Final_dive_depth) & !is.na(max_crep)) %>% ggplot(., aes(x = max_crep, y = log(Final_dive_depth))) + geom_boxplot() + geom_point(aes(colour = Family)) + facet_wrap(~Parvorder) + stat_compare_means(method = "anova")
-
 dive.data <- dive.data[, c("tips", "Final_dive_depth", "Mean_dive_depth")]
+dive.data <- filter(dive.data, !is.na(Final_dive_depth))
 write.csv(dive.data, here("cetacean_dive_depth.csv"), row.names = FALSE)
 
-# Section 8: One cetacean dataframe to rule them all -------------------------------
-dive_depth <- read.csv(here("cetacean_dive_depth.csv")) #65 species
-orbit_ratio <- read.csv(here("cetacean_orbit_ratio.csv")) #99 species
-echo <- read.csv(here("cetacean_habitat_dentition_echo.csv")) #194 species
-Manger <- read.csv(here("cetacean_manger_et_al.csv")) #84 species
+# Section 12: One cetacean dataframe to rule them all -------------------------------
+dive_depth <- read.csv(here("Churchill_dive_body_length.csv")) #28 species
+orbit_ratio <- read.csv(here("cetacean_orbit_ratio.csv")) #70 species
+echo <- read.csv(here("cetacean_habitat_dentition_echo.csv")) #84 species
+Manger <- read.csv(here("cetacean_manger_et_al.csv")) #74 species
 habitat <- read.csv(here("churchill_habitat_prey_capture.csv")) #70 species
-Parker <- read.csv(here("cetacean_Park_dive.csv")) #48 species
-
-trait.data <- merge(dive_depth, orbit_ratio, by = "tips", all = TRUE)
-trait.data <- merge(trait.data, echo, all = TRUE)
-trait.data <- merge(trait.data, habitat, all = TRUE)
-trait.data <- merge(trait.data, Manger, all = TRUE)
-
-#add in new dataset
-colnames(Parker) <- c("tips", "Body.size", "Diet1", "Divetype", "Feeding.behaviour", "Habitat_1")
-trait.data <- merge(trait.data, Parker, all = TRUE)
-
-#add in Chen et al data
-Chen <- read.csv(here("Chen_cetacean_traits.csv"))
-trait.data <- merge(trait.data, Chen, by = "tips", all = TRUE)
+Park <- read.csv(here("cetacean_Park_dive.csv")) #48 species
+Chen <- read.csv(here("Chen_cetacean_traits.csv")) #80 species
+dive.data <- read.csv(here("cetacean_dive_depth.csv")) #62 species
+  
+trait.data <- merge(dive_depth[, c("Dive_duration", "Mass", "Total_body_length", "tips")], orbit_ratio, by = "tips", all = TRUE)
+trait.data <- merge(trait.data, echo, all = TRUE, by = "tips")
+trait.data <- merge(trait.data, habitat, all = TRUE, by = "tips")
+trait.data <- merge(trait.data, Manger, all = TRUE, by = "tips") #some extra data I could remove here
+trait.data <- merge(trait.data, Park[, c("tips", "Body.size", "Diet1", "Divetype", "Feeding.behaviour", "Habitat_1")], all = TRUE, by = "tips")
+trait.data <- merge(trait.data, Chen[, c("IUCN", "Active_range", "body_weight", "tips")], all = TRUE, by = "tips")
+trait.data <- merge(trait.data, dive.data, all = TRUE, by = "tips")
 
 #combine the mass data into one column
 trait.data.1 <- trait.data[, c("tips","Mass", "Average_body_mass", "Body.size", "body_weight")]
@@ -340,22 +328,22 @@ trait.data.1$Average_body_mass <- str_replace_all(trait.data.1$Average_body_mass
 trait.data.1[is.na(trait.data.1)] <- 0
 trait.data.1$Average_body_mass <- as.numeric(trait.data.1$Average_body_mass)
 
-#Manger et al mass is in grams and Churchill and Parker et al mass is in KG.
+#Manger et al mass is in grams and Churchill and Park et al mass is in KG.
 #Convert Manger to kg by dividing by 1000
 trait.data.1$Average_body_mass <- trait.data.1$Average_body_mass/1000
 #Chen et al mass is in tonnes (?), convert to kg by multiplying by 1000
 trait.data.1$body_weight <- trait.data.1$body_weight * 1000
 #take the largest number as the mass
-trait.data.1$Body_mass_kg <- pmax(trait.data.1$Mass, trait.data.1$Average_body_mass, trait.data.1$Body.size, trait.data.1$body_weight)
+trait.data.1$Final_body_mass_kg <- pmax(trait.data.1$Mass, trait.data.1$Average_body_mass, trait.data.1$Body.size, trait.data.1$body_weight)
 trait.data.1[trait.data.1 == 0] <- NA
-trait.data.1$Average_body_mass_kg <- mean(trait.data.1$Mass, trait.data.1$Average_body_mass, trait.data.1$Body.size, trait.data.1$body_weight)
-trait.data <- merge(trait.data, trait.data.1[, c("tips", "Body_mass_kg", "Average_body_mass_kg")], all =TRUE)
+trait.data.1$Average_body_mass_kg <- rowMeans(trait.data.1[, 2:5], na.rm = TRUE)
+
+trait.data <- merge(trait.data, trait.data.1[, c("tips", "Final_body_mass_kg", "Average_body_mass_kg")], all =TRUE)
 
 #consolidate the habitat data
 trait.data$Habitat_2 <- str_replace(trait.data$Habitat_2, "Freshwater", "riverine")
 trait.data$Habitat_2 <- str_replace(trait.data$Habitat_2, "Nearshore", "coastal")
 trait.data$Habitat_2 <- str_replace(trait.data$Habitat_2, "Offshore", "pelagic")
-
 trait.data$Habitat <- str_replace(trait.data$Habitat, "-", "/")
 
 #combine habitat data
@@ -436,8 +424,10 @@ trait.data[trait.data$tips == "Balaenoptera_bonaerensis", c("Diet")] <- "zooplan
 trait.data[trait.data$tips == "Stenella_clymene", c("Diet")] <- "cephalopods + fish"
 
 #dive type: shallow <100m, mid ~500m, deep ~1000m, very deep >1000m
-trait.data.1 <- trait.data[, c("tips", "Final_dive_depth","Divetype")]
+trait.data.1 <- trait.data[, c("tips", "Final_dive_depth", "Mean_dive_depth", "Divetype")]
 trait.data.1$Final_divetype <- "undetermined"
+
+trait.data.1[is.na(trait.data.1)] <- 0
 
 trait.data.1[trait.data.1$Final_dive_depth > 1000, c("Final_divetype")] <- "verydeep"
 trait.data.1[trait.data.1$Final_dive_depth <= 1000, c("Final_divetype")] <- "deep"
@@ -446,17 +436,26 @@ trait.data.1[trait.data.1$Final_dive_depth < 180, c("Final_divetype")] <- "shall
 trait.data.1[trait.data.1$Final_dive_depth == 0, c("Final_divetype")] <- "undetermined"
 
 trait.data.1[trait.data.1 == 0] <- NA
+trait.data.1[trait.data.1 == "undetermined"] <- NA
+
+#how many of my calls agree with Park et al divetype calls?
+#15 false and 22 true, 60% agree can include but flag as low confidence
+trait.data.1 %>% filter(!is.na(Divetype) & !is.na(Final_divetype)) %>% filter(Divetype == Final_divetype) %>% nrow()/nrow(filter(trait.data.1, !is.na(Divetype) & !is.na(Final_divetype)))
+
+for(i in 1:nrow(trait.data.1)){
+  if(is.na(trait.data.1[i, "Final_divetype"]) & !is.na(trait.data.1[i, "Divetype"])){
+    trait.data.1[i, "Final_divetype"] <- paste(trait.data.1[i, "Divetype"], "low_conf", sep = "_") 
+  }
+}
 
 trait.data <- merge(trait.data, trait.data.1[, c("tips", "Final_divetype")], by = "tips")
-trait.data[trait.data$Final_dive_depth == 0, "Final_dive_depth"] <- NA
 
 #keep only the relevant columns
-trait.data <- trait.data[, c("tips", "Body_length", "Orbit_ratio", "Diet", "IUCN", "Body_mass_kg", "Final_habitat", "Final_feeding", "Final_dive_depth", "Final_divetype")]
-colnames(trait.data) <- c("tips", "Body_length_m","Orbit_ratio", "Diet", "IUCN", "Body_mass_kg", "Habitat", "Feeding_method", "Dive_depth_m", "Divetype")
+trait.data <- trait.data[, c("tips", "Dive_duration", "Total_body_length", "Orbit_ratio", "Diet", "Brain_mass", "Encephalization_quotient", "Longevity_days", "Sexual_maturity_days", "Group_size", "IUCN",  "Final_dive_depth", "Mean_dive_depth", "Final_body_mass_kg", "Average_body_mass_kg", "Final_habitat", "Final_feeding","Final_divetype")]
+colnames(trait.data) <- c("tips", "Dive_duration", "Body_length_m", "Orbit_ratio", "Diet", "Brain_mass_g", "Encephalization_quotient", "Longevity_days", "Sexual_maturity_days", "Group_size", "IUCN", "Dive_depth_m", "Mean_dive_depth_m", "Body_mass_kg", "Average_body_mass_kg", "Habitat", "Feeding_method",  "Divetype")
 
 #add in latitude data for odontocetes
 latitude_df <- read.csv(here("cetacean_latitude_df.csv"))
-
 trait.data <- merge(trait.data, latitude_df, by = "tips", all = TRUE)
 
 #lastly add in the activity patterns
@@ -485,7 +484,7 @@ trait.data[trait.data$Family == "Pontoporiidae", c("fam_colours")] <- "grey30"
 
 write.csv(trait.data, here("cetacean_ecomorphology_dataset.csv"), row.names = FALSE)
 
-# Section 9: eye mass vs body mass ---------------------------------------
+# Section 13: eye mass vs body mass ---------------------------------------
 eye_mass <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Burton_2006.xlsx")
 
 eye_mass <- separate(eye_mass, col = SpeciesBodymassBrainmassEyemass, into = c("Genus", "Species", "Body_mass_g", "Brain_mass_g", "Eye_mass_g"), sep = " ")
@@ -576,7 +575,7 @@ ggplot(eye_mass, aes(x = max_crep, y = log(Eye_mass_g))) +geom_boxplot(outlier.s
   stat_compare_means(method = "anova") # + facet_wrap(~max_crep)
 
 
-# Section 10: Baker et al artiodactyla orbit ratio -----------------------------------
+# Section 14: Baker et al artiodactyla orbit ratio -----------------------------------
 artio_eyes <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Baker_2019.xlsx")
 artio_eyes <- artio_eyes[2: nrow(artio_eyes),]
 colnames(artio_eyes) <- c("tips", "Order", "Corneal_diameter", "Axial_length", "Activity_pattern", "Source")
@@ -595,7 +594,7 @@ artio_eyes$Orbit_ratio <- artio_eyes$Corneal_diameter/artio_eyes$Axial_length
 #drop unnecessary columns
 artio_eyes <- artio_eyes[, c("tips", "Orbit_ratio")]
 
-# Section 11: Artiodactyla pantheria data ---------------------------------
+# Section 15: Artiodactyla pantheria data ---------------------------------
 
 # library(pak)
 # pkg_install("RS-eco/traitdata")
@@ -662,3 +661,14 @@ artio_eyes[artio_eyes$Family == "Antilocapridae", c("fam_colours")] <- "white"
 
 #save out 
 write.csv(artio_eyes, here("artiodactyla_ecomorphology_dataset.csv"), row.names = FALSE)
+
+
+# Section 16: IUCN data on species' range ---------------------------------
+
+#install.packages("rredlist")
+library(rredlist)
+
+#access order
+artio <- rl_order_(order = "artiodactyla", key = "XFHS4VQcefhFiES3zGipvTkUVJKPiA71VX17", all = TRUE, page = 1, quiet = FALSE)
+
+artio

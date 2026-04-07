@@ -9,8 +9,8 @@ mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
 #uncomment whichever clade you want to plot
 #clade_name <- "cetaceans_full"
 #clade_name <- "sleepy_artiodactyla_full"
-#clade_name <- "ruminants_full"
-clade_name <- "whippomorpha"
+clade_name <- "ruminants_full"
+#clade_name <- "whippomorpha"
 #clade_name <- "whippomorpha_high_conf"
 # clade_name <- "sleepy_artiodactyla_minus_cetaceans"
 
@@ -185,11 +185,11 @@ new_mammals$mammals <- "Mammals"
 custom.colours <- c("#dd8ae7","#EECBAD", "#FC8D62", "#66C2A5")
 mammals_plot <- ggplot(new_mammals, aes(x = mammals, fill = max_crep)) + geom_bar(position = "fill", width = 0.75) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())
 artiodactyla_plot <- artio_full %>% filter(Order == "Artiodactyla") %>% ggplot(., aes(x = Order, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank(), panel.grid = element_blank())
-#ruminantia_plot <- artio_full %>% filter(Suborder == "Ruminantia") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank(), panel.grid = element_blank())
+ruminantia_plot <- artio_full %>% filter(Suborder == "Ruminantia") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank(), panel.grid = element_blank())
 whippomorpha_plot <- artio_full %>% filter(Suborder == "Whippomorpha") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank(), panel.grid = element_blank())
 
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/barplot_percentages.pdf", width = 5, height = 2, bg = "transparent")
-grid.arrange(mammals_plot, artiodactyla_plot, whippomorpha_plot, nrow = 1)
+grid.arrange(mammals_plot, artiodactyla_plot, ruminantia_plot, whippomorpha_plot, nrow = 1)
 dev.off()
 
 #replace their artiodactyla data with my artiodactyla data?
@@ -204,6 +204,30 @@ mammals_df %>% filter(Order %in% c("Artiodactyla", "Amelia_artiodactyla")) %>% g
 custom.colours.3 <- c("#dd8ae7","#EECBAD", "#EECBAD" ,"#FC8D62", "gold", "#66C2A5", "green")
 mammals_df %>% filter(Order %in% c("Artiodactyla", "Amelia_artiodactyla")) %>% ggplot(., aes(x = Order, fill = Diel_Pattern)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours.3) + theme_minimal() + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank())
 
+#compare my ruminant data to Maor and Bennie datasets
+artio_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
+artio_full <- filter(artio_full, Family %in% c("Bovidae", "Cervidae", "Antilocapridae", "Giraffidae", "Tragulidae", "Moschidae"))
+table(artio_full$max_crep)
+table(artio_full$Diel_Pattern)
+
+Bennie_mam_data <- read.csv(here("Bennie_mam_data.csv")) #data from Bennie et al, 2014
+Bennie_mam_data <- Bennie_mam_data[Bennie_mam_data$Species_name %in% artio_full$Species_name,]
+table(Bennie_mam_data$max_crep)
+
+maor_mam_data <- read.csv(here("Maor_artio_full.csv")) #data from Maor et al, 2017
+maor_mam_data <- maor_mam_data[maor_mam_data$tips %in% artio_full$tips,]
+maor_mam_data$Diel_pattern <- str_replace(maor_mam_data$Diel_pattern, pattern = c("Cathemeral/Crepuscular"), replacement = c("Crepuscular"))
+maor_mam_data$Diel_pattern <- str_replace(maor_mam_data$Diel_pattern, pattern = c("Diurnal/Crepuscular"), replacement = c("Crepuscular"))
+maor_mam_data$Diel_pattern <- str_replace(maor_mam_data$Diel_pattern, pattern = c("Nocturnal/Crepuscular"), replacement = c("Crepuscular"))
+maor_mam_data$Diel_pattern <- str_replace(maor_mam_data$Diel_pattern, pattern = c("Diurnal/Cathemeral"), replacement = c("Cathemeral"))
+maor_mam_data$Diel_pattern <- str_replace(maor_mam_data$Diel_pattern, pattern = c("Nocturnal/Cathemeral"), replacement = c("Cathemeral"))
+table(maor_mam_data$Diel_pattern)
+
+# artio_full <- merge(artio_full[, c("tips", "Diel_Pattern", "max_crep")], maor_mam_data[, c("tips", "Diel_pattern")], by = "tips", all = TRUE)
+# artio_full <- merge(artio_full, Bennie_mam_data[, c("tips", "max_crep")], by = "tips", all = TRUE)
+# artio_full <- artio_full %>% filter(!is.na(Diel_Pattern)) 
+# colnames(artio_full) <- c("tips", "Amelia_diel", "Amelia_max_crep", "Maor_diel", "Bennie_diel")
+# artio_full$Maor_diel <- tolower(artio_full$Maor_diel)
 
 # Section 7: Mammal tree ----------------------------------------------------
 

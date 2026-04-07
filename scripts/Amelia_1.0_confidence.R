@@ -17,7 +17,7 @@ library(readxl)
 #open tree of life
 library(rotl)
 #adds timescale
-library(deeptime)
+#library(deeptime)
 #colours
 library(RColorBrewer)
 #apply two separate colour palettes
@@ -737,8 +737,11 @@ plot_countfreq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = 
   scale_y_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E"))
 
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance.pdf", width = 7, height = 7, bg = "transparent")
+# pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance_odontoceti.pdf", width = 7, height = 7, bg = "transparent")
+# pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance_mysticeti.pdf", width = 7, height = 7, bg = "transparent")
 plot_countfreq
-dev.off() 
+dev.off()
+
 
 # Section 5: Concordance sankey -------------------------------------------
 
