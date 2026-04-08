@@ -548,12 +548,6 @@ dive.data <- merge(dive.data, trait.data[, -c(14)], by = "tips", all = TRUE)
 
 dive.data %>% ggplot(., aes(x = Diel_Pattern, y = Final_dive_depth)) + geom_boxplot() + geom_point() + facet_wrap(~Parvorder)
 
-#remove riverine species - pelagic species will be more affected by DVM
-
-dive.data %>% filter(Habitat != "riverine" & Parvorder == "Odontoceti") %>% filter(!is.na(max_crep)) %>%
-  ggplot(., aes(x = max_crep, y = Mean_dive_depth)) + geom_boxplot() +
-  geom_point() + facet_wrap(~Habitat) + stat_compare_means(method = "anova")
-
 #how deep is the deep scattering layer? 
 #Wikipedia says they rise to 100m at night and descend to 800-1000m during day
 #coastal species also wouldn't be involved in this since they aren't diving that deep
@@ -566,89 +560,107 @@ dive.data %>% filter(Habitat %in% c("coastal/pelagic", "pelagic")) %>% filter(!i
   ggplot(., aes(x = max_crep, y = Final_dive_depth)) + geom_boxplot() +
   geom_point() + facet_wrap(~Parvorder) + stat_compare_means(method = "anova")
 
-#final dive depth (with chen)
-trait.data <- filter(dive.data, Habitat %in% c("coastal/pelagic", "pelagic") & !is.na(max_crep))
-
-trait.data.od <- filter(trait.data, Parvorder == "Odontoceti")
-trait.data.od <- trait.data.od[!is.na(trait.data.od$Final_dive_depth),]
-
-#perform the phylogenetically corrected one-way anova
-odonto_phylANOVA <- calculatePhylANOVA(trait.data.od, "Final_dive_depth")
-
-boxplot_dive <- ggplot(trait.data.od, aes(x = max_crep, y = Final_dive_depth)) +
-  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
-  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
-  labs(x = "Temporal activity pattern", y = "Final_dive_depth") + scale_fill_manual(values=unique(trait.data$fam_colours))  + 
-  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
-  stat_compare_means(label.x = 0.8, label.y = 3400, method = "anova") + 
-  annotate("text", x = 1.15, y = 3300, label = paste("phylANOVA, p =", odonto_phylANOVA$Pf))
-boxplot_dive
-
-#with mean dive depth (with chen)
-trait.data.od <- filter(trait.data, Parvorder == "Odontoceti")
-trait.data.od <- trait.data.od[!is.na(trait.data.od$Mean_dive_depth),]
-
-#perform the phylogenetically corrected one-way anova
-odonto_phylANOVA <- calculatePhylANOVA(trait.data.od, "Mean_dive_depth")
-
-boxplot_dive <- ggplot(trait.data.od, aes(x = max_crep, y = Mean_dive_depth)) +
-  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
-  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
-  labs(x = "Temporal activity pattern", y = "Mean_dive_depth") + scale_fill_manual(values=unique(trait.data$fam_colours))  + 
-  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
-  stat_compare_means(label.x = 0.8, label.y = 3400, method = "anova") + 
-  annotate("text", x = 1.15, y = 3300, label = paste("phylANOVA, p =", odonto_phylANOVA$Pf))
-boxplot_dive
-
-#final and mean dive data minus Chen et al data
-dive.data[is.na(dive.data)] <- 0
-dive.data$Final_dive_depth <- pmax(dive.data$Dive_depth, dive.data$Max_dive_depth_m, dive.data$Dive_depth_Laeta)
-dive.data[dive.data == 0] <- NA
-dive.data <- dive.data %>% mutate(., Mean_dive_depth = rowMeans(select(., 2:4), na.rm = TRUE))
-
-dive.data %>% filter(Habitat %in% c("coastal/pelagic", "pelagic")) %>% filter(!is.na(max_crep)) %>%
-  ggplot(., aes(x = max_crep, y = Mean_dive_depth)) + geom_boxplot() +
-  geom_point() + facet_wrap(~Parvorder) + stat_compare_means(method = "anova")
-
-dive.data %>% filter(Habitat %in% c("coastal/pelagic", "pelagic")) %>% filter(!is.na(max_crep)) %>%
-  ggplot(., aes(x = max_crep, y = Final_dive_depth)) + geom_boxplot() +
-  geom_point() + facet_wrap(~Parvorder) + stat_compare_means(method = "anova")
 
 #check for phylogenetic significance
 
-#final dive depth (minus chen)
-trait.data <- filter(dive.data, Habitat %in% c("coastal/pelagic", "pelagic"))
+#maximum dive depth
+trait.data <- read.csv(here("cetacean_ecomorphology_dataset.csv"))
+trait.data <- trait.data[!is.na(trait.data$max_crep),]
+
+trait.data <- filter(trait.data, Habitat %in% c("coastal/pelagic", "pelagic"))
 
 trait.data.od <- filter(trait.data, Parvorder == "Odontoceti")
-trait.data.od <- trait.data.od[!is.na(trait.data.od$Final_dive_depth),]
+trait.data.od <- trait.data.od[!is.na(trait.data.od$Dive_depth_m),]
 
 #perform the phylogenetically corrected one-way anova
-odonto_phylANOVA <- calculatePhylANOVA(trait.data.od, "Final_dive_depth")
+odonto_phylANOVA <- calculatePhylANOVA(trait.data.od, "Dive_depth_m")
 
-boxplot_dive <- ggplot(trait.data.od, aes(x = max_crep, y = Final_dive_depth)) +
+boxplot_dive <- ggplot(trait.data.od, aes(x = max_crep, y = Dive_depth_m)) +
   geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
   new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
-  labs(x = "Temporal activity pattern", y = "Final_dive_depth") + scale_fill_manual(values=unique(trait.data$fam_colours))  + 
+  labs(x = "Temporal activity pattern", y = "Dive_depth_m") + scale_fill_manual(values=unique(trait.data$fam_colours))  + 
   theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
   stat_compare_means(label.x = 0.8, label.y = 3400, method = "anova") + 
   annotate("text", x = 1.15, y = 3300, label = paste("phylANOVA, p =", odonto_phylANOVA$Pf))
 boxplot_dive
 
-#with mean dive depth (minus chen)
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maximum_dive_depth", "_boxplots_anova_pelagic_odontocetes.pdf"), width = 8, height = 7)
+boxplot_dive
+dev.off()
+
+#with mean dive depth 
 trait.data.od <- filter(trait.data, Parvorder == "Odontoceti")
-trait.data.od <- trait.data.od[!is.na(trait.data.od$Mean_dive_depth),]
+trait.data.od <- trait.data.od[!is.na(trait.data.od$Mean_dive_depth_m),]
 
 #perform the phylogenetically corrected one-way anova
-odonto_phylANOVA <- calculatePhylANOVA(trait.data.od, "Mean_dive_depth")
+odonto_phylANOVA <- calculatePhylANOVA(trait.data.od, "Mean_dive_depth_m")
 
-boxplot_dive <- ggplot(trait.data.od, aes(x = max_crep, y = Mean_dive_depth)) +
+boxplot_dive <- ggplot(trait.data.od, aes(x = max_crep, y = Mean_dive_depth_m)) +
   geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
   new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
-  labs(x = "Temporal activity pattern", y = "Mean_dive_depth") + scale_fill_manual(values=unique(trait.data$fam_colours))  + 
+  labs(x = "Temporal activity pattern", y = "Mean_dive_depth_m") + scale_fill_manual(values=unique(trait.data$fam_colours))  + 
   theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
   stat_compare_means(label.x = 0.8, label.y = 3400, method = "anova") + 
   annotate("text", x = 1.15, y = 3300, label = paste("phylANOVA, p =", odonto_phylANOVA$Pf))
 boxplot_dive
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Mean_dive_depth", "_boxplots_anova_pelagic_odontocetes.pdf"), width = 8, height = 7)
+boxplot_dive
+dev.off()
+
+#both parvorders on same plot
+trait.data.od <- filter(trait.data, Parvorder == "Odontoceti")
+trait.data.od <- trait.data.od[!is.na(trait.data.od$Dive_depth_m),]
+
+trait.data.my <- filter(trait.data, Parvorder == "Mysticeti")
+trait.data.my <- trait.data.my[!is.na(trait.data.my$Dive_depth_m),]
+
+#perform the phylogenetically corrected one-way anova
+odonto_phylANOVA <- calculatePhylANOVA(trait.data.od, "Dive_depth_m")
+mystic_phylANOVA <- calculatePhylANOVA(trait.data.my, "Dive_depth_m")
+
+dat_text <- data.frame(label = c(paste("phylANOVA =", mystic_phylANOVA$Pf, sep = " "), paste("phylANOVA =", odonto_phylANOVA$Pf, sep = " ")), Parvorder = c("Mysticeti", "Odontoceti"))
+
+boxplot_dive <- ggplot(trait.data, aes(x = max_crep, y = Dive_depth_m)) +
+  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
+  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Maximum dive depth (m)") + scale_fill_manual(values=unique(trait.data.1$fam_colours))  + 
+  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
+  stat_compare_means(label.x = 0.8, label.y = 3400, method = "anova") + 
+  geom_text(data= dat_text,mapping = aes(x = 1, y = 3300, label = label)) +
+  facet_wrap(~Parvorder, scales = "free_x")
+boxplot_dive
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maximum_dive_depth", "_boxplots_anova_pelagic_odontocetes_mysticeties.pdf"), width = 8, height = 7)
+boxplot_dive
+dev.off()
+
+#both parvorders on same plot for mean
+trait.data.od <- filter(trait.data, Parvorder == "Odontoceti")
+trait.data.od <- trait.data.od[!is.na(trait.data.od$Mean_dive_depth_m),]
+
+trait.data.my <- filter(trait.data, Parvorder == "Mysticeti")
+trait.data.my <- trait.data.my[!is.na(trait.data.my$Mean_dive_depth_m),]
+
+#perform the phylogenetically corrected one-way anova
+odonto_phylANOVA <- calculatePhylANOVA(trait.data.od, "Mean_dive_depth_m")
+mystic_phylANOVA <- calculatePhylANOVA(trait.data.my, "Mean_dive_depth_m")
+
+dat_text <- data.frame(label = c(paste("phylANOVA =", mystic_phylANOVA$Pf, sep = " "), paste("phylANOVA =", odonto_phylANOVA$Pf, sep = " ")), Parvorder = c("Mysticeti", "Odontoceti"))
+
+boxplot_dive <- ggplot(trait.data, aes(x = max_crep, y = Mean_dive_depth_m)) +
+  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
+  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Mean dive depth (m)") + scale_fill_manual(values=unique(trait.data.1$fam_colours))  + 
+  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
+  stat_compare_means(label.x = 0.8, label.y = 3400, method = "anova") + 
+  geom_text(data= dat_text,mapping = aes(x = 1, y = 3300, label = label)) +
+  facet_wrap(~Parvorder, scales = "free_x")
+boxplot_dive
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Mean_dive_depth", "_boxplots_anova_pelagic_odontocetes_mysticeties.pdf"), width = 8, height = 7)
+boxplot_dive
+dev.off()
 
 # Multivariate analysis ---------------------------------------------------
 

@@ -257,9 +257,12 @@ Chen$tips <- str_replace(Chen$Species, pattern = " ", replacement = "_")
 colnames(Chen) <- c("Species_name", "IUCN","Active_range", "max_dive_depth", "body_weight", "tips")
 Chen <- Chen[, -1]
 
+#remove Max dive depth since it is unreliable when compared to other sources
+Chen <- Chen %>% select(IUCN, Active_range, body_weight, tips)
+
 write.csv(Chen, here("Chen_cetacean_traits.csv"), row.names = FALSE)
 
-# Section 11: Primary literature + Churchill + Laeta + Chen dive depth data --------------------------
+# Section 11: Primary literature + Churchill + Laeta + NOT Chen dive depth data --------------------------
 
 #read in the additional dive data I collected
 url <- 'https://docs.google.com/spreadsheets/d/1_0ZS_tbddOCckkcKn9H5HpVRDZty4jhkUU20Nc0YYQY/edit?usp=sharing'
