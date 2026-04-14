@@ -462,7 +462,6 @@ previous_dataset <- read.csv(here("cetacean_tabulated_full.csv"))
 current_dataset <- test
 
 mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
-previous_dataset$tips <- str_replace(previous_dataset$Species_name, pattern = " ", replacement = "_")
 previous_dataset <- previous_dataset[previous_dataset$tips %in% mam.tree$tip.label, ]
 table(previous_dataset$tabulated_diel)
 current_dataset$tips <- str_replace(current_dataset$Species_name, pattern = " ", replacement = "_")
@@ -474,7 +473,7 @@ all(previous_dataset == current_dataset)
 if(all(previous_dataset == current_dataset) == FALSE) stop("Dataset is not the same!")
 
 #save out the new tabulated activity pattern dataframe
-write.csv(test, here("cetacean_tabulated_full.csv"), row.names = FALSE)
+write.csv(current_dataset, here("cetacean_tabulated_full.csv"), row.names = FALSE)
 
 # Section 3.5 Save out cetacean data frame with additional details -------
 #load in the dataframe with the tabulated activity patterns (objective calls based on source concordance)

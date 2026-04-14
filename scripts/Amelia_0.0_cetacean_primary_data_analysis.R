@@ -27,6 +27,8 @@ library(suntools)
 #install.packages("lutz")
 library(lutz)
 library(parsedate)
+#install.packages("R.matlab")
+library(R.matlab)
 
 setwd(here())
 source("scripts/fish_sleep_functions.R")
@@ -75,7 +77,7 @@ getSunlightTimes(date = as.Date(parse_date_time("2014-2-19", orders = "ymd")),
 
 sun_times <- getSunlightTimes(data = hyper[, c("date", "lon", "lat")], 
                               keep = c("sunriseEnd", "sunsetStart", "nauticalDawn", "nauticalDusk"),
-                              tz = "Chile/EasterIsland")
+                              tz = "Atlantic/South_Georgia")
 
 sun_times <- sun_times %>% separate_wider_delim(cols = c(4:7), delim = " ", names_sep = "_") %>% select(date, nauticalDawn_2, nauticalDusk_2, sunriseEnd_2 ,sunsetStart_2)
 sun_times <- sun_times %>% separate_wider_delim(cols = c(2:5), delim = ":", names_sep = "_") %>% select(date, nauticalDawn_2_1, nauticalDawn_2_2, nauticalDusk_2_1, nauticalDusk_2_2, sunriseEnd_2_1, sunriseEnd_2_2, sunsetStart_2_1, sunsetStart_2_2)
@@ -432,3 +434,108 @@ depth_buzz
 
 ggplot(depth_buzz, aes(x = interaction(hour, Ind), y = mean_depth, colour = mean_buzz, size = mean_buzz, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free")
 
+
+
+# Section 5: Beaked whale HARP data ----------------------------------------------------
+
+#this is passive acoustic monitoring data on rare beaked whale species from dryad
+#https://doi.org/10.5061/dryad.gf1vhhmw0
+
+#MTT: Time of event as Matlab datenumber (days elapsed since January 0, 0000). Each row represents one detection.
+#we need to convert this into a readable datetime from the matlab format into the r format
+#then plot the number of detections per hour (or half hour)
+
+#to get all observations, load in the other mat files 
+#for mesoplodon mirus
+# filenames <- list.files("C:/Users/ameli/Downloads/Mm", pattern = "*.mat", full.names = TRUE)
+# whalename <- "mesoplodon_mirus"
+
+# # #for mesoplodon europaeus
+# filenames <- list.files("C:/Users/ameli/Downloads/Me", pattern = "*.mat", full.names = TRUE)
+# whalename <- "mesoplodon_europaeus"
+
+#for kogiia
+filenames <- list.files("C:/Users/ameli/Downloads/Kogia", pattern = "*.mat", full.names = TRUE)
+whalename <- "kogia"
+
+#each file is named after the site it was recorded at and the disk number (tends to be multiple per site)
+
+files <- lapply(filenames, readMat)
+#make a dataframe out of just the time column from each mat file, all other information is irrelevant
+files <- lapply(files, function(x) as.data.frame(x$MTT))
+
+#extract the location name from the file name
+filenames <- str_remove(filenames, "C:/Users/ameli/Downloads/")
+#add in metadata from file names
+names(files) <- filenames
+
+#append all mat files together into one large dataframe of observations
+test <- do.call(rbind,files)
+
+#now we have a df with 184,081 rows, each with the timepoint of a detection in MATLAB datetime format
+test$metadata <- row.names(test)
+colnames(test) <- c("MATLAB_datetime", "metadata")
+
+
+#MTT: Time of event as Matlab datenumber (days elapsed since January 0, 0000).
+#refer to https://stackoverflow.com/questions/30072063/how-to-extract-the-time-using-r-from-a-matlab-serial-date-number
+Matlab2Rdate <- function(val) as.Date(val - 1, origin = '0000-01-01') 
+Matlab2Rdate(733038.6)
+"2006-12-27"
+Matlab2Rdate(735147.4)
+"2012-10-05"
+
+(735147.4 - 719529)*86400
+#test datetime conversion, this doesn't seem right is this data really from 2012?
+as.POSIXct(1349427015.16854, origin = "1970-01-01", tz = "UTC")
+"2012-10-05 08:50:15 UTC"
+
+#first convert the times into the R format 
+#test$R_datetime <- lapply(test$MATLAB_datetime, function(x) (x - 719529)*86400)
+test <- test %>% mutate(R_datetime = (MATLAB_datetime - 719529)*86400)
+
+#extract the datetime
+test <- test %>% mutate(times = as.POSIXct(R_datetime, origin = "1970-01-01", tz = "UTC"))
+
+#separate out into component parts 
+test$year <- year(test$times)
+test$month <- month(test$times)
+test$day <- day(test$times)
+test$hour <- hour(test$times)
+test$minute <- minute(test$times)
+test$second <- second(test$times)
+
+#plot the total detections in each hour bin
+ggplot(test, aes(x = hour)) + geom_histogram() + scale_x_continuous(breaks = round(seq(min(test$hour), max(test$hour), by = 1),1))
+
+ggplot(test, aes(x = hour)) + geom_density() 
+
+#for each site add the latitude and longitude (manually)
+#HH site: 25 (N), -85 (W)
+#BS site: 30 (N), -77 (W)
+#
+
+#find sunrise and sunset times using suncalc
+
+
+#use suncalc to get sunrise and sunset times
+#site is the Golf of Mexico, Howell Hook. Lat = 25N, long = 85W
+#test run: sunrise should be x, sunset at x. Returns 5:35 sunrise and 5:23pm (17:23) sunset!
+getSunlightTimes(date = as.Date(parse_date_time("2012-10-05", orders = "ymd")), lat = 25, lon = -85, tz = tz_lookup_coords(25, -85))
+
+#find out the coordinates of each location and use to calculate sunrise and set times
+#use nautical dawn as the start of dawn and sunrise end as the end (encompasses dawn) -about an hour
+#use sunset start as the start of dusk and nautical dusk as the end (encompasses dusk) -also about an hour
+sun_times <- getSunlightTimes(date = as.Date(camera_trap.df$eventDate), 
+                              lat = 25, lon = -85, 
+                              keep = c("sunriseEnd", "sunsetStart", "nauticalDawn", "nauticalDusk"),
+                              tz = tz_lookup_coords(25, -85))
+
+sun_times <- sun_times %>% separate_wider_delim(cols = c(4:7), delim = " ", names_sep = "_") %>% select(date, nauticalDawn_2, nauticalDusk_2, sunriseEnd_2 ,sunsetStart_2)
+sun_times <- sun_times %>% separate_wider_delim(cols = c(2:5), delim = ":", names_sep = "_") %>% select(date, nauticalDawn_2_1, nauticalDawn_2_2, nauticalDusk_2_1, nauticalDusk_2_2, sunriseEnd_2_1, sunriseEnd_2_2, sunsetStart_2_1, sunsetStart_2_2)
+sun_times <- sun_times %>% mutate(dawn_start = as.numeric(nauticalDawn_2_1) + as.numeric(nauticalDawn_2_2)/60) %>% 
+  mutate(dawn_end = as.numeric(sunriseEnd_2_1) + as.numeric(sunriseEnd_2_2)/60) %>% 
+  mutate(dusk_start = as.numeric(sunsetStart_2_1) + as.numeric(sunsetStart_2_2)/60) %>% 
+  mutate(dusk_end = as.numeric(nauticalDusk_2_1) + as.numeric(nauticalDusk_2_2)/60) %>% select(date, dusk_start, dusk_end, dawn_start, dawn_end)
+
+camera_trap.df <- cbind(camera_trap.df, sun_times)

@@ -27,7 +27,7 @@ setwd(here())
 # Load in and clean HARP data -------------------------------------------------------
 
 
-#this is new passive acoustic monitoring data on rare beaked whale species from dryad
+#this is passive acoustic monitoring data on rare beaked whale species from dryad
 #https://doi.org/10.5061/dryad.gf1vhhmw0
 
 #MTT: Time of event as Matlab datenumber (days elapsed since January 0, 0000). Each row represents one detection.
@@ -87,7 +87,7 @@ test1$second <- lapply(test1$value, second)
 test1$second <- lapply(test1$second, as.integer)
 
 #remove duplicates (same day, hour, minute, second)
-#this will bring us from 92040 observations to 22,787 observations(yay!)
+#this will bring us from 92,040 observations to 22,787 observations(yay!)
 test1 <- test1 %>% distinct(year, month, day, hour, minute, second, .keep_all = TRUE)
 
 #do the same for the other half of the dataframe

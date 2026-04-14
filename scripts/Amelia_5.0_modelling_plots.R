@@ -44,15 +44,16 @@ dev.off()
 
 
 # Section 3: Load in and format data --------------------------------------
-model_results1 <- readRDS(here("august_12__whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
-model_results2 <- readRDS(here("august_14__whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
-model_results1$ER_model <- c(model_results1$ER_model, model_results2$ER_model)
-model_results1$SYM_model <- c(model_results1$SYM_model, model_results2$SYM_model)
-model_results1$ARD_model <- c(model_results1$ARD_model, model_results2$ARD_model)
-model_results1$bridge_only_model <- c(model_results1$bridge_only_model, model_results2$bridge_only_model)
-model_results1$CONSYM_model <- c(model_results1$CONSYM_model, model_results2$CONSYM_model)
+# model_results1 <- readRDS(here("august_12__whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
+# model_results2 <- readRDS(here("august_14__whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
+# model_results1$ER_model <- c(model_results1$ER_model, model_results2$ER_model)
+# model_results1$SYM_model <- c(model_results1$SYM_model, model_results2$SYM_model)
+# model_results1$ARD_model <- c(model_results1$ARD_model, model_results2$ARD_model)
+# model_results1$bridge_only_model <- c(model_results1$bridge_only_model, model_results2$bridge_only_model)
+# model_results1$CONSYM_model <- c(model_results1$CONSYM_model, model_results2$CONSYM_model)
+# 
+# saveRDS(model_results1, here("august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
 
-saveRDS(model_results1, here("august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"))
 # Section 4: Plot AIC scores from 1k model results ----------------------
 
 filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"

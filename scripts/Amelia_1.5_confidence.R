@@ -369,7 +369,12 @@ test <- test[, c("Species_name", "tabulated_diel")]
 
 #check that nothing about the data has changed since running it last 
 previous_dataset <- read.csv(here("artio_tabulated_full.csv"))
+previous_dataset$tips <- str_replace(previous_dataset$Species_name, pattern = " ", replacement = "_")
+previous_dataset <- previous_dataset[previous_dataset$tips %in% mam.tree$tip.label, ]
+
 current_dataset <- test
+current_dataset$tips <- str_replace(current_dataset$Species_name, pattern = " ", replacement = "_")
+current_dataset <- current_dataset[current_dataset$tips %in% mam.tree$tip.label, ]
 all(previous_dataset == current_dataset)
 if(all(previous_dataset == current_dataset) == FALSE) stop("Dataset is not the same!")
 
