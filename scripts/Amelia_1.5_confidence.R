@@ -464,11 +464,11 @@ hippo <- artio_full[artio_full$Family == "Hippopotamidae", ]
 whippomorpha <- rbind(whippomorpha, hippo)
 write.csv(whippomorpha, file = here("whippomorpha.csv"), row.names = FALSE)
 
-# Section 5: Concordance between confidence levels (artio minus cet) ---------------------------------------------
+# Section 5: Concordance between confidence levels (ruminants) ---------------------------------------------
 diel_full_long <- read.csv(here("confidence_artio_long.csv"))
 
-#optional: filter for just ruminants
-#diel_full_long <- diel_full_long %>% filter(Family %in% c("Bovidae", "Cervidae", "Moschidae", "Tragulidae", "Giraffidae", "Antilocapridae"))
+#filter for just ruminants
+diel_full_long <- diel_full_long %>% filter(Family %in% c("Bovidae", "Cervidae", "Moschidae", "Tragulidae", "Giraffidae", "Antilocapridae"))
 
 unique(diel_full_long$value)
 
@@ -537,173 +537,24 @@ table2$Comp1 <- sapply(str_split(table2$Var1, "-"), `[`, 1)
 table2$Comp2 <- sapply(str_split(table2$Var1, "-"), `[`, 2)
 table2 <- table2[table2$Var2 == TRUE,]
 table2$count <- table
-plot_freq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = round(Freq, digits = 2))) + geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1))
-plot_freq
-plot_count <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = count)) + geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1))
-plot_count
 
-#want to make a plot that has both the frequency and the counts
+#plot both the frequency and the counts
 table2$freq_count <- paste0(round(table2$Freq, 2), "\n", "(n=", table2$count, ")")
 plot_countfreq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = freq_count)) +
   geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1)) + 
-  theme_minimal() + ylab("Primary source") + xlab("Secondary source") +
+  theme_minimal() + ylab("Primary source \n") + xlab("\n Secondary source") +
   scale_x_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
-  scale_y_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E"))
+  scale_y_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
+  theme(legend.position = "none")
 
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_minus_cet_btw_source_concordance.pdf", width = 7, height = 7, bg = "transparent")
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/ruminant_btw_source_concordance.pdf", width = 7, height = 7, bg = "transparent")
 plot_countfreq
 dev.off()
 
-# pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/ruminant_btw_source_concordance.pdf", width = 7, height = 7, bg = "transparent")
-# plot_countfreq
-# dev.off() 
 
-# Section 6: artiodactyla overall btw source confidence ------------------
-diel_full_long1 <- read.csv(here("confidence_artio_long.csv"))
-diel_full_long1 <- diel_full_long1[, c("Species_name", "column", "value")]
-diel_full_long2 <- read.csv(here("cetacean_confidence_long_df.csv"))
-diel_full_long2 <- diel_full_long2[, c("Species_name", "column", "value")]
- 
-diel_full_long <- rbind(diel_full_long1, diel_full_long2)
-
-unique(diel_full_long$value)
-
-#remove unclear since it gives no new information
-diel_full_long$value <- str_replace(diel_full_long$value, pattern = "unclear/", replacement = "")
-diel_full_long[diel_full_long == "unclear"] <- NA
-diel_full_long <- diel_full_long[!is.na(diel_full_long$value),]
-
-#optional: look an concordance for only cath, di and noc (since the pipeline is used to call these)
-diel_full_long$value <- str_replace(diel_full_long$value, pattern = "/crepusuclar", replacement = "")
-diel_full_long <- diel_full_long[diel_full_long$value %in% c("diurnal", "cathemeral", "nocturnal", "nocturnal/cathemeral", "diurnal/cathemeral"), ]
-
-species_list <- table(diel_full_long$Species_name) #319 species
-species_list <- names(species_list[species_list > 1]) #192 species with multiple sources
-
-output <- lapply(species_list, function(species) {
-  
-  #filter for one species at a time
-  df <- diel_full_long[diel_full_long$Species_name == species,]
-  #rename the column names to be unique for every entry for this species (ie for multiple column 2 entries column 2.1, 2.2 etc)
-  df$column <- make.unique(df$column)
-  
-  #converts the dataframe so it compares every entry with each other (ie for A,B,C A-A, A-B, A-C, B-A, B-B, B-C, etc)
-  df_lists_comb <- expand(df, nesting(var = column, vector = value), nesting(var2 = column, vector2 = value), .name_repair = "universal")
-  
-  #??? idk
-  df_lists_comb <- df_lists_comb %>% filter(var != var2) %>% arrange(var, var2) %>% mutate(vars = paste0(var, ".", var2)) %>% select(contains("var"), everything())
-  
-  #evaluates the activity patterns for each of these sources and returns if they agree or not (TRUE or FALSE)
-  comparisons <- df_lists_comb %>% group_by(vars) %>% mutate(comp = compTwo(comp1 = vector, comp2 = vector2))
-  #manipulate the strings for both variable names to revert them back to the original name (back to column 2 from col 2.1)
-  comparisons$var <- str_sub(comparisons$var, start = 1, end = 5)
-  comparisons$var2 <- str_sub(comparisons$var2, start = 1, end = 5)
-  
-  #create a column returning the comparison being made (ie col2-col2, col1-col2, etc)
-  comparisons$var_final <- paste(comparisons$var, comparisons$var2, sep = "-")
-  
-  #return just the comparison result column (TRUE or FALSE match) and the comparison being made (ie col1 vs col1)
-  return(comparisons[,c("comp","var_final")])
-})
-
-#combine this list of results 
-output <- Reduce(rbind, output)
-
-table <- table(output$var_final)
-# prop.table(table, margin = 1)
-table2 <- as.data.frame(prop.table(table(output$var_final, output$comp), margin = 1))
-table2$Comp1 <- sapply(str_split(table2$Var1, "-"), `[`, 1)
-table2$Comp2 <- sapply(str_split(table2$Var1, "-"), `[`, 2)
-table2 <- table2[table2$Var2 == TRUE,]
-table2$count <- table
-
-#want to make a plot that has both the frequency and the counts
-table2$freq_count <- paste0(round(table2$Freq, 2), "\n", "(n=", table2$count, ")")
-plot_countfreq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = freq_count)) +
-  geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1)) + 
-  theme_minimal() + ylab("Primary source") + xlab("Secondary source") +
-  scale_x_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
-  scale_y_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E"))
-
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_btw_source_concordance.pdf", width = 7, height = 7, bg = "transparent")
-plot_countfreq
-dev.off()
-# Section 7: Concordance within confidence levels artio -------------------------
+# Section 6: Concordance within confidence levels ruminants -------------------------
 diel_full_long <- read.csv(here("confidence_artio_long.csv"))
-#this is cheating but read in the tabulated activity patterns
-diel_full <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv"))
-diel_full <- merge(diel_full[, c("Species_name", "Diel_Pattern", "max_crep", "max_dinoc")], diel_full_long[c("Species_name", "column", "value")])
-
-diel_full$column <- substr(diel_full$column, 1,5)
-
-#for max crep dataset
-diel_full <- data.frame(lapply(diel_full, function(x) {gsub("cathemeral/crepuscular", "crepuscular", x)}))
-diel_full <- data.frame(lapply(diel_full, function(x) {gsub("diurnal/crepuscular", "crepuscular", x)}))
-diel_full <- data.frame(lapply(diel_full, function(x) {gsub("nocturnal/crepuscular", "crepuscular", x)}))
-diel_full <- data.frame(lapply(diel_full, function(x) {gsub("unclear/crepuscular", "crepuscular", x)}))
-diel_full <- data.frame(lapply(diel_full, function(x) {gsub("unclear/crepuscular", "crepuscular", x)}))
-diel_full[diel_full == "unclear"] <- NA
-
-diel_full <- diel_full[!is.na(diel_full$value),]
-
-#filter
-mulitple_sources <- diel_full %>% count(Species_name) %>% filter(n>1)
-diel_full_filtered <- diel_full[diel_full$Species_name %in% mulitple_sources$Species_name,]
-#this removes 115 species without an informative second source (120 out of 235 have a second source)
-
-#to include only species in the final tree, is this necessary? If so I should do it consistently 
-diel_full_filtered$tips <- str_replace(diel_full_filtered$Species_name, pattern = " ", replacement = "_")
-#of the 121 species, 111 are in the final tree
-diel_full_filtered <- diel_full_filtered[diel_full_filtered$tips %in% mam.tree$tip.label,]
-
-concordance <- as.data.frame(table(diel_full_filtered$max_crep, diel_full_filtered$value))
-colnames(concordance) <- c("actual", "predicted", "freq")
-totals_df <- aggregate(concordance$freq, by=list(Category=concordance$actual), FUN=sum)
-colnames(totals_df) <- c("actual", "total")
-concordance <- merge(concordance, totals_df, by = "actual")
-concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
-
-#this is heavily skewed since so many species are crepuscular
-ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
-  scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") 
-#since there are four diel categories, anything above 25% is better than chance?
-
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artio_minus_cet_all_conf_levels_confusion_matrix.pdf")
-ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
-  scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") + theme_minimal()
-dev.off()
-
-#function to plot the concordance for each of the confidence levels
-plotConcordance = function(set_column = "Conf2"){
-  diel_full_filtered <- diel_full %>% filter(column == set_column)
-  #need to filter for species with more than one entry or else concordance will always be 100%
-  mulitple_sources <- diel_full_filtered %>% count(Species_name) %>% filter(n>1)
-  diel_full_filtered <- diel_full_filtered[diel_full_filtered$Species_name %in% mulitple_sources$Species_name,]
-  concordance <- as.data.frame(table(diel_full_filtered$max_crep, diel_full_filtered$value))
-  colnames(concordance) <- c("actual", "predicted", "freq")
-  totals_df <- aggregate(concordance$freq, by=list(Category=concordance$actual), FUN=sum)
-  colnames(totals_df) <- c("actual", "total")
-  concordance <- merge(concordance, totals_df, by = "actual")
-  concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
-  return(concordance)
-}
-
-concordance_list <- lapply(sort(unique(diel_full$column)), function(x){plotConcordance(x)})
-
-#use below if 
-# for(i in seq_along(concordance_list)){
-#   pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "artio", "confidence", i, "_confusion_matrix.pdf"))
-#   print(ggplot(as.data.frame(concordance_list[i]), aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
-#           scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") +
-#           ggtitle(paste("Confidence level ", i, " concordance"))) 
-#   dev.off()
-# }
-
-
-
-# Section 7: Concordance within confidence levels ruminants -------------------------
-diel_full_long <- read.csv(here("confidence_artio_long.csv"))
-#this is cheating but read in the tabulated activity patterns
+#read in the tabulated activity patterns
 diel_full <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv"))
 diel_full <- diel_full %>% filter(Suborder == "Ruminantia")
 diel_full <- merge(diel_full[, c("Species_name", "Diel_Pattern", "max_crep", "max_dinoc")], diel_full_long[c("Species_name", "column", "value")])
@@ -737,14 +588,9 @@ colnames(totals_df) <- c("actual", "total")
 concordance <- merge(concordance, totals_df, by = "actual")
 concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
 
-#this is heavily skewed since so many species are crepuscular
-ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
-  scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") 
-#since there are four diel categories, anything above 25% is better than chance?
-
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/ruminants_all_conf_levels_confusion_matrix.pdf")
 ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
-  scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") + theme_minimal()
+  scale_fill_gradient(low = "#F5FBFF", high = "#0070D1") + labs(x = "Actual", y = "Predicted") + theme_minimal()
 dev.off()
 
 #function to plot the concordance for each of the confidence levels
@@ -775,39 +621,8 @@ concordance_list <- lapply(sort(unique(diel_full$column)), function(x){plotConco
 
 
 
-# Section 8: Pipeline flowchart ------------------------------------------
+# Section 7: Sankey pipeline flowchart ------------------------------------------
 
-df <- data.frame(
-  step_0 = c(rep("A. Multiple cateory D \n concordance?",235)),
-  step_1 = c(rep("B. Return category D \n concordance (n = 11)", 11), rep("C. Category D + E \n concordance?", 224)),
-  step_2 = c(rep(NA, 11), rep("D. Return category D + E \n concordance (n = 1)", 1), rep("E. Cateory C + D + E \n concordance?", 223)),
-  step_3 = c(rep(NA, 12), rep("F. Return category C + D + E \n concordance (n = 36)", 36), rep("G. Single category D source?", 187)),
-  step_4 = c(rep(NA, 48), rep("H. Return single category D \n source (n = 40)", 40), rep("I. Multiple category E \n concordance?", 147)),
-  step_5 = c(rep(NA, 88), rep("J. Return category E \n concordance (n = 5)",5), rep("K. Multiple category C concordance \n sources?", 142)),
-  step_6 = c(rep(NA, 93), rep("L. Return category C \n concordance (n = 68)", 68), rep("M. Single category C source? \n (n = 5)", 74)),
-  step_7 = c(rep(NA, 161), rep("N. Return single category C \n source (n = 7)", 7), rep("O. Category A + C + D \n + E concordance?", 67)),
-  step_8 = c(rep(NA, 168), rep("P. Return A + C + D \n + E concordance (n = 58)",58), rep("Q. Return cathemeral (n = 9)", 9))
-)
-
-#convert to long format for geomsankey
-df <- df %>% make_long(step_0, step_1, step_2, step_3, step_4, step_5, step_6, step_7, step_8)
-df <- df[!is.na(df$node), ]
-
-blues <- c("#010661", "#070E8A","#070E8A", "#0044A3","#0044A3", "#0070D1","#0070D1","#2E9DFF", "#2E9DFF","#5CB3FF","#5CB3FF","#8AC8FF","#8AC8FF","#B8DEFF","#B8DEFF","#E6F3FF" , "#E6F3FF")
-
-test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = node, label = node)) +
-  geom_sankey(flow.alpha= 0.5, node.color = 0.5) + geom_sankey_label(size = 3.5, color = 1, fill = "white")  + 
-  theme_sankey(base_size = 16) + scale_fill_manual(values = blues) +
-  theme(legend.position = "none", axis.text.x = element_blank(), panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
-
-test
-
-#save out to figure folder
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "artio_minus_cet_flowchart.pdf"), height = 7, width = 16)
-test
-dev.off()
-
-#repeat for just ruminants
 df <- data.frame(
   step_0 = c(rep("A. Multiple cateory D \n concordance?",209)),
   step_1 = c(rep("B. Return category D \n concordance (n = 11)", 11), rep("C. Category D + E \n concordance?", 198)),
@@ -840,7 +655,7 @@ dev.off()
 
 
 
-# Section 9: Comparison of artio data to Bennie and Maor data ---------------------------------------------
+# Section 8: Comparison of artio data to Bennie and Maor data ---------------------------------------------
 
 #my data
 artio_df <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv")) #235 species with data
@@ -880,11 +695,11 @@ test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_nod
 test
 
 #save out to figure folder
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "sankey_six_state.pdf"))
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maor_Bennie_sankey_six_state.pdf"))
 test
 dev.off()
 
-#try with three data sources  
+#with maximum crepusuclar dataset
 mammals_df <- data.frame(lapply(mammals_df, function(x) {gsub("diurnal/crepuscular", "crepuscular", x)}))
 mammals_df <- data.frame(lapply(mammals_df, function(x) {gsub("nocturnal/crepuscular", "crepuscular", x)}))
 
@@ -898,7 +713,7 @@ test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_nod
 test
 
 #save out to figure folder
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "sankey_max_crep.pdf"))
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maor_Bennie_sankey_max_crep.pdf"))
 test
 dev.off()
 
@@ -935,7 +750,7 @@ test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_nod
            label = Maor_freq_count, size =3.5, colour = "grey25")
 test
 
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "sankey_labelled.pdf"), width = 10.5, height = 8)
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maor_Bennie_sankey_labelled.pdf"), width = 10.5, height = 8)
 test
 dev.off()
 

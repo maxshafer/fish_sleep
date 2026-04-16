@@ -40,6 +40,8 @@ library(geiger)
 library(corHMM)
 library(phangorn)
 library(DescTools)
+library(ggbeeswarm)
+library(rstatix)
 
 #extra packages
 library(lubridate)
@@ -552,9 +554,9 @@ write.csv(whippomorpha_high_conf, file = here("whippomorpha_high_conf.csv"), row
 
 # Section 4 Concordance table within confidence levels -------------------------------------------
 diel_full_long <- read.csv(here("cetacean_confidence_long_df.csv"))
-#this is cheating but read in the tabulated activity patterns
+#read in the tabulated activity patterns
 diel_full <- read.csv(here("cetaceans_full.csv"))
-diel_full <- merge(diel_full[, c("Species_name", "Parvorder", "Diel_Pattern", "max_crep", "max_dinoc")], diel_full_long[c("Species_name", "column", "value")])
+diel_full <- merge(diel_full[, c("Species_name", "Parvorder", "Diel_Pattern", "max_crep")], diel_full_long[c("Species_name", "column", "value")])
 
 diel_full$column <- substr(diel_full$column, 1,5)
 
@@ -575,10 +577,8 @@ diel_full <- data.frame(lapply(diel_full, function(x) {gsub("nocturnal/crepuscul
 mulitple_sources <- diel_full %>% count(Species_name) %>% filter(n>1)
 diel_full_filtered <- diel_full[diel_full$Species_name %in% mulitple_sources$Species_name,]
 #this removes 12 species without an informative second source
-#"Berardius arnuxii"          "Caperea marginata"          "Inia boliviensis"           "Inia humboldtiana"         
-#"Lagenorhynchus albirostris" "Lissodelphis borealis"      "Lissodelphis peronii"       "Mesoplodon hotaula"        
-#"Mesoplodon mirus"           "Orcaella heinsohni"         "Phocoena sinus"             "Sousa teuszii"   
-#of these only I humboldtiana is not the final tree
+#"Berardius arnuxii", "Caperea marginata", "Inia boliviensis","Inia humboldtiana", "Lagenorhynchus albirostris","Lissodelphis borealis", "Lissodelphis peronii","Mesoplodon hotaula"        
+#"Mesoplodon mirus", "Orcaella heinsohni","Phocoena sinus", "Sousa teuszii"   
 
 #to include only species in the final tree, is this necessary? If so I should do it consistently 
 diel_full_filtered$tips <- str_replace(diel_full_filtered$Species_name, pattern = " ", replacement = "_")
@@ -595,13 +595,11 @@ colnames(totals_df) <- c("actual", "total")
 concordance <- merge(concordance, totals_df, by = "actual")
 concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
 
-ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
-  scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") 
-#since there are four diel categories, anything above 25% is better than chance?
-
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacean_all_conf_levels_confusion_matrix.pdf")
 ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
-  scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") + theme_minimal()
+  scale_fill_gradient(low = "#F5FBFF", high = "#0070D1") + 
+  labs(x = "Actual \n", y = "\n Predicted") + theme_minimal() +
+  theme(legend.position = "none")
 dev.off()
 
 #function to plot the concordance for each of the confidence levels
@@ -633,13 +631,6 @@ concordance_list <- lapply(sort(unique(diel_full$column)), function(x){plotConco
 # Section 4.5: Concordance between confidence levels ----------------------
 diel_full_long <- read.csv(here("cetacean_confidence_long_df.csv"))
 
-#use below for four state data, will also need to make a call on partially cathemeral species
-# diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "nocturnal/crepuscular", replacement = "nocturnal")
-# diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "diurnal/crepuscular", replacement = "diurnal")
-# diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
-# diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "nocturnal/cathemeral", replacement = "cathemeral")
-# diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "diurnal/cathemeral", replacement = "cathemeral")
-
 #remove unclear as an option, since we aren't interested in if unclear matches with unclear
 diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "unclear/nocturnal", replacement = "nocturnal")
 diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "unclear/diurnal", replacement = "diurnal")
@@ -649,20 +640,20 @@ diel_full_long$value <- str_replace_all(diel_full_long$value, pattern = "unclear
 diel_full_long[diel_full_long == "unclear"] <- NA
 diel_full_long <- diel_full_long[!is.na(diel_full_long$value),]
 
+#check which diel patterns we are comparing
 unique(diel_full_long$value)
 
 #with only species included in the final tree. From 84 to 76.
 diel_full_long <- diel_full_long[diel_full_long$tips %in% mam.tree$tip.label,]
 
 #check to see if there is a difference in concordance for mysticeti vs odontoceti
-#diel_full_long <- filter(diel_full_long, Parvorder == "Mysticeti")
 #diel_full_long <- filter(diel_full_long, Parvorder == "Odontoceti")
+#diel_full_long <- filter(diel_full_long, Parvorder == "Mysticeti")
 
 #get a list of all the species with more than one source (should be most of them)
 species_list <- table(diel_full_long$Species_name)
 #should be 72 species with all cetaceans w multiple sources, 67 with only cetaceans in tree with mulitple sources
 species_list <- names(species_list[species_list > 1])
-
 
 #function Max wrote for comparing entries
 compTwo <- function(comp1 = "comp1", comp2 = "comp2") {
@@ -720,24 +711,19 @@ table2$Comp1 <- sapply(str_split(table2$Var1, "_"), `[`, 1)
 table2$Comp2 <- sapply(str_split(table2$Var1, "_"), `[`, 2)
 table2 <- table2[table2$Var2 == TRUE,]
 table2$count <- table
-plot_freq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = round(Freq, digits = 2))) + 
-  geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1))
-plot_freq
-plot_count <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = count)) +
-  geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1))
-plot_count
 
 #want to make a plot that has both the frequency and the counts
 table2$freq_count <- paste0(round(table2$Freq, 2), "\n", "(n=", table2$count, ")")
 plot_countfreq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = freq_count)) +
-  geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1)) + 
-  theme_minimal() + ylab("Primary source") + xlab("Secondary source") +
+  geom_tile() + geom_text() + scale_fill_viridis(limits = c(1,0)) + 
+  theme_minimal() + ylab("Primary source \n") + xlab("\n Secondary source") +
   scale_x_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
-  scale_y_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E"))
+  scale_y_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
+  theme(legend.position = "none")
 
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance.pdf", width = 7, height = 7, bg = "transparent")
-# pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance_odontoceti.pdf", width = 7, height = 7, bg = "transparent")
-# pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance_mysticeti.pdf", width = 7, height = 7, bg = "transparent")
+#pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance_odontoceti.pdf", width = 7, height = 7, bg = "transparent")
+#pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance_mysticeti.pdf", width = 7, height = 7, bg = "transparent")
 plot_countfreq
 dev.off()
 
