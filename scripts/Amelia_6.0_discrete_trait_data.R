@@ -149,48 +149,38 @@ Manger <- Manger[-c(18), ]
 
 write.csv(Manger, here("cetacean_manger_et_al.csv"), row.names = FALSE)
 
-# Section 6: Groot et al ignore for now --------------------------------------------------
+# Section 7: IUCN cetacean latitude ----------------------------------------------
 
-groot <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Groot_et_al_2023.xlsx")
-#this data is coded so need to decode it with the original paper
-#contains trait data that is in the other dataframes
-#lifespan, length, mass, brain mass, EQ, age to reproduction, group size, gestation, sociality, group foraging, learned foraging, communication
+#data downloaded directly from IUCN website in shapefile format, data on 86 species
+range <- read_sf("C:/Users/ameli/Downloads/redlist_species_data_b8eeb8cf-3383-4314-bfb2-55dad2b8fec3/data_0.shp")
 
+#function to take max and min latitude
 
-# Section 7: McCurry et al latitude ---------------------------------------
-#https://doi.org/10.1093/biolinnean/blac128
+extractLatitude <-function(species_name){
+  
+  sps_range <- range %>% filter(SCI_NAME == species_name)
+  
+  ymin <- extent(sps_range)@ymin
+  ymax <- extent(sps_range)@ymax
+  
+  latitude_list <- c(ymin, ymax)
+  return(latitude_list)
+}
 
-McCurry <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\McCurry_2023.xlsx")
+latitude_list <- lapply(unique(range$SCI_NAME), function(x) extractLatitude(species_name = x))
 
-McCurry <- as.data.frame(McCurry[, c(6, 8:51)])
+names(latitude_list) <- unique(range$SCI_NAME)
 
-test <- McCurry %>% pivot_longer(cols = !`Absolute latitude`, names_to = "Species", values_to = "count")
+lat.df <- data.frame(coords = unlist(latitude_list))
+lat.df$Species_name <- rownames(lat.df)
+lat.df <- lat.df %>% separate(Species_name, into = c("Species_name", "minmax"), sep = "\\.")
 
-test <- test %>% filter(count > 0)
-test$Species <- str_replace_all(test$Species, pattern = "'", replacement = "")
-test$Species <- str_replace_all(test$Species, pattern = " ", replacement = "_")
-colnames(test) <- c("Absolute_latitude", "Species", "count")
+lat.df <- pivot_wider(lat.df, names_from = minmax, values_from = coords)
+colnames(lat.df) <- c("Species_name", "min_lat", "max_lat")
+lat.df$tips <- str_replace(lat.df$Species_name, pattern = " ", replacement = "_")
+lat.df$mean_lat <- (lat.df$min_lat + lat.df$max_lat)/2
 
-test <- test %>% group_by(Species) %>% summarize(max_lat = max(Absolute_latitude), mean_lat = mean(Absolute_latitude), min_lat = min(Absolute_latitude))
-names <- read.csv(here("cetaceans_full.csv"))
-
-names <- names %>% separate(col = tips, into = c("Genus", "Species"), sep = "_")
-test <- test %>% separate(col = Species, into = c("Genus", "Species"), sep = "_")
-
-test <- merge(names, test, by = "Species", all.y =TRUE)
-#two species have the species name attentuata, glacialis, australis and hectori. Drop the duplicates
-latitude_df <- test[-c(5,8,9,11,31), ]
-
-latitude_df %>% filter(!is.na(max_crep)) %>% ggplot(., aes(x = max_crep, y = max_lat)) + geom_boxplot() + stat_compare_means(method = "anova")
-
-latitude_df$tips <- str_replace(latitude_df$Species_name, pattern = " ", replacement = "_")
-latitude_df <- latitude_df[, c("tips", "max_lat", "mean_lat", "min_lat")]
-
-#check if species names are spelled correctly
-latitude_df[!latitude_df$tips %in% mam.tree$tip.label,]
-
-#save out 
-write.csv(latitude_df, here("cetacean_latitude_df.csv"), row.names = FALSE)
+write.csv(lat.df, here("cetacean_latitude_df.csv"), row.names = FALSE)
 
 # Section 8: Churchill qualitative variables ------------------------------
 
@@ -468,23 +458,6 @@ cetaceans_full <- cetaceans_full[, c("Parvorder", "Family", "Diel_Pattern", "max
 trait.data <- merge(cetaceans_full, trait.data, by = "tips", all = TRUE)
 trait.data[trait.data == ""] <- NA
 
-#add a colour for each of the families, easier to colour by later
-trait.data$fam_colours <- "Unknown"
-trait.data[trait.data$Family == "Balaenidae", c("fam_colours")] <- "darkorchid3"
-trait.data[trait.data$Family == "Balaenopteridae", c("fam_colours")] <- "magenta"
-trait.data[trait.data$Family == "Ziphiidae", c("fam_colours")] <- "green2"
-trait.data[trait.data$Family == "Neobalaenidae", c("fam_colours")] <- "pink"
-trait.data[trait.data$Family == "Delphinidae", c("fam_colours")] <- "grey"
-trait.data[trait.data$Family == "Monodontidae", c("fam_colours")] <- "steelblue4"
-trait.data[trait.data$Family == "Eschrichtiidae", c("fam_colours")] <- "yellow3"
-trait.data[trait.data$Family == "Iniiae", c("fam_colours")] <-"dodgerblue2"
-trait.data[trait.data$Family == "Kogiidae", c("fam_colours")] <- "lightslateblue"
-trait.data[trait.data$Family == "Lipotidae", c("fam_colours")] <-  "gold"
-trait.data[trait.data$Family == "Phocoenidae", c("fam_colours")] <- "orange2"
-trait.data[trait.data$Family == "Physeteridae", c("fam_colours")] <- "green4"
-trait.data[trait.data$Family == "Platanistidae", c("fam_colours")] <- "turquoise1"
-trait.data[trait.data$Family == "Pontoporiidae", c("fam_colours")] <- "grey30"
-
 write.csv(trait.data, here("cetacean_ecomorphology_dataset.csv"), row.names = FALSE)
 
 # Section 13: eye mass vs body mass ---------------------------------------
@@ -640,38 +613,16 @@ pantheria[pantheria$tips == "Taurotragus_oryx", "tips"] <- "Tragelaphus_oryx"
 # Alcelaphus_caama and Alcelaphus_lichtensteinii are subspecies of Alcelaphus buselaphus
 #Babyrousa_bolabatuensis only known from subfossil remains, may be a subspecies
 
-sleepy_artio <- sleepy_artio[sleepy_artio$tips %in% pantheria$tips, c("tips", "max_crep")]
+sleepy_artio <- sleepy_artio[sleepy_artio$tips %in% pantheria$tips, c("tips", "max_crep", "Diel_Pattern")]
 pantheria <- merge(sleepy_artio, pantheria, by = "tips", all = TRUE)
 
 #add in eye size data
 artio_eyes <- merge(pantheria, artio_eyes, by = "tips", all = TRUE)
 
-#add to keep colours consistent for each family
-artio_eyes$fam_colours <- "Unknown"
-artio_eyes[artio_eyes$Family == "Cervidae", c("fam_colours")] <- "maroon"
-artio_eyes[artio_eyes$Family == "Bovidae", c("fam_colours")] <- "red"
-artio_eyes[artio_eyes$Family == "Camelidae", c("fam_colours")] <- "salmon1"
-artio_eyes[artio_eyes$Family == "Rhinocerotidae", c("fam_colours")] <- "grey80"
-artio_eyes[artio_eyes$Family == "Equidae", c("fam_colours")] <- "chocolate4"
-artio_eyes[artio_eyes$Family == "Tragulidae", c("fam_colours")] <- "dimgrey"
-artio_eyes[artio_eyes$Family == "Giraffidae", c("fam_colours")] <- "black"
-artio_eyes[artio_eyes$Family == "Tayassuidae", c("fam_colours")] <- "moccasin"
-artio_eyes[artio_eyes$Family == "Tapiridae", c("fam_colours")] <- "darkgoldenrod"
-artio_eyes[artio_eyes$Family == "Suidae", c("fam_colours")] <- "brown4"
-artio_eyes[artio_eyes$Family == "Moschidae", c("fam_colours")] <- "tan1"
-artio_eyes[artio_eyes$Family == "Hippopotamidae", c("fam_colours")] <- "skyblue"
-artio_eyes[artio_eyes$Family == "Antilocapridae", c("fam_colours")] <- "white"
-
 #save out 
 write.csv(artio_eyes, here("artiodactyla_ecomorphology_dataset.csv"), row.names = FALSE)
 
 
-# Section 16: IUCN data on species' range ---------------------------------
 
-#install.packages("rredlist")
-library(rredlist)
 
-#access order
-artio <- rl_order_(order = "artiodactyla", key = "XFHS4VQcefhFiES3zGipvTkUVJKPiA71VX17", all = TRUE, page = 1, quiet = FALSE)
 
-artio

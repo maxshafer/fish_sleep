@@ -307,25 +307,20 @@ trait.data %>% filter(!is.na(Body_mass_kg)) %>% ggplot(., aes(x = max_crep, y = 
 # Ruminant body mass ------------------------------------------------------
 
 trait.data.art <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
-trait.data.art <- trait.data.art[!is.na(trait.data.art$AdultBodyMass_g), c("tips", "AdultBodyMass_g", "max_crep", "Family", "fam_colours")]
+trait.data.art <- trait.data.art[!is.na(trait.data.art$AdultBodyMass_g), c("tips", "AdultBodyMass_g", "max_crep", "Family", "Diel_Pattern")]
 trait.data.art <- trait.data.art[!is.na(trait.data.art$max_crep), ] %>% filter(Family %in% c("Bovidae", "Cervidae", "Antilocapridae", "Giraffidae", "Tragulidae", "Moschidae"))
-
-#perform the one-way anova
-art_model <- aov(AdultBodyMass_g ~ max_crep, data = trait.data.art)
-summary(art_model)
-
-#perform the post-hoc tukey test
-TukeyHSD(art_model, conf.level = .95)
 
 #perform the phylogenetically corrected one-way anova
 art_phylANOVA <- calculatePhylANOVA(trait.data.art, "AdultBodyMass_g")
 
-boxplot_art <- ggplot(trait.data.art, aes(x = max_crep, y = log(AdultBodyMass_g))) +
-  geom_boxplot(aes(fill = max_crep), alpha=0.8, outlier.shape = NA) + scale_fill_manual(values = custom.colours) +
-  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
-  labs(x = "Temporal activity pattern", y = "Body mass (g)") + scale_fill_manual(values=unique(trait.data.art$fam_colours))  + 
+boxplot_art <- ggplot(trait.data.art, aes(x = Diel_Pattern, y = log(AdultBodyMass_g))) +
+  geom_boxplot(aes(fill = max_crep), alpha=0.8, outlier.shape = NA) + 
+  scale_fill_manual(values = custom.colours) +
+  new_scale_fill() + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
+  labs(x = "Temporal activity pattern", y = "Body mass (g)") +
   theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
-  stat_compare_means(label.y = 14, method = "anova") + annotate("text", x = 1.15, y = 14.5, label = paste("phylANOVA, p =", art_phylANOVA$Pf))
+  annotate("text", x = 1.15, y = 14.5, label = paste("phylANOVA, p =", art_phylANOVA$Pf)) 
 boxplot_art   
 
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Body_mass", "_boxplots_anova_ruminants.pdf"), width = 8, height = 7)
@@ -613,3 +608,46 @@ ggplot(likelihood_metrics, aes(y = log_likelihoods, x = model, fill = model))  +
 likelihood_metrics$length <- 100
 ggplot(likelihood_metrics, aes(y = log_likelihoods, x = length, fill = model)) +
   geom_line() + ggtitle(filename)
+
+# Section 7: McCurry et al latitude ---------------------------------------
+#https://doi.org/10.1093/biolinnean/blac128
+
+McCurry <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\McCurry_2023.xlsx")
+
+McCurry <- as.data.frame(McCurry[, c(6, 8:51)])
+
+test <- McCurry %>% pivot_longer(cols = !`Absolute latitude`, names_to = "Species", values_to = "count")
+
+test <- test %>% filter(count > 0)
+test$Species <- str_replace_all(test$Species, pattern = "'", replacement = "")
+test$Species <- str_replace_all(test$Species, pattern = " ", replacement = "_")
+colnames(test) <- c("Absolute_latitude", "Species", "count")
+
+test <- test %>% group_by(Species) %>% summarize(max_lat = max(Absolute_latitude), mean_lat = mean(Absolute_latitude), min_lat = min(Absolute_latitude))
+names <- read.csv(here("cetaceans_full.csv"))
+
+names <- names %>% separate(col = tips, into = c("Genus", "Species"), sep = "_")
+test <- test %>% separate(col = Species, into = c("Genus", "Species"), sep = "_")
+
+test <- merge(names, test, by = "Species", all.y =TRUE)
+#two species have the species name attentuata, glacialis, australis and hectori. Drop the duplicates
+latitude_df <- test[-c(5,8,9,11,31), ]
+
+latitude_df %>% filter(!is.na(max_crep)) %>% ggplot(., aes(x = max_crep, y = max_lat)) + geom_boxplot() + stat_compare_means(method = "anova")
+
+latitude_df$tips <- str_replace(latitude_df$Species_name, pattern = " ", replacement = "_")
+latitude_df <- latitude_df[, c("tips", "max_lat", "mean_lat", "min_lat")]
+
+#check if species names are spelled correctly
+latitude_df[!latitude_df$tips %in% mam.tree$tip.label,]
+
+#save out 
+write.csv(latitude_df, here("cetacean_latitude_df.csv"), row.names = FALSE)
+
+# Section 6: Groot et al ignore for now --------------------------------------------------
+
+groot <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Groot_et_al_2023.xlsx")
+#this data is coded so need to decode it with the original paper
+#contains trait data that is in the other dataframes
+#lifespan, length, mass, brain mass, EQ, age to reproduction, group size, gestation, sociality, group foraging, learned foraging, communication
+

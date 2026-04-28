@@ -115,8 +115,8 @@ dev.off()
 
 # Section 2: Pie chart reconstructions ----------------------------------
 #load in model data
-filename <- "artiodactyla_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models.rds"
-#filename <- "whippomorpha_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models.rds"
+#filename <- "artiodactyla_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models.rds"
+filename <- "whippomorpha_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models.rds"
 #filename <- "ruminants_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models.rds"
 
 all_model_results <- readRDS(here(filename))
@@ -133,7 +133,9 @@ custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5","grey")
 base_tree <- ggtree(phylo_tree, layout = "rectangular") + geom_tiplab(size = 2, hjust = -0.1)
 base_tree <- base_tree %<+% model_results$data[, c("tips", "Diel_Pattern")]
 #base_tree <- base_tree + geom_tippoint(aes(color = Diel_Pattern), size = 3) 
-base_tree <- base_tree + geom_tile(data = base_tree$data[1:length(phylo_tree$tip.label),], aes(x=x, y=y, fill = Diel_Pattern), inherit.aes = FALSE, colour = "transparent", width = 0.5) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+base_tree <- base_tree + 
+  geom_tile(data = base_tree$data[1:length(phylo_tree$tip.label),], aes(x=x, y=y, fill = Diel_Pattern), inherit.aes = FALSE, colour = "transparent", width = 0.5) + 
+  scale_fill_manual(values = custom.colours, name = "Temporal activity pattern") + theme(legend.position = "none")
 base_tree
 
 #make the dataframe of likelihoods at the internal nodes without the tips
@@ -151,17 +153,18 @@ bars <- nodebar(lik.anc, 1:(length(lik.anc)-1))
 pie_tree <- base_tree + geom_inset(bars, width = .01, height = .02) + scale_fill_manual(values = custom.colours)
 pie_tree
 
-base_tree <- ggtree(phylo_tree, layout = "dendrogram") + geom_tiplab(size = 2)
+base_tree <- ggtree(phylo_tree) + geom_tiplab(size = 2)
 base_tree <- base_tree %<+% model_results$data[, c("tips", "Diel_Pattern")]
 base_tree <- base_tree + geom_tippoint(aes(color = Diel_Pattern), size = 3) 
 pie_tree <- base_tree + geom_inset(pies, width = .03, height = .03) 
-pie_tree
+pie_tree 
 
-#circular tree
-base_tree <- ggtree(phylo_tree, layout = "rectangular")
+base_tree <- ggtree(phylo_tree) + geom_tiplab(size = 2)
 base_tree <- base_tree %<+% model_results$data[, c("tips", "Diel_Pattern")]
-base_tree <- base_tree + geom_plot(data=base_tree$data, mapping=aes(x=x,y=y, label=pie), vp.width=0.09, vp.height=0.09, hjust=0.5, vjust=0.5) + coord_geo()
+base_tree <- base_tree + geom_cladelab()
 base_tree
+
+
 
 library(deeptime)
 library(geiger)
@@ -175,18 +178,16 @@ df <- tibble::tibble(node=as.numeric(trait_anc$node), pies=pies)
 p1 <- ggtree(tree)
 p2 <- p1 %<+% df
 library(ggpp)
-p2 + geom_plot(data=td_filter(!isTip), mapping=aes(x=x,y=y, label=pies), vp.width=0.09, vp.height=0.09, hjust=0.5, vjust=0.5) + coord_geo()
+p2 + geom_plot(data=td_filter(!isTip), mapping=aes(x=x,y=y, label=pies), vp.width=0.09, vp.height=0.09, hjust=0.5, vjust=0.5) + 
+  coord_polar()
+
 #this adds a the timescale for the entire tree
 #pie_tree <- pie_tree + theme_tree2()
 #reverses the timescale so it starts at 0mya at the tips and extends back to 50mya at ancestor
 #not currently working
 #pie_tree <- revts(pie_tree)
 
-# Section 3: Take the average of all the reconstructions? Trees? ----------------------------------
-#tbd
-
-
-# # Section 4: Tutorial time ----------------------------------------------
+# # Section 3: Tutorial time ----------------------------------------------
 #https://blog.phytools.org/2024/04/a-few-useful-demos-on-ancestral-state.html
 ## load tree and data
 library(phytools)
@@ -243,7 +244,7 @@ legend(0.2*max(nodeHeights(primate.tree)),
        horiz=FALSE,cex=0.8,bty="n",pt.cex=2,
        y.intersp=1.2)
 
-# Section 5: Lineages through time plot -----------------------------------
+# Section 4: Lineages through time plot -----------------------------------
 
 all_model_results <- readRDS(here(paste0("artiodactyla_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models.rds")))
 model_results <- all_model_results$bridge_only
@@ -312,3 +313,57 @@ ltt(phylo_tree_di, lwd = 2)
 for(i in 2:4) ltt.lines(trees[[i]])
 
 ltt.lines(phylo_tree_noc, lty = 2)
+
+
+# Section 5: Take the average of all the reconstructions? Trees? ----------------------------------
+
+setwd(here())
+source("scripts/Amelia_functions.R")
+source("scripts/Amelia_plotting_functions.R")
+
+mammal_trees <- read.nexus(here("Cox_mammal_data/Complete_phylogeny.nex"))
+
+trait.data <- read.csv(here("Sleepy_artiodactyla_full.csv"))
+trait.data <- filter(trait.data, Suborder == "Whippomorpha")
+                       
+phylo_trees <- lapply(mammal_trees, function(x) subsetTrees(tree = x, subset_names = trait.data$tips))
+
+names(phylo_trees) <- 1:1000
+
+#combine model likelihoods 
+filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+#filename <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+
+model_selection <- "bridge_only"
+
+df_full <- plot1kAIC(readRDS(here(filename)), 5)
+df_full$model <- factor(df_full$model, levels = c("ER", "SYM", "CONSYM", "ARD", "bridge_only"))
+
+df_full <- df_full %>% filter(model == model_selection)
+
+df_full$model_number <- 1:nrow(df_full)
+
+#combine the tree data with the model results
+df_full$tree <- phylo_trees
+
+#create list of 100 best models (lowest AIC score)
+lowest_100 <- df_full %>% arrange(AIC_score) %>% select(model_number) %>% slice(1:10)
+ggdensitree(mammal_trees[lowest_100$model_number])
+
+#filter by list
+df_full_subset <- df_full %>% filter(model_number %in% lowest_100$model_number)
+
+
+ggtree(phylo_trees[474]$`474`)
+
+ggtree(mammal_trees[474]$UNNAMED)
+
+str(mammal_trees[474])
+
+tree <- mammal_trees[474]
+subset_names <- trait.data$tips[trait.data$tips %in% tree$UNTITLED$tip.label]
+subset_tree <- keep.tip(tree, subset_names)
+
+ggtree(subset_tree, layout = "circular") + 
+  geom_tiplab()
+

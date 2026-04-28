@@ -754,4 +754,72 @@ pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maor
 test
 dev.off()
 
+#my data
+artio_df <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv")) #235 species with data
 
+#Baker et al dataset, a combination of primary data (200sps), the Bennie et al dataset and pantheria
+artio_eyes <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Baker_2019.xlsx")
+artio_eyes <- artio_eyes[2: nrow(artio_eyes),]
+colnames(artio_eyes) <- c("tips", "Order", "Corneal_diameter", "Axial_length", "Activity_pattern", "Source")
+
+#203 species with data
+Baker_df <- filter(artio_eyes, Order %in% c("Artiodactyla")) %>% select("tips", "Activity_pattern")
+
+#fix alternative spellings
+Baker_df[Baker_df$tips == "Alces_americanus", "tips"] <- "Alces_alces"
+Baker_df[Baker_df$tips == "Hemitragus_hylocrius", "tips"] <- "Nilgiritragus_hylocrius"
+Baker_df[Baker_df$tips == "Hemitragus_jayakari", "tips"] <- "Arabitragus_jayakari"
+Baker_df[Baker_df$tips == "Hexaprotodon_liberiensis", "tips"] <- "Choeropsis_liberiensis"
+Baker_df[Baker_df$tips == "Neotragus_moschatus", "tips"] <- "Nesotragus_moschatus"
+Baker_df[Baker_df$tips == "Przewalskium_albirostris", "tips"] <- "Cervus_albirostris"
+Baker_df[Baker_df$tips == "Pseudois_schaeferi", "tips"] <- "Pseudois_nayaur"
+Baker_df[Baker_df$tips == "Rucervus_eldi", "tips"] <- "Rucervus_eldii"
+Baker_df[Baker_df$tips == "Saiga_borealis", "tips"] <- "Saiga_tatarica"
+Baker_df[Baker_df$tips == "Sus_salvanius", "tips"] <- "Porcula_salvania"
+Baker_df[Baker_df$tips == "Taurotragus_derbianus", "tips"] <- "Tragelaphus_derbianus"
+
+Baker_df <- Baker_df[Baker_df$tips %in% artio_df$tips, ] #removes 4 sps
+# M rooseveltorum nor Sus bucculentus (both extinct) so drop, Bos frontalis and M gouazoupira not in mam tree
+
+mammals_df <- merge(Baker_df, artio_df, by = "tips", all = TRUE) 
+
+#only keep species that have entries in all three databases, leaves 199 species
+mammals_df <- mammals_df[complete.cases(mammals_df[ , c('Activity_pattern', 'Diel_Pattern')]), ]
+
+df <- mammals_df %>% make_long(Activity_pattern, Diel_Pattern,)
+
+test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+  geom_sankey(flow.alpha= 0.5, node.color = 1) + 
+  geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "pink", "#66C2A5", "#A6D854")) +
+  theme_sankey(base_size = 16) +
+  scale_x_discrete(labels = c("Activity_pattern" = "Existing database \n (Baker et al)", "Diel_Pattern" = "Current database \n (Mesich et al)")) +
+  theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
+
+test
+
+#save out to figure folder
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Baker_sankey_six_state.pdf"))
+test
+dev.off()
+
+
+mammals_df <- merge(Baker_df, artio_df, by = "tips", all = TRUE) 
+
+#only keep species that have entries in all three databases, leaves 199 species
+mammals_df <- mammals_df[complete.cases(mammals_df[ , c('Activity_pattern', 'max_crep')]), ]
+
+df <- mammals_df %>% make_long(Activity_pattern, max_crep)
+
+test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+  geom_sankey(flow.alpha= 0.5, node.color = 1) + 
+  geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5")) +
+  theme_sankey(base_size = 16) +
+  scale_x_discrete(labels = c("Activity_pattern" = "Existing database \n (Baker et al)", "max_crep" = "Current database \n (Mesich et al)")) +
+  theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
+
+test
+
+#save out to figure folder
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Baker_sankey_four_state.pdf"))
+test
+dev.off()

@@ -72,11 +72,13 @@ dev.off()
 
 # Cetacean mean latitude --------------------------------------------------
 
-family.colours <- c("dodgerblue", "darkolivegreen1", "orange")
+family.colours <- c("dodgerblue",  "cyan","darkgreen", "springgreen", "darkolivegreen1", "gold", "orange", "firebrick2", "brown", "orchid1", "darkorchid")
 
 #select the variable we're looking at
 trait.data.1 <- trait.data[!is.na(trait.data$mean_lat),]
 trait.data.1 <- trait.data.1[!is.na(trait.data.1$max_crep),]
+
+trait.data.1 <- filter(trait.data.1, Parvorder == "Odontoceti")
 
 #perform the phylogenetically corrected one-way anova
 phylANOVA <- calculatePhylANOVA(trait.data.1, "mean_lat")
@@ -88,22 +90,24 @@ boxplot <- ggplot(trait.data.1, aes(x = max_crep, y = mean_lat)) +
   labs(x = "\nTemporal activity pattern", y = "Mean latitude range\n") + 
   scale_fill_manual(values=family.colours)  + 
   geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) +
-  annotate("text", x = 1.15, y = 7500000, label = paste("phylANOVA, p =", phylANOVA$Pf)) +
+  annotate("text", x = 1.15, y = 100, label = paste("phylANOVA, p =", phylANOVA$Pf)) +
   boxplot_theme + 
   scale_x_discrete(labels = c("cathemeral" = "Cathemeral", "crepuscular" = "Crepuscular", "diurnal" = "Diurnal", "nocturnal" = "Nocturnal")) 
 
 boxplot
 
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/Mean_latitude_boxplot_cetaceans.pdf", width = 7.5, height = 7)
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/Mean_latitude_boxplot_cetaceans.pdf", width = 7, height = 7.5)
 boxplot
 dev.off()
 
 # Cetacean max latitude ---------------------------------------------------
-family.colours <- c("dodgerblue", "darkolivegreen1", "orange")
+family.colours <- c("dodgerblue",  "cyan","darkgreen", "springgreen", "darkolivegreen1", "gold", "orange", "firebrick2", "brown", "orchid1", "darkorchid")
 
 #select the variable we're looking at
 trait.data.1 <- trait.data[!is.na(trait.data$max_lat),]
 trait.data.1 <- trait.data.1[!is.na(trait.data.1$max_crep),]
+
+trait.data.1 <- filter(trait.data.1, Parvorder == "Odontoceti")
 
 #perform the phylogenetically corrected one-way anova
 phylANOVA <- calculatePhylANOVA(trait.data.1, "max_lat")
@@ -115,13 +119,13 @@ boxplot <- ggplot(trait.data.1, aes(x = max_crep, y = max_lat)) +
   labs(x = "\nTemporal activity pattern", y = "Maximum latitude range\n") + 
   scale_fill_manual(values=family.colours)  + 
   geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) +
-  annotate("text", x = 1.15, y = 7500000, label = paste("phylANOVA, p =", phylANOVA$Pf)) +
+  annotate("text", x = 1.15, y = 100, label = paste("phylANOVA, p =", phylANOVA$Pf)) +
   boxplot_theme + 
   scale_x_discrete(labels = c("cathemeral" = "Cathemeral", "crepuscular" = "Crepuscular", "diurnal" = "Diurnal", "nocturnal" = "Nocturnal")) 
 
 boxplot
 
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/Max_latitude_boxplot_cetaceans.pdf", width = 7.5, height = 7)
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/Max_latitude_boxplot_cetaceans.pdf", width = 7, height = 7.5)
 boxplot
 dev.off()
 
@@ -188,7 +192,7 @@ family.colours <- c("dodgerblue", "springgreen",  "gold", "darkorchid")
 
 #load in the data
 trait.data.art <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
-trait.data.art <- trait.data.art[!is.na(trait.data.art$Orbit_ratio), c("tips", "Orbit_ratio", "max_crep", "Family", "fam_colours")]
+trait.data.art <- trait.data.art[!is.na(trait.data.art$Orbit_ratio), c("tips", "Orbit_ratio", "max_crep", "Family")]
 
 #filter for just ruminants
 trait.data.art <-  filter(trait.data.art, Family %in% c("Bovidae", "Cervidae", "Giraffidae", "Tragulidae"))
@@ -211,7 +215,8 @@ stat.test <- stat.test %>% add_x_position(x = "max_crep")
 
 boxplot <- ggplot(trait.data.art, aes(x = max_crep, y = Orbit_ratio)) +
   geom_boxplot(aes(fill = max_crep), alpha = 0.8, outlier.shape = NA) + 
-  scale_fill_manual(values = custom.colours, guide = "none") +
+  scale_fill_manual(values = c("#EECBAD", "#FC8D62", "#66C2A5")
+, guide = "none") +
   new_scale_fill() + 
   labs(x = "\nTemporal activity pattern", y = "Corneal diameter: axial length\n") + 
   scale_fill_manual(values=family.colours)  + 
@@ -300,3 +305,120 @@ boxplot
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/max_latitude_boxplots_ruminant.pdf", width = 7.5, height = 7)
 boxplot
 dev.off()
+
+
+
+
+# Latitude maps -----------------------------------------------------------
+lat.df <- read.csv(here("cetacean_latitude_df.csv"))
+
+cetaceans_full <- read.csv(here("cetaceans_full.csv"))
+cetaceans_full <- cetaceans_full[, c("Parvorder", "Family", "Diel_Pattern", "max_crep", "Confidence", "tips")]
+
+lat.df <- merge(cetaceans_full, lat.df, by = "tips", all = TRUE)
+lat.df[lat.df == ""] <- NA
+
+lat.df <- lat.df[!is.na(lat.df$max_lat),]
+lat.df <- lat.df[!is.na(lat.df$max_crep),]
+
+#what species have the smallest ranges? Largest ranges?
+ggplot(lat.df, aes(x = (max_lat - min_lat), y = reorder(tips, (max_lat - min_lat)), fill = max_crep)) +
+  geom_col() + facet_wrap(~Parvorder, scales = "free")
+
+ggplot(lat.df, aes(y = (max_lat - min_lat), x = Family)) +
+  geom_boxplot() 
+
+
+range <- read_sf("C:/Users/ameli/Downloads/redlist_species_data_b8eeb8cf-3383-4314-bfb2-55dad2b8fec3/data_0.shp")
+
+unique(range$SCI_NAME)
+
+#filter for species with smallest ranges 
+small_range_list <- lat.df %>% filter((max_lat - min_lat) < 30) %>% pull(Species_name)
+
+sps_range <- range %>% filter(SCI_NAME %in% small_range_list)
+
+ggplot(sps_range) +
+  geom_sf(aes(fill = SCI_NAME), color = "black")
+
+
+#filter for all the delphinidae ranges
+delphinid_list <- lat.df %>% filter(Family == "Delphinidae") %>% pull(Species_name)
+sps_range <- range %>% filter(SCI_NAME %in% delphinid_list)
+
+ggplot(sps_range) +
+  geom_sf(aes(fill = SCI_NAME), color = "black")
+
+
+#filter for species by activity pattern
+diel_list <- lat.df %>% filter(max_crep == "diurnal") %>% pull(Species_name)
+
+sps_range <- range %>% filter(SCI_NAME %in% diel_list)
+
+ggplot(sps_range) +
+  geom_sf(aes(fill = SCI_NAME), color = "black")
+
+
+#Do sympatric species show temporal niche partitioning?
+
+lat.df %>% filter(Species_name %in% small_range_list)
+
+##function to take max and min longitude
+
+extractLongitude <-function(species_name){
+  
+  sps_range <- range %>% filter(SCI_NAME == species_name)
+  
+  xmin <- extent(sps_range)@xmin
+  xmax <- extent(sps_range)@xmax
+  
+  latitude_list <- c(xmin, xmax)
+  return(latitude_list)
+}
+
+longitude_list <- lapply(unique(range$SCI_NAME), function(x) extractLongitude(species_name = x))
+
+names(longitude_list) <- unique(range$SCI_NAME)
+
+lon.df <- data.frame(coords = unlist(longitude_list))
+lon.df$Species_name <- rownames(lon.df)
+lon.df <- lon.df %>% separate(Species_name, into = c("Species_name", "minmax"), sep = "\\.")
+
+lon.df <- pivot_wider(lon.df, names_from = minmax, values_from = coords)
+colnames(lon.df) <- c("Species_name", "min_lon", "max_lon")
+lon.df$tips <- str_replace(lon.df$Species_name, pattern = " ", replacement = "_")
+lon.df$mean_lon <- (lon.df$min_lon + lon.df$max_lon)/2
+
+lon.df$tips <- str_replace(lon.df$Species_name, pattern = " ", replacement = "_")
+
+trait.data <- merge(lat.df, lon.df, by = "tips", all = TRUE)
+
+trait.data <- trait.data[!is.na(trait.data$max_crep),]
+
+#install.packages("amt")
+library(amt)
+
+
+
+
+
+
+
+# Section X: Cetacean sleep duration --------------------------------------
+url <- 'https://docs.google.com/spreadsheets/d/1F_m52NE1IWQRjfwgwF1yzVV4TaR4MEkKJUr2aDJt6LE/edit?usp=sharing'
+duration <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
+
+duration <- duration %>% filter(!is.na(Sleep_duration)) %>% select(tips, Sleep_duration)
+
+trait.data <- read.csv(here("cetacean_ecomorphology_dataset.csv"))
+
+trait.data <- merge(trait.data, duration, by = "tips", all = TRUE)
+
+trait.data %>% filter(!is.na(Sleep_duration)) %>%
+  ggplot(., aes(x = max_crep, y = Sleep_duration)) + 
+  geom_boxplot() + geom_jitter()
+
+trait.data %>% filter(!is.na(Sleep_duration)) %>%
+  ggplot(., aes(x = log(Body_mass_kg), y = Sleep_duration)) + 
+  geom_point() + geom_smooth(method = "lm")
+

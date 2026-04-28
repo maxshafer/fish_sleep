@@ -26,6 +26,11 @@ library(ggnewscale)
 library(pals)
 #useful
 library(tidyr)
+#package to work with shapefiles
+#install.packages("sf")
+library(sf)
+#also helps with shapefiles
+library(raster)
 #colours
 library(viridis)
 #sankey diagram
@@ -102,9 +107,6 @@ diel_full <- separate(data = diel_full, col = Conf_5, into = c("Conf5.1", "Conf5
 #replace strings 
 diel_full <- data.frame(lapply(diel_full, function(x) {gsub("cathemeral-variable", "cathemeral", x)}))
 diel_full <- data.frame(lapply(diel_full, function(x) {gsub("cathemeral-invariate", "cathemeral", x)}))
-#double check this primacy source data I analzed
-diel_full <- data.frame(lapply(diel_full, function(x) {gsub("weakly-nocturnal-tbd", "weakly-nocturnal", x)}))
-diel_full <- data.frame(lapply(diel_full, function(x) {gsub("cathemeral-tbd", "cathemeral", x)}))
 #may change to cathemeral/nocturnal/crepuscular in future, there are 5 weakly nocturnal crepuscular entries
 diel_full <- data.frame(lapply(diel_full, function(x) {gsub("weakly-nocturnal/crepuscular", "nocturnal/crepuscular", x)}))
 diel_full <- data.frame(lapply(diel_full, function(x) {gsub("weakly-nocturnal", "nocturnal/cathemeral", x)}))

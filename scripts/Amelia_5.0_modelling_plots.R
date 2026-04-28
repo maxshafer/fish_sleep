@@ -91,24 +91,24 @@ dev.off()
 
 # Section 5: Plot transition rates from 1k model results ----------------------
 
-#filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
-filename <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+#filename <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
 #filename <- "august_artiodactyla_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
 
 #requires the filename, the number of states in the model and the number of Mk models 
 #returns a dataframe of the rates from each of the Mk models, for each of the 1k trees
 rates_df <- plot1kTransitionRates4state(readRDS(here(filename)), 5)
 
-model_selection <- "ARD"
+model_selection <- "SYM"
 #colour by unique transition (solution)
 rate_colours_sol <- c( "#A024AE", "#DD8AE7","#EEC4F3", "#AD9680", "#D1B49B","#EECBAD",  "#FA4A05", "#FC8D62", "#FECCB9","#3C967E", "#66C2A5","#ABDECE")
 #colour by ending state
 rate_colours_end = c("#AD9680","#FA4A05","#3C967E","#A024AE", "#FA4A05","#3C967E", "#A024AE","#AD9680", "#3C967E","#A024AE","#AD9680", "#FA4A05")
 
 #if model selection is bridge only, adjust colours
-# model_selection <- "Bridge_only"
-# #colour by ending state
-# rate_colours_end = c("#AD9680","#FA4A05","#3C967E","#A024AE", "#FA4A05","#3C967E", "#A024AE","#AD9680", "#A024AE","#AD9680")
+model_selection <- "Bridge_only"
+#colour by ending state
+rate_colours_end = c("#AD9680","#FA4A05","#3C967E","#A024AE", "#FA4A05","#3C967E", "#A024AE","#AD9680", "#A024AE","#AD9680")
 
 #filter by the model you're plotting
 rates_df1 <- rates_df %>% filter(model == model_selection) 
@@ -179,4 +179,63 @@ dev.off()
 # ggarrange(rates_column_plot, density_column_plot,
 #           ncol = 1, nrow = 2)
 # dev.off()
+
+
+# Plot rates from 100 most likely models ----------------------------------
+
+filename <- "august_whippomorpha_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+#filename <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+
+rates_df <- plot1kTransitionRates4state(readRDS(here(filename)), 5)
+
+model_selection <- "SYM"
+
+#filter by the model you're plotting
+rates_df1 <- rates_df %>% filter(model == model_selection) 
+
+df_full <- plot1kAIC(readRDS(here(filename)), 5)
+df_full$model <- factor(df_full$model, levels = c("ER", "SYM", "CONSYM", "ARD", "bridge_only"))
+
+df_full <- df_full %>% filter(model == model_selection)
+
+df_full$model_number <- 1:nrow(df_full)
+
+rates_df1$model_number <- rep(1:1000, each = (nrow(rates_df1)/1000))
+
+#merge by model number
+
+rates_df1 <- merge(rates_df1, df_full[, c("AIC_score", "model_number")], by = "model_number", all = TRUE)
+
+#create list of 100 best models (lowest AIC score)
+lowest_100 <- rates_df1 %>% arrange(AIC_score) %>% select(model_number) %>% slice(1:(nrow(rates_df1)/10))
+
+#filter by list
+rates_df1 <- rates_df1 %>% filter(model_number %in% unique(lowest_100$model_number))
+
+#plot as usual
+
+#extract just the starting state
+rates_df1$start_state <- word(rates_df1$solution, 1)
+rates_df1$start_state <- paste(rates_df1$start_state, "to", sep = " ")
+rates_df1$end_state <- word(rates_df1$solution, 3)
+
+rates_df1$start_state <- factor(rates_df1$start_state, levels = c("Cathemeral to", "Diurnal to", "Crepuscular to", "Nocturnal to"))
+
+#ARD colours
+rate_colours_end = c("#AD9680","#FA4A05","#3C967E","#A024AE", "#FA4A05","#3C967E", "#A024AE","#AD9680", "#3C967E","#A024AE","#AD9680", "#FA4A05")
+#bridge colours
+#rate_colours_end = c("#AD9680","#FA4A05","#3C967E","#A024AE", "#FA4A05","#3C967E", "#A024AE","#AD9680", "#A024AE","#AD9680")
+
+rates_plot <- 
+  ggplot(rates_df1, aes(x= end_state, y = log(rates), group = solution, fill = solution, colour = solution)) + 
+  geom_quasirandom(alpha = 0.8, width = 0.5, method = "quasirandom") + 
+  scale_color_manual(values = rate_colours_end) +
+  geom_violin(color = "black", scale = "width", alpha = 0.5) + theme_bw() +
+  scale_fill_manual(values = rate_colours_end) +
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5, size =10), axis.text.y = element_text(size =10), axis.title = element_text(size = 12), strip.background = element_rect(fill = "grey90"), legend.position = "none")  +
+  labs(x = "\n Transition", y = "Log(transition rate)") + 
+  stat_summary(fun=median, geom="point", size=3, colour = "black", alpha = 0.2) +
+  facet_wrap(~start_state, scales = "free_x", nrow = 2, ncol = 2)
+
+rates_plot
 
