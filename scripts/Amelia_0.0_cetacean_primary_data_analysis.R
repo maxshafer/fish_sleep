@@ -666,17 +666,50 @@ test %>% filter(Buzz == 1) %>%
 
 
 #plot depth vs time 
-test %>% filter(Ind == "Asgeir") %>% 
+
+#Asgeir only has full 24h recordings from August 25, 26, 27, 28, 29
+test %>% filter(Ind == "Asgeir", day %in% c(25, 26, 27, 28, 29)) %>% 
   ggplot(., aes(x = round(hourmin, 1), y = Depth)) + 
   theme_minimal() +
   annotate(geom = "rect", xmin = mean(test$dawn_start, na.rm = TRUE), xmax = mean(test$dawn_end, na.rm = TRUE), ymin = -Inf, ymax = Inf, fill = "pink") +
   annotate(geom = "rect", xmin = mean(test$dusk_start, na.rm = TRUE), xmax = mean(test$dusk_end, na.rm = TRUE), ymin = -Inf, ymax = Inf, fill = "pink") +
   annotate(geom = "rect", xmin = 0, xmax = mean(test$dawn_start, na.rm = TRUE), ymin = -Inf, ymax = Inf, fill = "grey70") +
   annotate(geom = "rect", xmin = mean(test$dusk_end, na.rm = TRUE), xmax = 24, ymin = -Inf, ymax = Inf, fill = "grey70") +
-  geom_point(aes(colour = Buzz)) + geom_line()
+  geom_point() + geom_line() + facet_wrap(~day)
 
 
+test %>% filter(Ind == "Asgeir", buzz == 1) %>% 
+  ggplot(., aes(x = round(hourmin, 1), y = Depth))
 
+mean_dive <- test %>% filter(day %in% c(25, 26, 27, 28, 29, 30)) %>% 
+  mutate(hourmin = round(hourmin, 2)) %>%
+  group_by(month, day, hour, minute, dusk_start, dusk_end, dawn_start, dawn_end, Ind) %>% 
+  summarize(mean_depth = mean(Depth), buzz = mean(Buzz)) 
+
+mean_dive$hourmin <- as.numeric(mean_dive$hour) + as.numeric((mean_dive$minute)/60)
+
+mean_dive %>% 
+  filter(Ind == "Siggi", day %in% c(26, 27, 28)) %>%
+  ggplot(., aes(x = hourmin, y = mean_depth, colour = buzz)) +
+  theme_minimal() +
+  annotate(geom = "rect", xmin = mean(mean_dive$dawn_start, na.rm = TRUE), xmax = mean(mean_dive$dawn_end, na.rm = TRUE), ymin = -Inf, ymax = Inf, fill = "pink") +
+  annotate(geom = "rect", xmin = mean(mean_dive$dusk_start, na.rm = TRUE), xmax = mean(mean_dive$dusk_end, na.rm = TRUE), ymin = -Inf, ymax = Inf, fill = "pink") +
+  annotate(geom = "rect", xmin = 0, xmax = mean(mean_dive$dawn_start, na.rm = TRUE), ymin = -Inf, ymax = Inf, fill = "grey70") +
+  annotate(geom = "rect", xmin = mean(mean_dive$dusk_end, na.rm = TRUE), xmax = 24, ymin = -Inf, ymax = Inf, fill = "grey70") +
+  geom_point() + geom_line() + facet_wrap(~day)
+  
+
+#does average depth vary with time of day?
+test %>%
+  group_by(month, day, hour, Ind) %>% 
+  summarize(mean_depth = mean(Depth)) %>%
+  ggplot(., aes(x = as.factor(hour), y = mean_depth)) + 
+  theme_minimal() +
+  annotate(geom = "rect", xmin = mean(mean_dive$dawn_start, na.rm = TRUE), xmax = mean(mean_dive$dawn_end, na.rm = TRUE), ymin = -Inf, ymax = Inf, fill = "pink") +
+  annotate(geom = "rect", xmin = mean(mean_dive$dusk_start, na.rm = TRUE), xmax = mean(mean_dive$dusk_end, na.rm = TRUE), ymin = -Inf, ymax = Inf, fill = "pink") +
+  annotate(geom = "rect", xmin = 0, xmax = mean(mean_dive$dawn_start, na.rm = TRUE), ymin = -Inf, ymax = Inf, fill = "grey70") +
+  annotate(geom = "rect", xmin = mean(mean_dive$dusk_end, na.rm = TRUE), xmax = 24, ymin = -Inf, ymax = Inf, fill = "grey70") +
+  geom_boxplot(outlier.shape = NA, fill = "lightblue")# + facet_wrap(~Ind)
 
 # ## When do Buzz's occur
 # #this plots the number of seconds with and without a buzz in each hour
@@ -708,56 +741,56 @@ test %>% filter(Ind == "Asgeir") %>%
 ## Plot depth versus time
 
 ## plot 1 Hz data (1 timepoint per second)
-ggplot(narwhale[1:10000, ], aes(x = datetime, y = Depth)) + geom_point()
-
-## Can we average by minute, or hour, or day?
-
-#AVERAGE BY...
-day_depth <- narwhale %>% group_by(day) %>% summarise(mean_depth = mean(Depth))
-
-hour_depth <- narwhale %>% group_by(hour) %>% summarise(mean_depth = mean(Depth))
-hour_depth
-
-dayhour_depth <- narwhale %>% group_by(Ind, day, hour) %>% summarise(mean_depth = mean(Depth))
-
-ggplot(dayhour_depth, aes(x = interaction(hour,day), y = mean_depth, colour = Ind, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free", ncol = 1)
-
-
-minute_depth <- narwhale %>% group_by(day, hour, minute) %>% summarise(mean_depth = mean(Depth))
-
-
-ggplot(minute_depth, aes(x = interaction(day,hour,minute), y = mean_depth)) + geom_point() + theme(axis.text.x = element_blank())
-
-## Plot both buzzes and depth?
-## take mean of "Buzz" for each day/hour/min, you will get a range from 0-1
-## Find a way to ask if there was a buzz or not in each day/hour/min?
-
-mean_buzz_day <- narwhale %>% group_by(day, Ind) %>% summarise(mean_buzz = mean(Buzz))
-mean_buzz_day
-#creates a tibble with three rows: the day, the mean frequency of a buzz occuring (0=no buzz, 1=buzz))
-#and the individual whale making the buzz
-
-ggplot(mean_buzz_day, aes(x = day, y = mean_buzz, colour = Ind, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free", ncol = 1)
-#creates a graph showing the mean frequency of buzzes occurring per day by individual
-
-mean_buzz_dayhour <- narwhale %>% group_by(day, hour, Ind) %>% summarise(mean_buzz = mean(Buzz))
-mean_buzz_dayhour
-#same as above by breaks down the mean number of buzzes by hour as well as day and individual
-
-ggplot(mean_buzz_dayhour, aes(x = interaction(hour, day), y = mean_buzz, colour = Ind, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free", ncol = 1)
-
-#Same as before but adding the minute as well
-mean_buzz_dayhourminute <- narwhale %>% group_by(day, hour, minute, Ind) %>% summarise(mean_buzz = mean(Buzz))
-mean_buzz_dayhourminute
-
-#plot
-ggplot(mean_buzz_dayhourminute, aes(x = interaction(hour, day, minute), y = mean_buzz, colour = Ind, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free", ncol = 1)
-
-
-#plot depth over time, noting when the mean buzzes are occurring (ie hunting)
-depth_buzz <- narwhale %>% group_by(hour, Ind) %>% summarise(mean_buzz = mean(Buzz), mean_depth = mean(Depth))
-depth_buzz
-
-ggplot(depth_buzz, aes(x = interaction(hour, Ind), y = mean_depth, colour = mean_buzz, size = mean_buzz, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free")
-
+# ggplot(narwhale[1:10000, ], aes(x = datetime, y = Depth)) + geom_point()
+# 
+# ## Can we average by minute, or hour, or day?
+# 
+# #AVERAGE BY...
+# day_depth <- narwhale %>% group_by(day) %>% summarise(mean_depth = mean(Depth))
+# 
+# hour_depth <- narwhale %>% group_by(hour) %>% summarise(mean_depth = mean(Depth))
+# hour_depth
+# 
+# dayhour_depth <- narwhale %>% group_by(Ind, day, hour) %>% summarise(mean_depth = mean(Depth))
+# 
+# ggplot(dayhour_depth, aes(x = interaction(hour,day), y = mean_depth, colour = Ind, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free", ncol = 1)
+# 
+# 
+# minute_depth <- narwhale %>% group_by(day, hour, minute) %>% summarise(mean_depth = mean(Depth))
+# 
+# 
+# ggplot(minute_depth, aes(x = interaction(day,hour,minute), y = mean_depth)) + geom_point() + theme(axis.text.x = element_blank())
+# 
+# ## Plot both buzzes and depth?
+# ## take mean of "Buzz" for each day/hour/min, you will get a range from 0-1
+# ## Find a way to ask if there was a buzz or not in each day/hour/min?
+# 
+# mean_buzz_day <- narwhale %>% group_by(day, Ind) %>% summarise(mean_buzz = mean(Buzz))
+# mean_buzz_day
+# #creates a tibble with three rows: the day, the mean frequency of a buzz occuring (0=no buzz, 1=buzz))
+# #and the individual whale making the buzz
+# 
+# ggplot(mean_buzz_day, aes(x = day, y = mean_buzz, colour = Ind, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free", ncol = 1)
+# #creates a graph showing the mean frequency of buzzes occurring per day by individual
+# 
+# mean_buzz_dayhour <- narwhale %>% group_by(day, hour, Ind) %>% summarise(mean_buzz = mean(Buzz))
+# mean_buzz_dayhour
+# #same as above by breaks down the mean number of buzzes by hour as well as day and individual
+# 
+# ggplot(mean_buzz_dayhour, aes(x = interaction(hour, day), y = mean_buzz, colour = Ind, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free", ncol = 1)
+# 
+# #Same as before but adding the minute as well
+# mean_buzz_dayhourminute <- narwhale %>% group_by(day, hour, minute, Ind) %>% summarise(mean_buzz = mean(Buzz))
+# mean_buzz_dayhourminute
+# 
+# #plot
+# ggplot(mean_buzz_dayhourminute, aes(x = interaction(hour, day, minute), y = mean_buzz, colour = Ind, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free", ncol = 1)
+# 
+# 
+# #plot depth over time, noting when the mean buzzes are occurring (ie hunting)
+# depth_buzz <- narwhale %>% group_by(hour, Ind) %>% summarise(mean_buzz = mean(Buzz), mean_depth = mean(Depth))
+# depth_buzz
+# 
+# ggplot(depth_buzz, aes(x = interaction(hour, Ind), y = mean_depth, colour = mean_buzz, size = mean_buzz, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free")
+# 
 
