@@ -98,7 +98,8 @@ ggplot(hyper, aes(y = Signal_count, x = Start_time)) +
   annotate(geom = "rect", xmin = mean(hyper$dusk_end), xmax = 24, ymin = -Inf, ymax = Inf, fill = "grey70") +
   geom_point() + 
   scale_x_continuous(limits = c(0, 24), breaks = c(0:24)) + 
-  geom_smooth(method = "loess", formula = "y~x", colour = "black")
+  geom_smooth(method = "loess", formula = "y~x", colour = "black") +
+  geom_rug()
 
 
 hyper1 <- hyper
@@ -170,7 +171,9 @@ ggplot(hyper, aes(y = Signal_count, x = Start_time)) +
   annotate(geom = "rect", xmin = mean(hyper$dusk_end, na.rm = TRUE), xmax = 24, ymin = -Inf, ymax = Inf, fill = "grey70") +
   geom_point() + 
   scale_x_continuous(breaks = c(0:24)) +
-  geom_smooth(method = "loess", formula = "y~x", colour = "black")
+  geom_smooth(method = "loess", formula = "y~x", colour = "black")+
+  geom_rug()
+
 
 #study took place in  Falkland Islands to the South Sandwich Islands and South Georgia from December 30, 2019 to January 29, 2020 (Leg 1)
 #only one detection occurred on the second leg of the trip from King George Island to Puerto Williams, Chile via the Antarctic Peninsula from February 11 to 27, 2020 (Leg 2)
@@ -184,14 +187,15 @@ ggplot(hyper_merged, aes(y = Signal_count, x = Start_time)) +
   annotate(geom = "rect", xmin = mean(hyper_merged$dusk_end, na.rm = TRUE), xmax = 24, ymin = -Inf, ymax = Inf, fill = "grey70") +
   geom_point() +
   scale_x_continuous(breaks = c(0:24)) + 
-  geom_smooth(method = "loess", formula = "y~x", colour = "black")
+  geom_smooth(method = "loess", formula = "y~x", colour = "black")+
+  geom_rug()
 
 
 # Section 2: vaquita ---------------------------------------------------------
 #study: https://iucn-csg.org/wp-content/uploads/2023/06/Vaquita-Survey-2023-Main-Report.pdf
 #data from appendix: https://iucn-csg.org/wp-content/uploads/2023/06/Vaquita-Survey-2023-Appendices-FINAL.pdf
 
-#vaquita moment
+#load in the data
 vaquita <- read.csv("C:/Users/ameli/Downloads/vaquita_PAM.csv")
 vaquita$datetime <- parse_date(vaquita$Start)
 vaquita$hour <- hour(vaquita$datetime)
@@ -710,87 +714,4 @@ test %>%
   annotate(geom = "rect", xmin = 0, xmax = mean(mean_dive$dawn_start, na.rm = TRUE), ymin = -Inf, ymax = Inf, fill = "grey70") +
   annotate(geom = "rect", xmin = mean(mean_dive$dusk_end, na.rm = TRUE), xmax = 24, ymin = -Inf, ymax = Inf, fill = "grey70") +
   geom_boxplot(outlier.shape = NA, fill = "lightblue")# + facet_wrap(~Ind)
-
-# ## When do Buzz's occur
-# #this plots the number of seconds with and without a buzz in each hour
-# buzzes <- narwhale %>% group_by(hour, Buzz) %>% count()
-# 
-# #plotting out the number of seconds without a buzz (top plot) and with a buzz (bottom plot)
-# ggplot(buzzes, aes(x = hour, y = n, group = Buzz)) + geom_point() + geom_line() + facet_wrap(~Buzz, scales = "free", ncol = 1)
-# 
-# #plot the number of detection positive minutes (more standard)
-# returnMinPerHour <- function(hour = 1){
-#   buzzes <- narwhale %>% filter(hour == hour) %>% group_by(minute, Buzz) %>% count()
-#   return(buzzes)
-# }
-# 
-# buzz_list <- lapply(unique(narwhale$hour), function(x) returnMinPerHour(hour = x))
-# buzzes <- do.call(rbind.data.frame, buzz_list)
-# buzzes <- buzzes %>% filter(Buzz == 1)
-# hour_list <- lapply(0:23, function(x) rep(x, times = 60))
-# #buzzes$hour <- hour_list
-# 
-# 
-# buzzes$total_minute <- 0:(nrow(buzzes)-1)
-# 
-# ggplot(buzzes, aes(x = total_minute, y = n)) + geom_point() + geom_line()
-# 
-# #detection positive minutes per hour
-
-
-## Plot depth versus time
-
-## plot 1 Hz data (1 timepoint per second)
-# ggplot(narwhale[1:10000, ], aes(x = datetime, y = Depth)) + geom_point()
-# 
-# ## Can we average by minute, or hour, or day?
-# 
-# #AVERAGE BY...
-# day_depth <- narwhale %>% group_by(day) %>% summarise(mean_depth = mean(Depth))
-# 
-# hour_depth <- narwhale %>% group_by(hour) %>% summarise(mean_depth = mean(Depth))
-# hour_depth
-# 
-# dayhour_depth <- narwhale %>% group_by(Ind, day, hour) %>% summarise(mean_depth = mean(Depth))
-# 
-# ggplot(dayhour_depth, aes(x = interaction(hour,day), y = mean_depth, colour = Ind, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free", ncol = 1)
-# 
-# 
-# minute_depth <- narwhale %>% group_by(day, hour, minute) %>% summarise(mean_depth = mean(Depth))
-# 
-# 
-# ggplot(minute_depth, aes(x = interaction(day,hour,minute), y = mean_depth)) + geom_point() + theme(axis.text.x = element_blank())
-# 
-# ## Plot both buzzes and depth?
-# ## take mean of "Buzz" for each day/hour/min, you will get a range from 0-1
-# ## Find a way to ask if there was a buzz or not in each day/hour/min?
-# 
-# mean_buzz_day <- narwhale %>% group_by(day, Ind) %>% summarise(mean_buzz = mean(Buzz))
-# mean_buzz_day
-# #creates a tibble with three rows: the day, the mean frequency of a buzz occuring (0=no buzz, 1=buzz))
-# #and the individual whale making the buzz
-# 
-# ggplot(mean_buzz_day, aes(x = day, y = mean_buzz, colour = Ind, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free", ncol = 1)
-# #creates a graph showing the mean frequency of buzzes occurring per day by individual
-# 
-# mean_buzz_dayhour <- narwhale %>% group_by(day, hour, Ind) %>% summarise(mean_buzz = mean(Buzz))
-# mean_buzz_dayhour
-# #same as above by breaks down the mean number of buzzes by hour as well as day and individual
-# 
-# ggplot(mean_buzz_dayhour, aes(x = interaction(hour, day), y = mean_buzz, colour = Ind, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free", ncol = 1)
-# 
-# #Same as before but adding the minute as well
-# mean_buzz_dayhourminute <- narwhale %>% group_by(day, hour, minute, Ind) %>% summarise(mean_buzz = mean(Buzz))
-# mean_buzz_dayhourminute
-# 
-# #plot
-# ggplot(mean_buzz_dayhourminute, aes(x = interaction(hour, day, minute), y = mean_buzz, colour = Ind, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free", ncol = 1)
-# 
-# 
-# #plot depth over time, noting when the mean buzzes are occurring (ie hunting)
-# depth_buzz <- narwhale %>% group_by(hour, Ind) %>% summarise(mean_buzz = mean(Buzz), mean_depth = mean(Depth))
-# depth_buzz
-# 
-# ggplot(depth_buzz, aes(x = interaction(hour, Ind), y = mean_depth, colour = mean_buzz, size = mean_buzz, group = Ind)) + geom_point() + geom_line() + theme(axis.text.x = element_text(angle = 90)) + facet_wrap(~Ind, scales = "free")
-# 
 

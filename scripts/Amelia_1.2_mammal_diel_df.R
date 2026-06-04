@@ -109,9 +109,6 @@ trait.data[trait.data$tips == "Tadarida_sarasinorum", "Order"] <- "Chiroptera"
 #should have 4477 species
 write.csv(trait.data, here("Bennie_mam_data.csv"), row.names = FALSE)
 
-#trait.data <- read.csv(here("Bennie_mam_data.csv"))
-
-
 # Section 2: Maor dataframe -----------------------------------------------
 #read in the Maor diel activity patterns
 #from https://doi.org/10.1038/s41559-017-0366-5 
@@ -177,6 +174,30 @@ maor_full <- maor_full[, c("Species", "Diel_pattern", "tips")]
 
 #save out Maor dataframe
 write.csv(maor_full, here("maor_artio_full.csv"), row.names  = FALSE)
+
+
+# Section 3: Baker dataframe ----------------------------------------------
+
+#Baker et al dataset, a combination of primary data (200sps), the Bennie et al dataset and pantheria
+Baker_df <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Baker_2019.xlsx")
+Baker_df <- Baker_df[2: nrow(Baker_df),]
+colnames(Baker_df) <- c("tips", "Order", "Corneal_diameter", "Axial_length", "Activity_pattern", "Source")
+
+#fix alternative spellings for just the artiodactyls
+Baker_df[Baker_df$tips == "Hemitragus_hylocrius", "tips"] <- "Nilgiritragus_hylocrius"
+Baker_df[Baker_df$tips == "Hemitragus_jayakari", "tips"] <- "Arabitragus_jayakari"
+Baker_df[Baker_df$tips == "Hexaprotodon_liberiensis", "tips"] <- "Choeropsis_liberiensis"
+Baker_df[Baker_df$tips == "Neotragus_moschatus", "tips"] <- "Nesotragus_moschatus"
+Baker_df[Baker_df$tips == "Przewalskium_albirostris", "tips"] <- "Cervus_albirostris"
+Baker_df[Baker_df$tips == "Pseudois_schaeferi", "tips"] <- "Pseudois_nayaur"
+Baker_df[Baker_df$tips == "Rucervus_eldi", "tips"] <- "Rucervus_eldii"
+Baker_df[Baker_df$tips == "Saiga_borealis", "tips"] <- "Saiga_tatarica"
+Baker_df[Baker_df$tips == "Sus_salvanius", "tips"] <- "Porcula_salvania"
+Baker_df[Baker_df$tips == "Taurotragus_derbianus", "tips"] <- "Tragelaphus_derbianus"
+
+Baker_df <- Baker_df %>% select(tips, Order, Activity_pattern)
+
+write.csv(Baker_df, here("Baker_mam_data.csv"), row.names = FALSE)
 
 # Section 3: How well do these sources agree? -----------------------------
 diel_merge <- merge(Bennie_mam_data,maor_mam_data,by="Species")

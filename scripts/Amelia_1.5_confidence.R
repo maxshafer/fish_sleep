@@ -88,8 +88,11 @@ confidence_list <- lapply(unique(diel_full_long$Species_name), function(x){
   substr(Confidence, 5,5)
 })
 
+
+#we will add this data to the final dataframe in section 4
 confidence_df <- data.frame(Species_name = unique(diel_full_long$Species_name))
 confidence_df$Confidence <- as.numeric(confidence_list)
+
 
 write.csv(diel_full_long, here("confidence_artio_long.csv"), row.names = FALSE)
 
@@ -163,99 +166,6 @@ which.max.simple=function(x,na.rm=TRUE,tie_value="NA"){
 
 x <- filter(diel_full_long, Species_name == "Cephalophus jentinki")
 
-tabulateFunc3 <- function(x) {
-  #first check if there is multiple level 4 confidence entries
-  if(x %>% filter(column == "Conf4") %>% nrow() > 1){
-    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA"))) {
-      if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
-        if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
-          activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf1", "Conf2", "Conf3", "Conf4", "Conf5")], unique(x$new_diel))), tie_value = "NA")] #result if there is a tie between all confidence levels (case D)
-        } else {
-          activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
-          #result if level 4 and level 4+3 are inconclusive (case C)
-        }
-      } else {
-        activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
-        #result if level 4 alone is inconclusive (case B)
-      }
-    } else {
-      activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
-      #result if there is multiple level 4 evidence and it is not inconclusive (case A)
-    }
-  } else {
-    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
-      if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
-        #if there is a tie use the single level 4 entry to make the call 
-        activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
-        #if there is no level 4 source it will return an NA and move on to here
-        if(NA %in% activity_pattern){ #if there is no level 4 data to use as the tiebreaker then add in the level 1 and 2 data
-          activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf2", "Conf1")], unique(x$new_diel))), tie_value = "NA")]
-          if(NA %in% activity_pattern){
-            if(nrow(x) == 1){
-              activity_pattern <- x$new_diel #if there is only one row take the activity pattern from this row
-            } else {activity_pattern <- "cathemeral-variable"}
-          }
-        } 
-        } else {activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]}
-      } else {
-        activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
-        #result if level 4 alone is inconclusive (case E)
-      }
-    } 
-  
-  return(activity_pattern)  
-}
-tabulateFunc4 <- function(x) {
-  #first check if there is multiple level 4 confidence entries
-  if(x %>% filter(column == "Conf4") %>% nrow() > 1){
-    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA"))) {
-      if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
-        if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))) {
-          activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf1", "Conf3", "Conf4", "Conf5")], unique(x$new_diel))), tie_value = "NA")] #result if there is a tie between all confidence levels (case D)
-          activity_pattern <- paste(activity_pattern, "D")
-        } else {
-          activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
-          activity_pattern <- paste(activity_pattern, "C")
-          #result if level 4 and level 4+3 are inconclusive (case C)
-        }
-      } else {
-        activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
-        activity_pattern <- paste(activity_pattern, "B")
-        #result if level 4 alone is inconclusive (case B)
-      }
-    } else {
-      activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
-      activity_pattern <- paste(activity_pattern, "A")
-      #result if there is multiple level 4 evidence and it is not inconclusive (case A)
-    }
-  } else {
-    if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))|(nrow(x[x$column %in% c("Conf3", "Conf4"),]) == 1)) {
-      if (is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA"))|(nrow(x[x$column %in% c("Conf3", "Conf4"),]) == 1)) {
-        #if there is a tie use the single level 4 entry to make the call
-        activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
-        #activity_pattern <- paste(activity_pattern, "G") can't actually label this with a G or it won't recognize NA for the next steps
-        #if there is no level 4 source it will return an NA and move on to here
-        if(NA %in% activity_pattern){ #if there is no level 4 data to use as the tiebreaker then add in the level 1 and 2 data
-          activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf3")], unique(x$new_diel))), tie_value = "NA")]
-          activity_pattern <- paste(activity_pattern, "H") #can't label case H because then below doesn't work
-          if("NA H" %in% activity_pattern){
-            if(is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf1")], unique(x$new_diel))), tie_value = "NA"))){
-              activity_pattern <- "cathemeral-variable J"}
-            else {activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3", "Conf1")], unique(x$new_diel))), tie_value = "NA")]
-            activity_pattern <- paste(activity_pattern, "I")}
-          }
-        }
-      } else {activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf5", "Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
-      activity_pattern <- paste(activity_pattern, "F")}
-    } else {
-      activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4", "Conf3")], unique(x$new_diel))), tie_value = "NA")]
-      activity_pattern <- paste(activity_pattern, "E")
-      #result if level 4 alone is inconclusive (case E)
-    }
-  }
-  
-  return(activity_pattern) 
-}
 tabulateFuncArt <- function(x){
   if(x %>% filter(column == "Conf4") %>% nrow() > 1 & !is.na(which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA"))){
     activity_pattern <- unique(x$new_diel)[which.max.simple(tabulate(match(x$new_diel[x$column %in% c("Conf4")], unique(x$new_diel))), tie_value = "NA")]
@@ -355,31 +265,34 @@ crep_df <- diel_full_long %>% group_by(Species_name) %>% do(tabulated_crep = tab
 
 crep_df <- crep_df[!is.na(crep_df$tabulated_crep),]
 
-test <- merge(crep_df, activity_pattern_df, by = "Species_name")
-test$tabulated_diel <- test$tabulated_diel_pattern
-for(i in 1:nrow(test)){
-  if(test[i, "tabulated_crep"] == "crepuscular"){
-    test[i, "tabulated_diel"] <- paste(test[i, "tabulated_diel_pattern"], "crepuscular", sep = "/")
+final_df <- merge(crep_df, activity_pattern_df, by = "Species_name")
+final_df$tabulated_diel <- final_df$tabulated_diel_pattern
+for(i in 1:nrow(final_df)){
+  if(final_df[i, "tabulated_crep"] == "crepuscular"){
+    final_df[i, "tabulated_diel"] <- paste(final_df[i, "tabulated_diel_pattern"], "crepuscular", sep = "/")
   }
 }
 
-unique(test$tabulated_diel)
+unique(final_df$tabulated_diel)
 
-test <- test[, c("Species_name", "tabulated_diel")]
+final_df <- final_df[, c("Species_name", "tabulated_diel")]
 
 #check that nothing about the data has changed since running it last 
 previous_dataset <- read.csv(here("artio_tabulated_full.csv"))
 previous_dataset$tips <- str_replace(previous_dataset$Species_name, pattern = " ", replacement = "_")
 previous_dataset <- previous_dataset[previous_dataset$tips %in% mam.tree$tip.label, ]
 
-current_dataset <- test
+current_dataset <- final_df
 current_dataset$tips <- str_replace(current_dataset$Species_name, pattern = " ", replacement = "_")
 current_dataset <- current_dataset[current_dataset$tips %in% mam.tree$tip.label, ]
 all(previous_dataset == current_dataset)
 if(all(previous_dataset == current_dataset) == FALSE) stop("Dataset is not the same!")
 
+#add a column for tips, formatted as the species names appear in the phylogenetic tree
+final_df$tips <- str_replace(final_df$Species_name, pattern = " ", replacement = "_")
+
 #save out the new tabulated activity pattern dataframe
-write.csv(test, here("artio_tabulated_full.csv"), row.names = FALSE)
+write.csv(final_df, here("artio_tabulated_full.csv"), row.names = FALSE)
 
 
 # Section 4: Save out artiodactyla dataframe with taxonomic and confidence info ------------------------
@@ -399,8 +312,10 @@ artio_full <- artio_full[c("Species_name", "Family", "tabulated_diel")]
 artio_full$tips <- str_replace(artio_full$Species_name, pattern = " ", replacement = "_")
 colnames(artio_full) <- c("Species_name", "Family", "Diel_Pattern", "tips")
 
-#add parvborder taxonomic info for future reference (to match with cetacean dataset)
+#add taxonomic info for future reference (also to match with cetacean dataset)
 artio_full$Parvorder <- "non-cetacean"
+#add in order information
+artio_full$Order <- "Artiodactyla"
 
 #rename the row names to be the tip names so it's easier to subset by the tree tip labels later
 row.names(artio_full) <- artio_full$tips
@@ -418,7 +333,7 @@ artio_full$max_dinoc <- str_replace(artio_full$max_dinoc, pattern = "nocturnal/c
 artio_full$max_dinoc <- str_replace(artio_full$max_dinoc, pattern = "diurnal/crepuscular", replacement = "diurnal")
 artio_full$max_dinoc <- str_replace(artio_full$max_dinoc, pattern = "cathemeral/crepuscular", replacement = "crepuscular")
 
-artio_full$Suborder <- "idk"
+artio_full$Suborder <- "Unknown"
 for(i in 1:length(artio_full$Species_name)){
   if(artio_full[i, "Family"] %in% c("Camelidae")){
     artio_full[i, "Suborder"] <- "Tylopoda"}
@@ -433,9 +348,6 @@ for(i in 1:length(artio_full$Species_name)){
 
 #add in maximum confidence data
 artio_full <- merge(artio_full, confidence_df, by = "Species_name")
-
-#add in order information
-artio_full$Order <- "Artiodactyla"
 
 #put into same order as cetaceans
 artio_full <- artio_full %>% select("Species_name", "Order", "Suborder", "Parvorder", "Family", "Diel_Pattern", "max_crep", "max_dinoc", "Confidence", "tips")
@@ -455,7 +367,6 @@ write.csv(ruminants_high_conf, file = here("ruminants_high_conf.csv"), row.names
 #save out a version with cetaceans, hippos are already in artiodactyla minus cetaceans
 cetaceans_full <- read.csv(here("cetaceans_full.csv"))
 artiodactyla_full <- rbind(cetaceans_full, artio_full)
-rownames(artiodactyla_full) <- artiodactyla_full$tips #should just get rid of this line since I don't save out rownames anyway
 write.csv(artiodactyla_full, file = here("sleepy_artiodactyla_full.csv"), row.names = FALSE)
 
 #save out a version of cetacean dataset with hippos
@@ -463,6 +374,11 @@ whippomorpha <- read.csv(here("cetaceans_full.csv"))
 hippo <- artio_full[artio_full$Family == "Hippopotamidae", ]
 whippomorpha <- rbind(whippomorpha, hippo)
 write.csv(whippomorpha, file = here("whippomorpha.csv"), row.names = FALSE)
+
+#save out a version with only high confidence data (level 3-5)
+whippomorpha <- read.csv(here("whippomorpha.csv")) # should be 100 sps(includes NA species)
+whippomorpha_high_conf <- whippomorpha %>% filter(Confidence %in% c(3,4,5)) #should be 76 species
+write.csv(whippomorpha_high_conf, file = here("whippomorpha_high_conf.csv"), row.names = FALSE)
 
 # Section 5: Concordance between confidence levels (ruminants) ---------------------------------------------
 diel_full_long <- read.csv(here("confidence_artio_long.csv"))
@@ -541,7 +457,7 @@ table2$count <- table
 #plot both the frequency and the counts
 table2$freq_count <- paste0(round(table2$Freq, 2), "\n", "(n=", table2$count, ")")
 plot_countfreq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = freq_count)) +
-  geom_tile() + geom_text() + scale_fill_viridis(limits = c(0,1)) + 
+  geom_tile() + geom_text() + scale_fill_viridis(begin = 0.2, end = 1, limits = c(1,0)) + 
   theme_minimal() + ylab("Primary source \n") + xlab("\n Secondary source") +
   scale_x_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
   scale_y_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
@@ -561,12 +477,13 @@ diel_full <- merge(diel_full[, c("Species_name", "Diel_Pattern", "max_crep", "ma
 
 diel_full$column <- substr(diel_full$column, 1,5)
 
+diel_full <- data.frame(lapply(diel_full, function(x) {gsub("unclear/crepuscular", "crepuscular", x)}))
+
 #for max crep dataset
 diel_full <- data.frame(lapply(diel_full, function(x) {gsub("cathemeral/crepuscular", "crepuscular", x)}))
 diel_full <- data.frame(lapply(diel_full, function(x) {gsub("diurnal/crepuscular", "crepuscular", x)}))
 diel_full <- data.frame(lapply(diel_full, function(x) {gsub("nocturnal/crepuscular", "crepuscular", x)}))
-diel_full <- data.frame(lapply(diel_full, function(x) {gsub("unclear/crepuscular", "crepuscular", x)}))
-diel_full <- data.frame(lapply(diel_full, function(x) {gsub("unclear/crepuscular", "crepuscular", x)}))
+
 diel_full[diel_full == "unclear"] <- NA
 
 diel_full <- diel_full[!is.na(diel_full$value),]
@@ -576,11 +493,6 @@ mulitple_sources <- diel_full %>% count(Species_name) %>% filter(n>1)
 diel_full_filtered <- diel_full[diel_full$Species_name %in% mulitple_sources$Species_name,]
 #this removes 115 species without an informative second source (120 out of 235 have a second source)
 
-#to include only species in the final tree, is this necessary? If so I should do it consistently 
-diel_full_filtered$tips <- str_replace(diel_full_filtered$Species_name, pattern = " ", replacement = "_")
-#of the 121 species, 111 are in the final tree
-diel_full_filtered <- diel_full_filtered[diel_full_filtered$tips %in% mam.tree$tip.label,]
-
 concordance <- as.data.frame(table(diel_full_filtered$max_crep, diel_full_filtered$value))
 colnames(concordance) <- c("actual", "predicted", "freq")
 totals_df <- aggregate(concordance$freq, by=list(Category=concordance$actual), FUN=sum)
@@ -588,27 +500,40 @@ colnames(totals_df) <- c("actual", "total")
 concordance <- merge(concordance, totals_df, by = "actual")
 concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
 
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/ruminants_all_conf_levels_confusion_matrix.pdf")
-ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
-  scale_fill_gradient(low = "#F5FBFF", high = "#0070D1") + labs(x = "Actual", y = "Predicted") + theme_minimal()
+confusion_plot_rum <-
+  ggplot(concordance, aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label= paste0(percent, "%")), size = 3) +
+  scale_fill_gradient(low = "#F5FBFF", high = "#0070D1") + 
+  labs(x = "Actual (final activity pattern)", y = "Predicted (activity pattern of sources)") + 
+  theme_void() +
+  scale_x_discrete(labels = c("Cathemeral", "Crepuscular", "Diurnal", "Nocturnal")) +
+  scale_y_discrete(labels = c("Cathemeral", "Crepuscular", "Diurnal", "Nocturnal")) +
+  theme(legend.position = "none", axis.text = element_text(size = 9), axis.title = element_text(size = 11))
+
+# pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/ruminants_all_conf_levels_confusion_matrix.pdf", width = 4, height = 2)
+# confusion_plot_rum 
+# dev.off()
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/combined_confusion_matrix.pdf", width = 4, height = 4.3)
+(confusion_plot_cet + labs(x = "\n", y = "")) /
+  (confusion_plot_rum + theme(axis.title.y = element_blank()))
 dev.off()
 
 #function to plot the concordance for each of the confidence levels
-plotConcordance = function(set_column = "Conf2"){
-  diel_full_filtered <- diel_full %>% filter(column == set_column)
-  #need to filter for species with more than one entry or else concordance will always be 100%
-  mulitple_sources <- diel_full_filtered %>% count(Species_name) %>% filter(n>1)
-  diel_full_filtered <- diel_full_filtered[diel_full_filtered$Species_name %in% mulitple_sources$Species_name,]
-  concordance <- as.data.frame(table(diel_full_filtered$max_crep, diel_full_filtered$value))
-  colnames(concordance) <- c("actual", "predicted", "freq")
-  totals_df <- aggregate(concordance$freq, by=list(Category=concordance$actual), FUN=sum)
-  colnames(totals_df) <- c("actual", "total")
-  concordance <- merge(concordance, totals_df, by = "actual")
-  concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
-  return(concordance)
-}
-
-concordance_list <- lapply(sort(unique(diel_full$column)), function(x){plotConcordance(x)})
+# plotConcordance = function(set_column = "Conf2"){
+#   diel_full_filtered <- diel_full %>% filter(column == set_column)
+#   #need to filter for species with more than one entry or else concordance will always be 100%
+#   mulitple_sources <- diel_full_filtered %>% count(Species_name) %>% filter(n>1)
+#   diel_full_filtered <- diel_full_filtered[diel_full_filtered$Species_name %in% mulitple_sources$Species_name,]
+#   concordance <- as.data.frame(table(diel_full_filtered$max_crep, diel_full_filtered$value))
+#   colnames(concordance) <- c("actual", "predicted", "freq")
+#   totals_df <- aggregate(concordance$freq, by=list(Category=concordance$actual), FUN=sum)
+#   colnames(totals_df) <- c("actual", "total")
+#   concordance <- merge(concordance, totals_df, by = "actual")
+#   concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
+#   return(concordance)
+# }
+# 
+# concordance_list <- lapply(sort(unique(diel_full$column)), function(x){plotConcordance(x)})
 
 #use below if 
 # for(i in seq_along(concordance_list)){
@@ -624,15 +549,15 @@ concordance_list <- lapply(sort(unique(diel_full$column)), function(x){plotConco
 # Section 7: Sankey pipeline flowchart ------------------------------------------
 
 df <- data.frame(
-  step_0 = c(rep("A. Multiple cateory D \n concordance?",209)),
-  step_1 = c(rep("B. Return category D \n concordance (n = 11)", 11), rep("C. Category D + E \n concordance?", 198)),
-  step_2 = c(rep(NA, 11), rep("D. Return category D + E \n concordance (n = 1)", 1), rep("E. Cateory C + D + E \n concordance?", 197)),
-  step_3 = c(rep(NA, 12), rep("F. Return category C + D + E \n concordance (n = 30)", 30), rep("G. Single category D source?", 167)),
-  step_4 = c(rep(NA, 42), rep("H. Return single category D \n source (n = 35)", 35), rep("I. Multiple category E \n concordance?", 132)),
-  step_5 = c(rep(NA, 77), rep("J. Return category E \n concordance (n = 3)",3), rep("K. Multiple category C concordance \n sources?", 129)),
-  step_6 = c(rep(NA, 80), rep("L. Return category C \n concordance (n = 65)", 65), rep("M. Single category C source? \n (n = 5)", 64)),
-  step_7 = c(rep(NA, 145), rep("N. Return single category C \n source (n = 5)", 5), rep("O. Category A + C + D \n + E concordance?", 59)),
-  step_8 = c(rep(NA, 150), rep("P. Return A + C + D \n + E concordance (n = 53)",53), rep("Q. Return cathemeral (n = 6)", 6))
+  step_0 = c(rep("A. Multiple category D \n sources in concordance?", 206)),
+  step_1 = c(rep("B. Return category D \n (n = 10)", 10), rep("C. Category D + E \n sources in concordance?", 196)),
+  step_2 = c(rep(NA, 10), rep("D. Return category D + E \n (n = 1)", 1), rep("E. Category C + D + E \n sources in concordance?", 195)),
+  step_3 = c(rep(NA, 11), rep("F. Return category C + D + E \n (n = 28)", 28), rep("G. Single category D \n source?", 167)),
+  step_4 = c(rep(NA, 39), rep("H. Return single category D \n source (n = 36)", 36), rep("I. Multiple category E \n sources in concordance?", 131)),
+  step_5 = c(rep(NA, 75), rep("J. Return category E \n (n = 3)",3), rep("K. Multiple category C \n sources in concordance?", 128)),
+  step_6 = c(rep(NA, 78), rep("L. Return category C \n (n = 64)", 64), rep("M. Single category C \n source?", 64)),
+  step_7 = c(rep(NA, 142), rep("N. Return single category C \n source (n = 6)", 6), rep("O. Category A + C + D + E \n sources in concordance?", 58)),
+  step_8 = c(rep(NA, 148), rep("P. Return A + C + D \n + E (n = 51)",51), rep("Q. Else return cathemeral (n = 7)", 7))
 )
 
 #convert to long format for geomsankey
@@ -641,16 +566,16 @@ df <- df[!is.na(df$node), ]
 
 blues <- c("#010661", "#070E8A","#070E8A", "#0044A3","#0044A3", "#0070D1","#0070D1","#2E9DFF", "#2E9DFF","#5CB3FF","#5CB3FF","#8AC8FF","#8AC8FF","#B8DEFF","#B8DEFF","#E6F3FF" , "#E6F3FF")
 
-test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = node, label = node)) +
+sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = node, label = substr(node, 4, 300))) +
   geom_sankey(flow.alpha= 0.5, node.color = 0.5) + geom_sankey_label(size = 3.5, color = 1, fill = "white")  + 
   theme_sankey(base_size = 16) + scale_fill_manual(values = blues) +
   theme(legend.position = "none", axis.text.x = element_blank(), panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
 
-test
+sankey
 
 #save out to figure folder
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "ruminant_flowchart.pdf"), height = 7, width = 16)
-test
+sankey
 dev.off()
 
 
@@ -705,16 +630,16 @@ mammals_df <- data.frame(lapply(mammals_df, function(x) {gsub("nocturnal/crepusc
 
 df <- mammals_df %>% make_long(Bennie_diel, Amelia_diel, Maor_diel,)
 
-test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
   geom_sankey(flow.alpha= 0.5, node.color = 1) + geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5")) +
   theme_sankey(base_size = 16) + scale_x_discrete(labels = c("Bennie_diel" = "Existing database \n (Bennie et al)", "Amelia_diel" = "Current database \n (Mesich et al)", "Maor_diel" = "Existing database \n (Maor et al)")) +
   theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
 
-test
+sankey
 
 #save out to figure folder
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maor_Bennie_sankey_max_crep.pdf"))
-test
+sankey
 dev.off()
 
 #add the concordance values to the sankey diagram
@@ -755,18 +680,14 @@ test
 dev.off()
 
 #my data
-artio_df <- read.csv(here("sleepy_artiodactyla_minus_cetaceans.csv")) #235 species with data
+artio_df <- read.csv(here("sleepy_artiodactyla_full.csv")) #235 species with data
 
 #Baker et al dataset, a combination of primary data (200sps), the Bennie et al dataset and pantheria
-artio_eyes <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_discrete_traits\\Baker_2019.xlsx")
-artio_eyes <- artio_eyes[2: nrow(artio_eyes),]
-colnames(artio_eyes) <- c("tips", "Order", "Corneal_diameter", "Axial_length", "Activity_pattern", "Source")
+Baker_df <- read.csv(here("Baker_mam_data.csv"))
 
-#203 species with data
-Baker_df <- filter(artio_eyes, Order %in% c("Artiodactyla")) %>% select("tips", "Activity_pattern")
+#209 species with data
+Baker_df <- filter(artio_eyes, Order %in% c("Artiodactyla", "Cetacea")) %>% select("tips", "Activity_pattern")
 
-#fix alternative spellings
-Baker_df[Baker_df$tips == "Alces_americanus", "tips"] <- "Alces_alces"
 Baker_df[Baker_df$tips == "Hemitragus_hylocrius", "tips"] <- "Nilgiritragus_hylocrius"
 Baker_df[Baker_df$tips == "Hemitragus_jayakari", "tips"] <- "Arabitragus_jayakari"
 Baker_df[Baker_df$tips == "Hexaprotodon_liberiensis", "tips"] <- "Choeropsis_liberiensis"
@@ -778,48 +699,40 @@ Baker_df[Baker_df$tips == "Saiga_borealis", "tips"] <- "Saiga_tatarica"
 Baker_df[Baker_df$tips == "Sus_salvanius", "tips"] <- "Porcula_salvania"
 Baker_df[Baker_df$tips == "Taurotragus_derbianus", "tips"] <- "Tragelaphus_derbianus"
 
-Baker_df <- Baker_df[Baker_df$tips %in% artio_df$tips, ] #removes 4 sps
+Baker_df <- Baker_df[Baker_df$tips %in% artio_df$tips, ] #removes 5 sps
 # M rooseveltorum nor Sus bucculentus (both extinct) so drop, Bos frontalis and M gouazoupira not in mam tree
+# Alces americanus is a subspecies of Alces alces which is already in dataset
 
-mammals_df <- merge(Baker_df, artio_df, by = "tips", all = TRUE) 
+mammals_df <- merge(Baker_df, artio_df, by = "tips", all.x = TRUE) #204 sps
 
-#only keep species that have entries in all three databases, leaves 199 species
-mammals_df <- mammals_df[complete.cases(mammals_df[ , c('Activity_pattern', 'Diel_Pattern')]), ]
+df <- mammals_df %>% make_long(Activity_pattern, Diel_Pattern)
 
-df <- mammals_df %>% make_long(Activity_pattern, Diel_Pattern,)
-
-test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
   geom_sankey(flow.alpha= 0.5, node.color = 1) + 
   geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "pink", "#66C2A5", "#A6D854")) +
   theme_sankey(base_size = 16) +
   scale_x_discrete(labels = c("Activity_pattern" = "Existing database \n (Baker et al)", "Diel_Pattern" = "Current database \n (Mesich et al)")) +
   theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
 
-test
+sankey
 
 #save out to figure folder
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Baker_sankey_six_state.pdf"))
-test
+sankey
 dev.off()
-
-
-mammals_df <- merge(Baker_df, artio_df, by = "tips", all = TRUE) 
-
-#only keep species that have entries in all three databases, leaves 199 species
-mammals_df <- mammals_df[complete.cases(mammals_df[ , c('Activity_pattern', 'max_crep')]), ]
 
 df <- mammals_df %>% make_long(Activity_pattern, max_crep)
 
-test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
   geom_sankey(flow.alpha= 0.5, node.color = 1) + 
   geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5")) +
   theme_sankey(base_size = 16) +
   scale_x_discrete(labels = c("Activity_pattern" = "Existing database \n (Baker et al)", "max_crep" = "Current database \n (Mesich et al)")) +
   theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
 
-test
+sankey
 
 #save out to figure folder
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Baker_sankey_four_state.pdf"))
-test
+sankey
 dev.off()

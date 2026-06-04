@@ -4,9 +4,9 @@
 
 #load in model file
 
-filename <- "artiodactyla_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models.rds"
+#filename <- "artiodactyla_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models.rds"
 #filename <- "whippomorpha_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models.rds"
-#filename <- "ruminants_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models.rds"
+filename <- "ruminants_finalized_max_clade_cred_four_state_max_crep_traits_ER_SYM_CONSYM_ARD_bridge_only_models.rds"
 
 all_model_results <- readRDS(here(paste0(filename)))
 
@@ -22,12 +22,12 @@ all_model_results <- readRDS(here(paste0(filename)))
 # model_results <- all_model_results$CONSYM_model
 # model_name <- "CONSYM"
 
-# model_results <- all_model_results$ARD_model
-# model_name <- "ARD"
+model_results <- all_model_results$ARD_model
+model_name <- "ARD"
 
-model_results <- all_model_results$bridge_only
-#model_results <- model_results$UNTITLED
-model_name <- "bridge_only"
+# model_results <- all_model_results$bridge_only
+# #model_results <- model_results$UNTITLED
+# model_name <- "bridge_only"
 
 #from the model results file, tip states describes the trait states at the tips, states describes the trait states at the nodes
 lik.anc <- as.data.frame(rbind(model_results$tip.states, model_results$states))

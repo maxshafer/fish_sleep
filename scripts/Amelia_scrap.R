@@ -271,74 +271,6 @@ dev.off()
 
 
 
-# Cetacean body mass ------------------------------------------------------
-
-trait.data.1 <- trait.data[!is.na(trait.data$Body_mass_kg),]
-
-#perform the one-way anova
-mass_model <- aov(Body_mass_kg ~ max_crep, data = trait.data.1)
-summary(mass_model)
-
-#perform the post-hoc tukey test
-TukeyHSD(mass_model, conf.level = .95)
-#plot(TukeyHSD(orbit_model, conf.level=.95), las = 2)
-
-#perform the phylogenetically corrected one-way anova
-mass_phylANOVA <- calculatePhylANOVA(trait.data.1, "Body_mass_kg")
-
-#plot out the group means
-boxplot_mass <- ggplot(trait.data.1, aes(x = max_crep, y = log(Body_mass_kg))) +
-  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + scale_fill_manual(values = custom.colours) +
-  new_scale_fill() + geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
-  labs(x = "Temporal activity pattern", y = "Log (Body mass kg)") + scale_fill_manual(values=unique(trait.data.1$fam_colours))  + 
-  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
-  stat_compare_means(label.y = 12.5, method = "anova") +annotate("text", x = 1.15, y = 12, label = paste("phylANOVA, p =", mass_phylANOVA$Pf)) #+ facet_wrap(~Parvorder)
-boxplot_mass
-
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Body_mass", "_boxplots_anova_cetaceans.pdf"), width = 8, height = 7)
-boxplot_mass
-dev.off()
-
-#body mass separated by parvorder
-trait.data %>% filter(!is.na(Body_mass_kg)) %>% ggplot(., aes(x = max_crep, y = log(Body_mass_kg))) +
-  geom_boxplot(aes(fill = max_crep), alpha = 0.8) + facet_wrap(~ Parvorder)
-
-
-# Ruminant body mass ------------------------------------------------------
-
-trait.data.art <- read.csv(here("artiodactyla_ecomorphology_dataset.csv"))
-trait.data.art <- trait.data.art[!is.na(trait.data.art$AdultBodyMass_g), c("tips", "AdultBodyMass_g", "max_crep", "Family", "Diel_Pattern")]
-trait.data.art <- trait.data.art[!is.na(trait.data.art$max_crep), ] %>% filter(Family %in% c("Bovidae", "Cervidae", "Antilocapridae", "Giraffidae", "Tragulidae", "Moschidae"))
-
-#perform the phylogenetically corrected one-way anova
-art_phylANOVA <- calculatePhylANOVA(trait.data.art, "AdultBodyMass_g")
-
-boxplot_art <- ggplot(trait.data.art, aes(x = Diel_Pattern, y = log(AdultBodyMass_g))) +
-  geom_boxplot(aes(fill = max_crep), alpha=0.8, outlier.shape = NA) + 
-  scale_fill_manual(values = custom.colours) +
-  new_scale_fill() + 
-  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = "black", pch = 21) + 
-  labs(x = "Temporal activity pattern", y = "Body mass (g)") +
-  theme_minimal() + theme(panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'), panel.border = element_rect(colour = "black", fill = "transparent")) + 
-  annotate("text", x = 1.15, y = 14.5, label = paste("phylANOVA, p =", art_phylANOVA$Pf)) 
-boxplot_art   
-
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Body_mass", "_boxplots_anova_ruminants.pdf"), width = 8, height = 7)
-boxplot_art
-dev.off()
-
-#filter for species in the final tree
-# trait.data <- trait.data.art[trait.data.art$tips %in% mam.tree$tip.label,]
-# trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
-# 
-# custom.colours <- c("#dd8ae7",  "peachpuff2", "#FC8D62", "#66C2A5")
-# diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep", "AdultBodyMass_g")]
-# diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
-# diel.plot <- diel.plot +  new_scale_fill() +  geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x +2, y=y, fill = log(AdultBodyMass_g)), inherit.aes = FALSE, colour = "transparent") + scale_fill_viridis_c(option = "magma")
-# diel.plot <- diel.plot + geom_tiplab(size = 3, offset = 4) 
-# diel.plot
-
-
 # Cetacean dive data in detail ---------------------------------------------------
 
 dive.data <- read.csv(here("cetacean_dive_depth_all_sources.csv"))
@@ -651,3 +583,559 @@ groot <- read_xlsx("C:\\Users\\ameli\\OneDrive\\Documents\\R_projects\\cetacean_
 #contains trait data that is in the other dataframes
 #lifespan, length, mass, brain mass, EQ, age to reproduction, group size, gestation, sociality, group foraging, learned foraging, communication
 
+
+
+# Section: Random diel plots ----------------------------------------------
+
+#all diel patterns
+custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "gold", "#66C2A5", "#A6D854","grey")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "Diel_Pattern")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x+1.5, y=y, fill = Diel_Pattern), inherit.aes = FALSE, colour = "transparent", width = 3) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
+diel.plot <- diel.plot + geom_tiplab(size = 3, offset = 3.2) 
+diel.plot
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", clade_name, "_six_state_plot_labelled.pdf"), width = 9, height = 8, bg = "transparent")
+diel.plot
+dev.off() 
+
+
+cetaceans_full <- read.csv(here("whippomorpha.csv"))
+cetaceans_full <- cetaceans_full[!is.na(cetaceans_full$max_crep), ]
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+trait.data <- cetaceans_full[cetaceans_full$tips %in% mam.tree$tip.label,]
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+#add clade labels
+findMRCANode2(phylo = trpy_n, trait.data = trait.data, taxonomic_level_col = 4, taxonomic_level_name = "Mysticeti")
+findMRCANode2(phylo = trpy_n, trait.data = trait.data, taxonomic_level_col = 4, taxonomic_level_name = "Odontoceti")
+
+custom.colours <- c("#dd8ae7","#EECBAD", "#FC8D62", "#66C2A5")
+diel.plot <- ggtree(trpy_n, layout = "circular", fill = "transparent") %<+% trait.data[,c("tips", "max_crep")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent") + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot + 
+  geom_cladelab(node = 137, label = "Mysticeti", align = TRUE, geom = "label", offset=1, align=TRUE, offset.text=1, barsize=2, fontsize=3, fill = "grey", barcolour = "grey", textcolour = "black")
+diel.plot <- diel.plot + 
+  geom_cladelab(node = 77, label = "Odontoceti", align = FALSE, geom = "label", offset=1, align=FALSE, offset.text=1, hjust = 1, barsize=2, fontsize=3, fill = "grey", barcolour = "grey", textcolour = "black")
+diel.plot
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/max_crep_plot_no_Na_unlabelled_cladelabels.pdf", bg = "transparent")
+diel.plot
+dev.off()
+
+# Section 7: Mammal tree ----------------------------------------------------
+
+#make plot of bennie et al data with the artiodactyla data replaced with my own
+new_mammals <- read.csv(here("Bennie_mam_data.csv")) #data from Bennie et al, 2014, 4732 species
+new_mammals <- new_mammals %>% filter(Order != "Artiodactyla") #4492 species (removes 240 artios)
+artio_full <- read.csv(here("sleepy_artiodactyla_full.csv")) 
+artio_full <- artio_full[!is.na(artio_full$Diel_Pattern), ] #317 species (82 cetaceans, 235 non cetaceans)
+artio_full <- artio_full %>% select(Species_name, Order, Family, max_crep)
+new_mammals <- new_mammals %>% select(Species_name, Order, Family, max_crep)
+diel_full <- rbind(new_mammals, artio_full) #4809 species
+diel_full$tips <- str_replace(diel_full$Species_name, pattern = " ", replacement = "_")
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+trait.data <- diel_full[diel_full$tips %in% mam.tree$tip.label,] #should be 4,400 species in tree (other 400 misnamed)
+trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
+
+custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5","grey")
+diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x+3, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 6) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
+diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
+diel.plot
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/clade_name/sleepy_mammals_max_crep_plot_unlabelled.pdf", width = 9, height = 8, bg = "transparent")
+diel.plot
+dev.off() 
+
+order_list <- trait.data %>% group_by(Order) %>% filter(n()>10)
+order_list <- unique(order_list$Order)
+node_labels <- lapply(order_list, function(x){findMRCANode2(phylo = trpy_n, trait.data = trait.data, taxonomic_level_col = 2, taxonomic_level_name = x)})
+node_labels <- do.call(rbind.data.frame, node_labels)
+node_labels$barsize <- 2
+node_labels$vjust <- 0.5
+node_labels_left <- node_labels[node_labels$clade_name %in% c("Lagomorpha", "Scandentia", "Primates", "Artiodactyla", "Carnivora", "Perissodactyla", "Dermoptera", "Pholidota"),]
+#node_labels_left[node_labels_left$clade_name %in% c("Dermoptera", "Pholidota"), "vjust"] <- -2
+#node_labels_left[node_labels_left$clade_name %in% c("Perissodactyla"), "vjust"] <- -2
+node_labels_right <- node_labels[!node_labels$clade_name %in% c("Lagomorpha", "Scandentia", "Primates", "Artiodactyla", "Carnivora", "Perissodactyla", "Dermoptera", "Pholidota"),]
+#node_labels_right[node_labels_right$clade_name %in% c("Proboscidea", "Monotremata"), "vjust"] <- -2
+node_labels_right[node_labels_right$clade_name %in% c("Cingulata"), "vjust"] <- 0
+
+diel.plot <- ggtree(trpy_n, layout = "circular", fill = "transparent") %<+% trait.data[,c("tips", "max_crep")]
+diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 6) + scale_fill_manual(values = custom.colours)
+diel.plot <- diel.plot + geom_cladelab(barsize = 1.5, barcolor = "grey50", node = node_labels_left$node_number, label = node_labels_left$clade_name, hjust = 1, offset = 3, vjust = node_labels_left$vjust, offset.text = 2)
+diel.plot <- diel.plot + geom_cladelab(barsize = 1.5, barcolor = "grey50", node = node_labels_right$node_number, label = node_labels_right$clade_name, offset = 3, vjust = node_labels_right$vjust, offset.text = 2)
+diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent'), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
+diel.plot
+
+# pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/mammals_max_crep_plot_cladelabels.pdf", bg = "transparent", width = 10, height = 10)
+# diel.plot
+# dev.off()
+
+
+
+
+# Comparison to Maor and Bennie artio datasets ----------------------------
+
+#compare my ruminant data to Maor and Bennie datasets
+artio_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
+artio_full <- filter(artio_full, Family %in% c("Bovidae", "Cervidae", "Antilocapridae", "Giraffidae", "Tragulidae", "Moschidae"))
+table(artio_full$max_crep)
+table(artio_full$Diel_Pattern)
+
+Bennie_mam_data <- read.csv(here("Bennie_mam_data.csv")) #data from Bennie et al, 2014
+Bennie_mam_data <- Bennie_mam_data[Bennie_mam_data$Species_name %in% artio_full$Species_name,]
+table(Bennie_mam_data$max_crep)
+
+maor_mam_data <- read.csv(here("Maor_artio_full.csv")) #data from Maor et al, 2017
+maor_mam_data <- maor_mam_data[maor_mam_data$tips %in% artio_full$tips,]
+maor_mam_data$Diel_pattern <- str_replace(maor_mam_data$Diel_pattern, pattern = c("Cathemeral/Crepuscular"), replacement = c("Crepuscular"))
+maor_mam_data$Diel_pattern <- str_replace(maor_mam_data$Diel_pattern, pattern = c("Diurnal/Crepuscular"), replacement = c("Crepuscular"))
+maor_mam_data$Diel_pattern <- str_replace(maor_mam_data$Diel_pattern, pattern = c("Nocturnal/Crepuscular"), replacement = c("Crepuscular"))
+maor_mam_data$Diel_pattern <- str_replace(maor_mam_data$Diel_pattern, pattern = c("Diurnal/Cathemeral"), replacement = c("Cathemeral"))
+maor_mam_data$Diel_pattern <- str_replace(maor_mam_data$Diel_pattern, pattern = c("Nocturnal/Cathemeral"), replacement = c("Cathemeral"))
+table(maor_mam_data$Diel_pattern)
+
+# Section 9: Phylogenetic signal lambda -wrong  ----------
+
+#requires a vector of the trait data in the same order as phy$tip.label
+mam.tree <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,]
+mam.tree <- keep.tip(mam.tree, tip = trait.data$tips)
+
+#all branches need to have a positive length
+#replace branches with length 0 with 1% of the 1% quantile (replace it with a number very close to zero)
+mam.tree$edge.length[mam.tree$edge.length == 0] <- quantile(mam.tree$edge.length, 0.1)*0.1
+
+#function phylo.signal isn't working so load in the base code
+#rep doesn't do anything?
+phylo.signal <- function(trait, phy, rep = 999) {
+  if (length(attributes(factor(trait))$levels) == length(trait)) 
+    stop("Are you sure this variable is categorical?")
+  
+  phy <- keep.tip(phy, tip = names(trait))
+  
+  # calculate likelihood corresponding to maximum likelihood value of lambda
+  obs <- fitDiscrete(phy, trait, transform="lambda")
+  
+  # calculate likelihood of model with no phylogenetic signal
+  #null <- fitDiscrete(transform(phylo, "lambda", 0), trait)
+  # this wasn't working so I tested the likelihood of the lambda against a tree with traits randomly distributed
+  trait.random <- sample(trait)
+  names(trait.random) <- names(trait)
+  null <- fitDiscrete(phy, trait.random, transform = "lambda")
+  
+  # calculate the likelihood ratio between the two models
+  LLR <- -2*(null$opt$lnL - obs$opt$lnL)
+  
+  # what is the p value of this likelihood ratio?
+  p <- pchisq(LLR, df=1, lower.tail=FALSE)
+  
+  return(data.frame(row.names=NULL, lambda=obs$opt$lambda, obs=obs$opt$lnL, null=null$opt$lnL, LLR=LLR, p=p))
+}
+
+#function to create a vector of trait data, with species in same order as in tree (mam.tree$tip.label)
+makeTraitVector <- function(trait.data = trait.data, taxonomic_level = "Order", clade_name = "Primates"){
+  trait.data <- trait.data[trait.data[,taxonomic_level] == clade_name, ]
+  sps_order <- as.data.frame(mam.tree$tip.label)
+  colnames(sps_order) <- "tips"
+  sps_order$id <- 1:nrow(sps_order)
+  trait.data <- merge(trait.data, sps_order, by = "tips")
+  trait.data <- trait.data[order(trait.data$id), ]
+  trait <- trait.data$max_crep
+  names(trait) <- trait.data$tips
+  return(trait)
+}
+
+#calculate signal for all mammals
+trait.data <- read.csv(here("Bennie_mam_data.csv"))
+trait.data$Kingdom <- "Mammals"
+trait <- makeTraitVector(trait.data = trait.data, taxonomic_level = "Kingdom", clade_name = "Mammals")
+mam_signal <- phylo.signal(trait = trait, phy = mam.tree, rep = 999)
+mam_signal$clade <- "Mammals"
+row.names(mam_signal) <- "Mammals"
+
+#calculate signal for artiodactyla suborders
+trait.data <- read.csv(here("sleepy_artiodactyla_full.csv"))
+trait.vector.list <- lapply(unique(trait.data$Suborder), function(x) makeTraitVector(trait = trait.data, taxonomic_level = "Suborder", clade_name = x))
+names(trait.vector.list) <- unique(trait.data$Suborder)
+phylo.sig.list <- lapply(trait.vector.list, function(x) phylo.signal(trait = x, phy = mam.tree, rep = 999))
+suborder_df <- do.call(rbind.data.frame, phylo.sig.list)
+suborder_df$clade <- row.names(suborder_df)
+
+#write.csv(suborder_df, here("phylogenetic_signal_artio_suborder.csv"), row.names = FALSE)
+
+#calculate phylogenetic signal for all families with more than 100 species
+trait.data <- read.csv(here("Bennie_mam_data.csv"))
+trait.data <- trait.data[, c("max_crep", "tips", "Order")]
+
+#to use my artio data instead (or in addition to)
+#trait.data <- filter(trait.data, Order != "Artiodactyla")
+trait.data.1 <- read.csv(here("sleepy_artiodactyla_full.csv"))
+trait.data.1 <- trait.data.1[!is.na(trait.data.1$max_crep), c("max_crep", "tips", "Order")]
+trait.data.1$Order <- str_replace(trait.data.1$Order, pattern = "Artiodactyla", replacement = "Amelia_artiodactyla")
+
+trait.data <- rbind(trait.data, trait.data.1) #4459 species
+
+trait.data <- trait.data[trait.data$tips %in% mam.tree$tip.label,] #4303 mammals in final tree
+table(trait.data$Order, trait.data$max_crep)
+
+#filter for orders that have over x number of species
+#trait.data <- trait.data %>% group_by(Order) %>% filter(n() > 70)
+
+#filter for species with all four diel categories
+trait.data <- trait.data %>% group_by(Order) %>% filter(length(unique(max_crep)) ==4)
+
+trait.vector.list <- lapply(unique(trait.data$Order), function(x) makeTraitVector(trait = trait.data, taxonomic_level = , clade_name = x))
+names(trait.vector.list) <- unique(trait.data$Order)
+
+phylo.sig.list <- lapply(trait.vector.list, function(x) phylo.signal(trait = x, phy = mam.tree))
+phylo.sig.df <- do.call(rbind.data.frame, phylo.sig.list)
+phylo.sig.df$clade <- row.names(phylo.sig.df)
+
+#save out 
+#write.csv(phylo.sig.df, here("phylogenetic_signal_mammals.csv"), row.names = FALSE)
+
+#final comparison
+phylo_signal_final <- rbind(phylo.sig.df, suborder_df, mam_signal)
+write.csv(phylo_signal_final, here("phylogenetic_signal.csv"), row.names = FALSE)
+
+#i think chiroptera only has nocturnal species so the random reordering isn't any different than the actual data on the tree
+ggplot(phylo_signal_final, aes(x = clade, y = lambda, fill = log(p))) + geom_bar(stat = "identity") + geom_text(aes(label = round(lambda, digits = 3)), vjust = -0.2)
+
+knitr::kable(phylo_signal_final, format = "html", digits = 3, caption = "Table X") %>%  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F) %>% save_kable("phylosig_table_longer.html")
+webshot("phylosig_table_longer.html", file = "C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/phylogenetic_signal.pdf")
+
+
+
+
+
+# Latitude maps -----------------------------------------------------------
+lat.df <- read.csv(here("cetacean_latitude_df.csv"))
+
+cetaceans_full <- read.csv(here("cetaceans_full.csv"))
+cetaceans_full <- cetaceans_full[, c("Parvorder", "Family", "Diel_Pattern", "max_crep", "Confidence", "tips")]
+
+lat.df <- merge(cetaceans_full, lat.df, by = "tips", all = TRUE)
+lat.df[lat.df == ""] <- NA
+
+lat.df <- lat.df[!is.na(lat.df$max_lat),]
+lat.df <- lat.df[!is.na(lat.df$max_crep),]
+
+#what species have the smallest ranges? Largest ranges?
+ggplot(lat.df, aes(x = (max_lat - min_lat), y = reorder(tips, (max_lat - min_lat)), fill = max_crep)) +
+  geom_col() + facet_wrap(~Parvorder, scales = "free")
+
+ggplot(lat.df, aes(y = (max_lat - min_lat), x = Family)) +
+  geom_boxplot() 
+
+
+range <- read_sf("C:/Users/ameli/Downloads/redlist_species_data_b8eeb8cf-3383-4314-bfb2-55dad2b8fec3/data_0.shp")
+
+unique(range$SCI_NAME)
+
+#filter for species with smallest ranges 
+small_range_list <- lat.df %>% filter((max_lat - min_lat) < 30) %>% pull(Species_name)
+
+sps_range <- range %>% filter(SCI_NAME %in% small_range_list)
+
+ggplot(sps_range) +
+  geom_sf(aes(fill = SCI_NAME), color = "black")
+
+
+#filter for all the delphinidae ranges
+delphinid_list <- lat.df %>% filter(Family == "Delphinidae") %>% pull(Species_name)
+sps_range <- range %>% filter(SCI_NAME %in% delphinid_list)
+
+ggplot(sps_range) +
+  geom_sf(aes(fill = SCI_NAME), color = "black")
+
+
+#filter for species by activity pattern
+diel_list <- lat.df %>% filter(max_crep == "diurnal") %>% pull(Species_name)
+
+sps_range <- range %>% filter(SCI_NAME %in% diel_list)
+
+ggplot(sps_range) +
+  geom_sf(aes(fill = SCI_NAME), color = "black")
+
+
+#Do sympatric species show temporal niche partitioning?
+
+lat.df %>% filter(Species_name %in% small_range_list)
+
+##function to take max and min longitude
+
+extractLongitude <-function(species_name){
+  
+  sps_range <- range %>% filter(SCI_NAME == species_name)
+  
+  xmin <- extent(sps_range)@xmin
+  xmax <- extent(sps_range)@xmax
+  
+  latitude_list <- c(xmin, xmax)
+  return(latitude_list)
+}
+
+longitude_list <- lapply(unique(range$SCI_NAME), function(x) extractLongitude(species_name = x))
+
+names(longitude_list) <- unique(range$SCI_NAME)
+
+lon.df <- data.frame(coords = unlist(longitude_list))
+lon.df$Species_name <- rownames(lon.df)
+lon.df <- lon.df %>% separate(Species_name, into = c("Species_name", "minmax"), sep = "\\.")
+
+lon.df <- pivot_wider(lon.df, names_from = minmax, values_from = coords)
+colnames(lon.df) <- c("Species_name", "min_lon", "max_lon")
+lon.df$tips <- str_replace(lon.df$Species_name, pattern = " ", replacement = "_")
+lon.df$mean_lon <- (lon.df$min_lon + lon.df$max_lon)/2
+
+lon.df$tips <- str_replace(lon.df$Species_name, pattern = " ", replacement = "_")
+
+trait.data <- merge(lat.df, lon.df, by = "tips", all = TRUE)
+
+trait.data <- trait.data[!is.na(trait.data$max_crep),]
+
+#install.packages("amt")
+library(amt)
+
+
+
+
+
+
+
+# Section X: Cetacean sleep duration --------------------------------------
+url <- 'https://docs.google.com/spreadsheets/d/1F_m52NE1IWQRjfwgwF1yzVV4TaR4MEkKJUr2aDJt6LE/edit?usp=sharing'
+duration <- read.csv(text=gsheet2text(url, format='csv'), stringsAsFactors=FALSE)
+
+duration <- duration %>% filter(!is.na(Sleep_duration)) %>% select(tips, Sleep_duration)
+
+trait.data <- read.csv(here("cetacean_ecomorphology_dataset.csv"))
+
+trait.data <- merge(trait.data, duration, by = "tips", all = TRUE)
+
+trait.data %>% filter(!is.na(Sleep_duration)) %>%
+  ggplot(., aes(x = max_crep, y = Sleep_duration)) + 
+  geom_boxplot() + geom_jitter()
+
+trait.data %>% filter(!is.na(Sleep_duration)) %>%
+  ggplot(., aes(x = log(Body_mass_kg), y = Sleep_duration)) + 
+  geom_point() + geom_smooth(method = "lm")
+
+
+
+
+
+
+# Section X: The testing ground -------------------------------------------
+
+#Investigating the Bayestrait packages
+library("devtools")
+install_github("rgriff23/btw")
+library("btw")
+
+
+
+
+#Is there a hidden rate in the artiodactyla transition rates: are cetaceans transitioning faster than ruminants
+
+trait.data <- read.csv(here("Sleepy_artiodactyla_full.csv"))
+trait.data <- trait.data[!is.na(trait.data$max_crep), c("tips", "max_crep")]
+phylo_trees <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+
+#subset trait data to only include species that are in the tree
+trait.data <- trait.data[trait.data$tips %in% phylo_trees$tip.label,]
+# this selects a tree that is only the subset with data (mutual exclusive)
+phylo_trees <- keep.tip(phylo_trees, tip = trait.data$tips)
+
+hidden_rate_ARD <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = 2, model = "ARD", node.states = "marginal")
+plotMKmodel(hidden_rate_ARD)
+
+ARD <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = 1, model = "ARD", node.states = "marginal")
+plotMKmodel(ARD)
+
+#whippo bridge model
+trait.data <- read.csv(here("whippomorpha.csv"))
+#ruminant bridge model
+trait.data <- read.csv(here("ruminants_full.csv"))
+trait.data <- trait.data[!is.na(trait.data$max_crep), c("tips", "max_crep")]
+phylo_trees <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+
+bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = 1, rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4), model = "ARD", node.states = "marginal")
+bridge_only_HR <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = 2, rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4), model = "ARD", node.states = "marginal")
+plotMKmodel(bridge_only)
+plotMKmodel(brdige_only_HR)
+
+#subset trait data to only include species that are in the tree
+trait.data <- trait.data[trait.data$tips %in% phylo_trees$tip.label,]
+# this selects a tree that is only the subset with data (mutual exclusive)
+phylo_trees <- keep.tip(phylo_trees, tip = trait.data$tips)
+
+bridge_only <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = 1, rate.mat = matrix(c(0,1,2,3,4,0,5,6,7,8,0,0,10,11,0,0), ncol = 4, nrow = 4), model = "ARD", node.states = "marginal")
+
+#simmap: plot lineages through time based on max clade cred tree: compare cetaceans and ruminants
+trait.data <- read.csv(here("whippomorpha.csv"))
+trait.data <- trait.data[!is.na(trait.data$max_crep), c("tips", "max_crep")]
+phylo_trees <- readRDS(here("maxCladeCred_mammal_tree.rds"))
+#subset trait data to only include species that are in the tree
+trait.data <- trait.data[trait.data$tips %in% phylo_trees$tip.label,]
+# this selects a tree that is only the subset with data (mutual exclusive)
+phylo_trees <- keep.tip(phylo_trees, tip = trait.data$tips)
+
+model_ARD <- corHMM(phy = phylo_trees, data = trait.data, rate.cat = 1, model = "ARD", node.states = "marginal")
+  
+simmaps <- corHMM::makeSimmap(tree = phylo_trees, data = trait.data, rate.cat = 1, model = model_ARD$solution, nSim = 2, nCores = 1)
+
+plotSimmap(simmaps)
+
+
+
+
+
+
+
+#Stochastic mapping with bayesian framework
+#tutorial from Liam Revell, 2017 https://blog.phytools.org/2017/11/visualizing-rate-of-change-in-discrete.html
+library(phytools)
+tree
+
+x
+
+
+
+
+
+
+# Section: Transition rate scrap ------------------------------------------
+
+#how do the principal components relate to the data 
+
+ggplot(rates_df1, aes(y = log(rates), x = model_number, colour = solution)) + 
+  theme_minimal() +
+  geom_point()
+
+#correlations between rates (I've done this before)
+rates_wider <- rates_df1 %>% select(rates, solution, model_number) %>%
+  pivot_wider(., names_from = solution, values_from = rates)
+
+ggplot(rates_wider, aes(x = log(`Crepuscular -> Cathemeral`), y = log(`Diurnal -> Cathemeral`))) +
+  geom_point() + geom_smooth(method = "lm")
+
+#round values to one digit
+ggplot(rates_df1, aes(x = log(round(rates)))) + 
+  #theme_minimal() +
+  geom_density() + facet_wrap(~solution)
+
+#can take the mean because there are no zeros (only values very close to zero)
+rates_df1 %>% group_by(solution) %>% summarize(mean_rates = mean(rates), SD_rates = sd(rates)) %>%
+  ggplot(., aes(x = solution, y = mean_rates, fill = solution)) + geom_col() + 
+  geom_errorbar(aes(ymin = mean_rates, ymax = mean_rates + SD_rates))
+
+
+
+
+# Section: Does cetacean orbit size associate with eye size ---------------
+
+trait.data <- read.csv(here("cetacean_ecomorphology_dataset.csv"))
+
+trait.data %>% filter(!is.na(Orbit_ratio) & !is.na(Mean_dive_depth_m)) %>%
+  ggplot(., aes(x = Orbit_ratio, y = Dive_depth_m)) +
+  geom_point() + geom_smooth(method = "lm") + stat_poly_eq() +
+  facet_wrap(~Family)
+
+
+# Delphinidae dive depth --------------------------------------------------
+trait.data.1 <- trait.data[!is.na(trait.data$Dive_depth_m),]
+trait.data.delph <- trait.data.1 %>% filter(Family == "Delphinidae")
+
+phylANOVA <- calculatePhylANOVA(trait.data.delph, "Dive_depth_m")
+
+stat.test <- data.frame(group1 = c("cathemeral", "cathemeral", "cathemeral", "crepuscular", "crepuscular", "diurnal"),
+                        group2 = c("crepuscular", "diurnal", "nocturnal", "diurnal", "nocturnal", "nocturnal"),
+                        p.adj = c(phylANOVA$Pt[2], phylANOVA$Pt[3], phylANOVA$Pt[4], phylANOVA$Pt[7], phylANOVA$Pt[8], phylANOVA$Pt[12]),
+                        y.position = c(7.2, 7.6, 8, 8.4, 8.8, 9.3))
+
+stat.test <- stat.test %>% add_x_position(x = "max_crep")
+
+delph_dive_boxplot <- ggplot(trait.data.delph, aes(x = max_crep, y = log(Dive_depth_m))) +
+  geom_boxplot(aes(fill = max_crep), alpha = 0.8, outlier.shape = NA) + 
+  scale_fill_manual(values = custom.colours, guide = "none") +
+  new_scale_fill() + 
+  labs(x = "Temporal activity pattern", y = "Log (maximum dive depth (m))") + 
+  geom_jitter(aes(fill = Family), size = 3, width = 0.1, height = 0, colour = 'black', fill = "dodgerblue", pch = 21) +
+  annotate("text", x = 1.3, y = 9, label = paste("phylANOVA, p =", phylANOVA$Pf)) +
+  boxplot_theme +
+  stat_pvalue_manual(stat.test, label = "p.adj") +
+  scale_x_discrete(labels = c("cathemeral" = "Cathemeral", "crepuscular" = "Crepuscular", "diurnal" = "Diurnal", "nocturnal" = "Nocturnal")) 
+
+delph_dive_boxplot
+
+# pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/Dive_depth_boxplot_delphinidae.pdf", width = 7, height = 7.5)
+# delph_dive_boxplot
+# dev.off()
+
+
+
+# Section 6: Proportion plots OLD----------------------------
+
+new_mammals <- read.csv(here("Bennie_mam_data.csv")) #data from Bennie et al, 2014, 4477 sps
+new_mammals <- new_mammals[!is.na(new_mammals$max_crep), ] 
+
+#add in my primary source data 
+artio_full <- read.csv(here("sleepy_artiodactyla_full.csv"))
+artio_full <- artio_full[!is.na(artio_full$Diel_Pattern), ]
+
+#we want to compare all mammals, vs all artiodactyla vs cetaceans/ruminants
+new_mammals$mammals <- "Mammals"
+
+custom.colours <- c("#dd8ae7","#EECBAD", "#FC8D62", "#66C2A5")
+mammals_plot <- ggplot(new_mammals, aes(x = mammals, fill = max_crep)) + geom_bar(position = "fill", width = 0.75) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank())
+ruminantia_plot <- artio_full %>% filter(Suborder == "Ruminantia") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank(), panel.grid = element_blank())
+whippomorpha_plot <- artio_full %>% filter(Suborder == "Whippomorpha") %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank(), panel.grid = element_blank())
+
+artiodactyla_plot <- artio_full %>% ggplot(., aes(x = Order, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() + theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank(), panel.grid = element_blank())
+#suborders_plot <- 
+
+#plot the full order proportions and the suborders in the same barplot
+artio_full %>% mutate(Suborder = "Artiodactyla") %>% rbind(., artio_full) %>%
+  ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) +
+  theme_bw() +
+  #facet_wrap(~Suborder, nrow = 1, scales = "free") +
+  labs(y = "Proportion", x = "Clade")
+#theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank(), panel.grid = element_blank())
+
+#suborders_plot <- artio_full %>% filter(Suborder %in% c("Whippomorpha", "Ruminantia")) %>% ggplot(., aes(x = Suborder, fill = max_crep)) + geom_bar(position = "fill", width = 0.6) + scale_fill_manual(values = custom.colours) + theme_minimal() #+ theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.title.x = element_blank(), panel.grid = element_blank())
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/barplot_percentages.pdf", width = 5, height = 2, bg = "transparent")
+(artiodactyla_plot + plot_spacer() + plot_spacer() + plot_spacer()) / 
+  suborders_plot
+dev.off()
+
+mammals_plot <- 
+  new_mammals %>% group_by(max_crep) %>% summarize(count = n()) %>%
+  ggplot(., aes(x = "", y = count, fill = max_crep)) +
+  geom_bar(stat = "identity") +
+  coord_polar(theta = "y") + theme_void() + theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank()) + 
+  scale_fill_manual(values = custom.colours) + geom_text(aes(label = round((count/4477)*100, digits = 1)), position = position_stack(vjust = 0.5))
+
+ruminantia_plot <- 
+  artio_full %>% filter(Suborder == "Ruminantia") %>% 
+  group_by(max_crep) %>% summarize(count = n()) %>%
+  ggplot(., aes(x = "", y = count, fill = max_crep)) +
+  geom_bar(stat = "identity") +
+  coord_polar(theta = "y") + theme_void() + theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank()) + 
+  scale_fill_manual(values = custom.colours) + geom_text(aes(label = round((count/206)*100, digits = 1)), position = position_stack(vjust = 0.5))
+
+whippomorpha_plot <- 
+  artio_full %>% filter(Suborder == "Whippomorpha") %>% 
+  group_by(max_crep) %>% summarize(count = n()) %>%
+  ggplot(., aes(x = "", y = count, fill = max_crep)) +
+  geom_bar(stat = "identity") +
+  coord_polar(theta = "y") + 
+  theme_void() + theme(legend.position = "none", axis.title.x = element_blank(), panel.grid = element_blank()) + 
+  scale_fill_manual(values = custom.colours) + geom_text(aes(label = round((count/84)*100, digits = 1)), position = position_stack(vjust = 0.5))
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/piechart_percentages.pdf", width = 10, height = 5, bg = "transparent")
+grid.arrange(mammals_plot, ruminantia_plot, whippomorpha_plot, nrow = 1)
+dev.off()

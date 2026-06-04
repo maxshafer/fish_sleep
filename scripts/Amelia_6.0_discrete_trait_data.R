@@ -570,6 +570,41 @@ artio_eyes$Orbit_ratio <- artio_eyes$Corneal_diameter/artio_eyes$Axial_length
 #drop unnecessary columns
 artio_eyes <- artio_eyes[, c("tips", "Orbit_ratio")]
 
+write.csv(artio_eyes, here("ruminant_eye_df.csv"), row.names = FALSE)
+
+# Section 7: IUCN ruminant latitude ----------------------------------------------
+
+#data downloaded directly from IUCN website in shapefile format, data on 86 species
+range <- read_sf("C:/Users/ameli/Downloads/redlist_species_data_11fa069c-8326-459e-982d-320b2aa4d19c/data_0.shp")
+
+#function to take max and min latitude
+
+extractLatitude <-function(species_name){
+  
+  sps_range <- range %>% filter(SCI_NAME == species_name)
+  
+  ymin <- extent(sps_range)@ymin
+  ymax <- extent(sps_range)@ymax
+  
+  latitude_list <- c(ymin, ymax)
+  return(latitude_list)
+}
+
+latitude_list <- lapply(unique(range$SCI_NAME), function(x) extractLatitude(species_name = x))
+
+names(latitude_list) <- unique(range$SCI_NAME)
+
+lat.df <- data.frame(coords = unlist(latitude_list))
+lat.df$Species_name <- rownames(lat.df)
+lat.df <- lat.df %>% separate(Species_name, into = c("Species_name", "minmax"), sep = "\\.")
+
+lat.df <- pivot_wider(lat.df, names_from = minmax, values_from = coords)
+colnames(lat.df) <- c("Species_name", "min_lat", "max_lat")
+lat.df$tips <- str_replace(lat.df$Species_name, pattern = " ", replacement = "_")
+lat.df$mean_lat <- (lat.df$min_lat + lat.df$max_lat)/2
+
+write.csv(lat.df, here("ruminant_latitude_df.csv"), row.names = FALSE)
+
 # Section 15: Artiodactyla pantheria data ---------------------------------
 
 # library(pak)
@@ -598,10 +633,10 @@ pantheria[pantheria$tips == "Hemitragus_jayakari", "tips"] <- "Arabitragus_jayak
 pantheria[pantheria$tips == "Hexaprotodon_liberiensis", "tips"] <- "Choeropsis_liberiensis"
 pantheria[pantheria$tips == "Neotragus_moschatus", "tips"] <- "Nesotragus_moschatus"
 pantheria[pantheria$tips == "Przewalskium_albirostris", "tips"] <- "Cervus_albirostris"
-pantheria[pantheria$tips == "Pseudois_schaeferi", "tips"] <- "Pseudois_nayaur"
-pantheria[pantheria$tips == "Saiga_borealis", "tips"] <- "Saiga_tatarica"
+#pantheria[pantheria$tips == "Pseudois_schaeferi", "tips"] <- "Pseudois_nayaur"
+#pantheria[pantheria$tips == "Saiga_borealis", "tips"] <- "Saiga_tatarica"
 pantheria[pantheria$tips == "Sus_salvanius", "tips"] <- "Porcula_salvania"
-pantheria[pantheria$tips == "Alces_americanus", "tips"] <- "Alces_alces"
+#pantheria[pantheria$tips == "Alces_americanus", "tips"] <- "Alces_alces"
 pantheria[pantheria$tips == "Taurotragus_derbianus", "tips"] <- "Tragelaphus_derbianus"
 pantheria[pantheria$tips == "Taurotragus_oryx", "tips"] <- "Tragelaphus_oryx"
 
@@ -613,11 +648,21 @@ pantheria[pantheria$tips == "Taurotragus_oryx", "tips"] <- "Tragelaphus_oryx"
 # Alcelaphus_caama and Alcelaphus_lichtensteinii are subspecies of Alcelaphus buselaphus
 #Babyrousa_bolabatuensis only known from subfossil remains, may be a subspecies
 
-sleepy_artio <- sleepy_artio[sleepy_artio$tips %in% pantheria$tips, c("tips", "max_crep", "Diel_Pattern")]
+write.csv(pantheria, here("ruminant_pantheria_df.csv"), row.names = FALSE)
+
+# Section : One ruminant dataset to rule them all -------------------------
+artio_eyes <- read.csv(here("ruminant_eye_df.csv"))
+pantheria <- read.csv(here("ruminant_pantheria_df.csv"))
+sleepy_artio <- read.csv(here("Sleepy_artiodactyla_full.csv"))
+
+sleepy_artio <- sleepy_artio[, c("tips", "max_crep", "Diel_Pattern")]
 pantheria <- merge(sleepy_artio, pantheria, by = "tips", all = TRUE)
 
 #add in eye size data
 artio_eyes <- merge(pantheria, artio_eyes, by = "tips", all = TRUE)
+
+#add in IUCN latitude data
+artio_eyes <- merge(artio_eyes, lat.df, by = "tips", all = TRUE)
 
 #save out 
 write.csv(artio_eyes, here("artiodactyla_ecomorphology_dataset.csv"), row.names = FALSE)

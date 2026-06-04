@@ -216,7 +216,6 @@ pie_tree
 dev.off()
 
 
-
 # Setting root test --------------------------------------------
 
 #load in model file
@@ -310,3 +309,82 @@ likelihood_metrics[which(likelihood_metrics$AIC_scores == min(likelihood_metrics
 
 
 
+
+# Pie chart ancestral reconstruction ------------------------------------
+source("scripts/Amelia_plotting_functions.R")
+
+filename <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_bridge_only_models.rds"
+rates_df <- plot1kTransitionRates4state(readRDS(here(filename)), 5)
+model_selection <- "ARD"
+
+#filter by the model you're plotting
+rates_df1 <- rates_df %>% filter(model == model_selection) 
+
+df_full <- plot1kAIC(readRDS(here(filename)), 5)
+df_full$model <- factor(df_full$model, levels = c("ER", "SYM", "CONSYM", "ARD", "bridge_only"))
+
+model_selection <- "ARD"
+df_full <- df_full %>% filter(model == model_selection)
+df_full$model_number <- 1:nrow(df_full)
+
+rates_df1$model_number <- rep(1:1000, each = (nrow(rates_df1)/1000))
+
+#merge by model number
+rates_df1 <- merge(rates_df1, df_full[, c("AIC_score", "model_number")], by = "model_number", all = TRUE)
+
+# filter for the models with high direct noc -> di transitions (ruminants)
+test <- rates_df1 %>% filter(solution == "Nocturnal -> Diurnal")
+model_list <- test %>% filter(log(rates) > -1) %>% pull(model_number)
+
+#start with model 871
+all_model_results <- readRDS(here(filename))
+
+model_results <- all_model_results$ARD_model[871]
+phylo_tree <- model_results$UNTITLED$phy
+
+plotMKmodel(model_results$UNTITLED)
+
+#rename column names for consistency in the next steps
+colnames(model_results$UNTITLED$data) <- c("tips", "Diel_Pattern")
+
+model_results <- model_results$UNTITLED
+
+#to make more clear we can colour the tips separately using geom_tipppoint 
+#may have to adjust what trait data column is called in each
+base_tree <- ggtree(phylo_tree, layout = "rectangular") + geom_tiplab(size = 2, hjust = -0.1)
+base_tree <- base_tree %<+% model_results$data[, c("tips", "Diel_Pattern")]
+base_tree <- base_tree + geom_tippoint(aes(color = Diel_Pattern), size = 3) 
+base_tree
+
+#make the dataframe of likelihoods at the internal nodes without the tips
+lik.anc <- as.data.frame(model_results$states)
+
+#for cetaceans we have to add 72 because we are skipping the tips (nodes 1-72)
+#the internal nodes start at 73 and end at node 143
+#for artiodactyla we add 300 because we are skipping the tips (nodes 1-300)
+#the internal nodes start at 301 and end at node 599
+lik.anc$node <- c(1:nrow(lik.anc)) + nrow(model_results$data)
+
+#get the pie charts from this database using nodepie
+#the number of columns changes depending on how many trait states
+pie <- nodepie(lik.anc, 1:(length(lik.anc)-1))
+
+pie_tree <- base_tree + geom_inset(pie, width = .01, height = .01) 
+#this adds a the timescale for the entire tree
+
+pie_tree 
+
+base_tree + geom_text(aes(label = node), colour= "blue")
+
+viewClade(pie_tree, 208)
+
+viewClade(pie_tree, 266)
+
+viewClade(pie_tree, 238)
+
+artio_full <- read.csv(here("Sleepy_artiodactyla_full.csv"))
+
+#save out
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "pie_chart_anc_recon_", file_name, ".pdf"), width=20,height=15)
+pie_tree + theme(legend.position = "none") #+ scale_colour_manual(values = c("#A024AE","#AD9680","#FA4A05","#3C967E"))
+dev.off()
