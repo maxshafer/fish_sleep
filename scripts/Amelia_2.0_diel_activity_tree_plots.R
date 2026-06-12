@@ -26,7 +26,7 @@ custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5","grey")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep")]
 diel.plot <- diel.plot + geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x+1.5, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 3) + scale_fill_manual(values = custom.colours, name = "Temporal activity pattern")
 diel.plot <- diel.plot + theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent'))
-diel.plot <- diel.plot + geom_tiplab(size = 3, offset = 3.2) 
+diel.plot <- diel.plot# + geom_tiplab(size = 3, offset = 3.2) 
 diel.plot
 
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", clade_name, "_max_crep_plot_labelled.pdf"), width = 9, height = 8, bg = "transparent")
@@ -59,17 +59,17 @@ custom.colours <- c("#dd8ae7","#EECBAD", "#FC8D62", "#66C2A5")
 diel.plot <- ggtree(trpy_n, layout = "circular") %<+% trait.data[,c("tips", "max_crep", "Family")]
 diel.plot <- diel.plot + 
   geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),], aes(x=x, y=y, fill = max_crep), inherit.aes = FALSE, colour = "transparent", width = 3) + 
-  scale_fill_manual(values = custom.colours, name = "Temporal activity pattern", labels = c("Cathemeral", "Crepuscular", "Diurnal", "Nocturnal")) +
-  geom_cladelab(node = nodes_right$node_number, label = nodes_right$clade_name, offset=1.5, offset.text=2, barsize=2, fontsize=3, barcolour = "grey50", textcolour = "black") +
-  geom_cladelab(node = nodes_left$node_number, label = nodes_left$clade_name, offset=1.5, offset.text=2, hjust = 1, barsize=2, fontsize=3, barcolour = "grey50", textcolour = "black") +
-  geom_cladelab(node = 71, label = "Eschrichtiidae", offset = 3, fontsize = 3) + 
-  geom_cladelab(node = 45, label = "Iniiae", hjust = 1, offset = 3, fontsize = 3) +
-  geom_cladelab(node = 46, label = "Lipotidae", offset = 3, hjust = 1, fontsize = 3) + 
-  geom_cladelab(node = 44, label = "Pontoporiidae", offset = 3, hjust = 1, fontsize = 3) +
-  geom_cladelab(node = 59, label = "Platanistidae", offset =3, hjust = 0.9, fontsize = 3) +
-  geom_cladelab(node = 141, label = "Kogiidae", offset=1.5, offset.text=2, hjust = 0.4, barsize=2, fontsize=3, barcolour = "grey50") +
-  geom_cladelab(node = 60, label = "Physeteridae", offset = 3, fontsize = 3) +
-  geom_cladelab(node = 72, label = "Neobalaenidae", offset = 3,fontsize = 3) +
+  scale_fill_manual(values = custom.colours, name = "\n Temporal activity pattern", labels = c("Cathemeral", "Crepuscular", "Diurnal", "Nocturnal")) +
+  geom_cladelab(node = nodes_right$node_number, label = nodes_right$clade_name, offset=1.5, offset.text=2, barsize=2, fontsize=3, barcolour = "grey50", textcolour = "white") +
+  geom_cladelab(node = nodes_left$node_number, label = nodes_left$clade_name, offset=1.5, offset.text=2, hjust = 1, barsize=2, fontsize=3, barcolour = "grey50", textcolour = "white") +
+  geom_cladelab(node = 71, label = "Eschrichtiidae", offset = 3, fontsize = 3, textcolour = "white") + 
+  geom_cladelab(node = 45, label = "Iniiae", hjust = 1, offset = 3, fontsize = 3, textcolour = "white") +
+  geom_cladelab(node = 46, label = "Lipotidae", offset = 3, hjust = 1, fontsize = 3, textcolour = "white") + 
+  geom_cladelab(node = 44, label = "Pontoporiidae", offset = 3, hjust = 1, fontsize = 3, textcolour = "white") +
+  geom_cladelab(node = 59, label = "Platanistidae", offset =3, hjust = 0.9, fontsize = 3, textcolour = "white") +
+  geom_cladelab(node = 141, label = "Kogiidae", offset=1.5, offset.text=2, hjust = 0.4, barsize=2, fontsize=3, barcolour = "grey50", textcolour = "white") +
+  geom_cladelab(node = 60, label = "Physeteridae", offset = 3, fontsize = 3, textcolour = "white") +
+  geom_cladelab(node = 72, label = "Neobalaenidae", offset = 3,fontsize = 3, textcolour = "white") +
   new_scale_fill() + 
   geom_tile(data = diel.plot$data[1:length(trpy_n$tip.label),] %>% filter(Family %in% c("Eschrichtiidae", "Iniiae", "Lipotidae", "Pontoporiidae", "Platanistidae", "Physeteridae", "Neobalaenidae")), aes(x=x+2.5, y=y), inherit.aes = FALSE, fill = "grey50", width = 1.3, height = 0.6) +
   theme(legend.position = "inside", legend.position.inside = c(0.5,0.4), panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) 

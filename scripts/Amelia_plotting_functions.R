@@ -30,7 +30,7 @@ max_clade_metrics <- function(model_results = readRDS(here("test_whippomorpha_ma
   return(likelihoods)
 }
 
-max_clade_rates <- function(data = mam_model_result_list$Carnivora){
+max_clade_rates1 <- function(data = mam_model_result_list$Carnivora){
   if(length(unique(data$data$max_crep)) == 4){
     rates <- as.data.frame(data$solution)
     colnames(rates) <- c("cathemeral", "crepuscular", "diurnal", "nocturnal")
@@ -42,6 +42,24 @@ max_clade_rates <- function(data = mam_model_result_list$Carnivora){
     rates <- rates[!is.na(rates$rate), ]
   }
   if(length(unique(data$data$max_crep)) < 4){
+    stop("Less than 4 states in the model")
+  }
+  
+  return(rates)
+}
+
+max_clade_rates2 <- function(data = mam_model_result_list$Carnivora){
+  if(length(unique(data$data$Diel_Pattern)) == 4){
+    rates <- as.data.frame(data$solution)
+    colnames(rates) <- c("cathemeral", "crepuscular", "diurnal", "nocturnal")
+    row.names(rates) <- c("cathemeral", "crepuscular", "diurnal", "nocturnal")
+    rates$start_state <- row.names(rates)
+    rates <- pivot_longer(rates, cols = !start_state, names_to = "end_state", values_to = "rate")
+    rates <- as.data.frame(rates)
+    rates$solution <- paste(rates$start_state, "to", rates$end_state, sep = "-")
+    rates <- rates[!is.na(rates$rate), ]
+  }
+  if(length(unique(data$data$Diel_Pattern)) < 4){
     stop("Less than 4 states in the model")
   }
   

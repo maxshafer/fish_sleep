@@ -386,8 +386,6 @@ diel_full_long <- read.csv(here("confidence_artio_long.csv"))
 #filter for just ruminants
 diel_full_long <- diel_full_long %>% filter(Family %in% c("Bovidae", "Cervidae", "Moschidae", "Tragulidae", "Giraffidae", "Antilocapridae"))
 
-unique(diel_full_long$value)
-
 #remove unclear since it gives no new information
 diel_full_long$value <- str_replace(diel_full_long$value, pattern = "unclear/", replacement = "")
 diel_full_long[diel_full_long == "unclear"] <- NA
@@ -414,7 +412,6 @@ compTwo <- function(comp1 = "comp1", comp2 = "comp2") {
   }
   
 }
-
 
 #apply this function across all species with multiple entries
 output <- lapply(species_list, function(species) {
@@ -455,16 +452,20 @@ table2 <- table2[table2$Var2 == TRUE,]
 table2$count <- table
 
 #plot both the frequency and the counts
-table2$freq_count <- paste0(round(table2$Freq, 2), "\n", "(n=", table2$count, ")")
-plot_countfreq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = freq_count)) +
-  geom_tile() + geom_text() + scale_fill_viridis(begin = 0.2, end = 1, limits = c(1,0)) + 
-  theme_minimal() + ylab("Primary source \n") + xlab("\n Secondary source") +
-  scale_x_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
-  scale_y_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
+table2$freq_count <- paste0((round(table2$Freq, 2) * 100), "%", "\n", "(n=", table2$count, ")")
+
+plot_countfreq_rum <- table2[c(1:5, 7:10, 13:15, 19:20, 25), ] %>% 
+  ggplot(., aes(x = Comp1, y = Comp2, fill = Freq, label = freq_count)) +
+  geom_tile() + geom_text(size = 3) + scale_fill_viridis(begin = 0.2, end = 1, limits = c(1,0)) + 
+  theme_minimal() + ylab("Primary source category") + xlab("Secondary source category") +
+  scale_x_discrete(labels = c("A", "B", "C", "D", "E")) +
+  scale_y_discrete(labels = c("A", "B", "C", "D", "E")) +
   theme(legend.position = "none")
 
+plot_countfreq_rum
+
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/ruminant_btw_source_concordance.pdf", width = 7, height = 7, bg = "transparent")
-plot_countfreq
+plot_countfreq_rum
 dev.off()
 
 
@@ -485,7 +486,6 @@ diel_full <- data.frame(lapply(diel_full, function(x) {gsub("diurnal/crepuscular
 diel_full <- data.frame(lapply(diel_full, function(x) {gsub("nocturnal/crepuscular", "crepuscular", x)}))
 
 diel_full[diel_full == "unclear"] <- NA
-
 diel_full <- diel_full[!is.na(diel_full$value),]
 
 #filter
@@ -513,51 +513,25 @@ confusion_plot_rum <-
 # confusion_plot_rum 
 # dev.off()
 
+#save out combined plots
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/combined_confusion_matrix.pdf", width = 4, height = 4.3)
 (confusion_plot_cet + labs(x = "\n", y = "")) /
   (confusion_plot_rum + theme(axis.title.y = element_blank()))
 dev.off()
 
-#function to plot the concordance for each of the confidence levels
-# plotConcordance = function(set_column = "Conf2"){
-#   diel_full_filtered <- diel_full %>% filter(column == set_column)
-#   #need to filter for species with more than one entry or else concordance will always be 100%
-#   mulitple_sources <- diel_full_filtered %>% count(Species_name) %>% filter(n>1)
-#   diel_full_filtered <- diel_full_filtered[diel_full_filtered$Species_name %in% mulitple_sources$Species_name,]
-#   concordance <- as.data.frame(table(diel_full_filtered$max_crep, diel_full_filtered$value))
-#   colnames(concordance) <- c("actual", "predicted", "freq")
-#   totals_df <- aggregate(concordance$freq, by=list(Category=concordance$actual), FUN=sum)
-#   colnames(totals_df) <- c("actual", "total")
-#   concordance <- merge(concordance, totals_df, by = "actual")
-#   concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
-#   return(concordance)
-# }
-# 
-# concordance_list <- lapply(sort(unique(diel_full$column)), function(x){plotConcordance(x)})
-
-#use below if 
-# for(i in seq_along(concordance_list)){
-#   pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "artio", "confidence", i, "_confusion_matrix.pdf"))
-#   print(ggplot(as.data.frame(concordance_list[i]), aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
-#           scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") +
-#           ggtitle(paste("Confidence level ", i, " concordance"))) 
-#   dev.off()
-# }
-
-
 
 # Section 7: Sankey pipeline flowchart ------------------------------------------
 
 df <- data.frame(
-  step_0 = c(rep("A. Multiple category D \n sources in concordance?", 206)),
-  step_1 = c(rep("B. Return category D \n (n = 10)", 10), rep("C. Category D + E \n sources in concordance?", 196)),
-  step_2 = c(rep(NA, 10), rep("D. Return category D + E \n (n = 1)", 1), rep("E. Category C + D + E \n sources in concordance?", 195)),
-  step_3 = c(rep(NA, 11), rep("F. Return category C + D + E \n (n = 28)", 28), rep("G. Single category D \n source?", 167)),
+  step_8 = c(rep("A. Multiple category D \n sources in concordance?", 206)),
+  step_7 = c(rep("B. Return category \n D (n = 10)", 10), rep("C. Category D + E \n sources in concordance?", 196)),
+  step_6 = c(rep(NA, 10), rep("D. Return category \n D + E (n = 1)", 1), rep("E. Category C + D + E \n sources in concordance?", 195)),
+  step_5 = c(rep(NA, 11), rep("F. Return category \n C + D + E (n = 28)", 28), rep("G. Single category D \n source?", 167)),
   step_4 = c(rep(NA, 39), rep("H. Return single category D \n source (n = 36)", 36), rep("I. Multiple category E \n sources in concordance?", 131)),
-  step_5 = c(rep(NA, 75), rep("J. Return category E \n (n = 3)",3), rep("K. Multiple category C \n sources in concordance?", 128)),
-  step_6 = c(rep(NA, 78), rep("L. Return category C \n (n = 64)", 64), rep("M. Single category C \n source?", 64)),
-  step_7 = c(rep(NA, 142), rep("N. Return single category C \n source (n = 6)", 6), rep("O. Category A + C + D + E \n sources in concordance?", 58)),
-  step_8 = c(rep(NA, 148), rep("P. Return A + C + D \n + E (n = 51)",51), rep("Q. Else return cathemeral (n = 7)", 7))
+  step_3 = c(rep(NA, 75), rep("J. Return category E \n (n = 3)",3), rep("K. Multiple category C \n sources in concordance?", 128)),
+  step_2 = c(rep(NA, 78), rep("L. Return category C \n (n = 64)", 64), rep("M. Single category C \n source?", 64)),
+  step_1 = c(rep(NA, 142), rep("N. Return single category C \n source (n = 6)", 6), rep("O. Category A + C + D + E \n sources in concordance?", 58)),
+  step_0 = c(rep(NA, 148), rep("P. Return A + C \n + D + E (n = 51)",51), rep("Q. Else return \n cathemeral (n = 7)", 7))
 )
 
 #convert to long format for geomsankey
@@ -566,18 +540,17 @@ df <- df[!is.na(df$node), ]
 
 blues <- c("#010661", "#070E8A","#070E8A", "#0044A3","#0044A3", "#0070D1","#0070D1","#2E9DFF", "#2E9DFF","#5CB3FF","#5CB3FF","#8AC8FF","#8AC8FF","#B8DEFF","#B8DEFF","#E6F3FF" , "#E6F3FF")
 
-sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = node, label = substr(node, 4, 300))) +
-  geom_sankey(flow.alpha= 0.5, node.color = 0.5) + geom_sankey_label(size = 3.5, color = 1, fill = "white")  + 
-  theme_sankey(base_size = 16) + scale_fill_manual(values = blues) +
-  theme(legend.position = "none", axis.text.x = element_blank(), panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
+sankey_rum <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = node, label = substr(node, 4, 300))) +
+  geom_sankey(flow.alpha= 0.5, node.color = 0.5) + geom_sankey_label(size = 3, color = 1, fill = "white")  + 
+  theme_sankey(base_size = 11) + scale_fill_manual(values = blues) +
+  theme(legend.position = "none", axis.text.x = element_blank(), panel.background = element_rect(fill='transparent', colour = NA), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
 
-sankey
+sankey_rum
 
 #save out to figure folder
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "ruminant_flowchart.pdf"), height = 7, width = 16)
-sankey
+sankey_rum
 dev.off()
-
 
 
 # Section 8: Comparison of artio data to Bennie and Maor data ---------------------------------------------
@@ -612,73 +585,62 @@ mammals_df <- mammals_df %>% relocate(Maor_diel, .after = last_col())
 mammals_df <- data.frame(lapply(mammals_df, function(x) {gsub("cathemeral/crepuscular", "crepuscular", x)}))
 df <- mammals_df %>% make_long(Bennie_diel, Amelia_diel, Maor_diel,)
 
-test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+six_state_sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
   geom_sankey(flow.alpha= 0.5, node.color = 1) + geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "pink", "#66C2A5", "#A6D854")) +
   theme_sankey(base_size = 16) + scale_x_discrete(labels = c("Bennie_diel" = "Existing database \n (Bennie et al)", "Amelia_diel" = "Current database \n (Mesich et al)", "Maor_diel" = "Existing database \n (Maor et al)")) +
   theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
 
-test
+six_state_sankey
 
 #save out to figure folder
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maor_Bennie_sankey_six_state.pdf"))
-test
-dev.off()
+# pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maor_Bennie_sankey_six_state.pdf"))
+# six_state_sankey
+# dev.off()
 
-#with maximum crepusuclar dataset
-mammals_df <- data.frame(lapply(mammals_df, function(x) {gsub("diurnal/crepuscular", "crepuscular", x)}))
-mammals_df <- data.frame(lapply(mammals_df, function(x) {gsub("nocturnal/crepuscular", "crepuscular", x)}))
+#with maximum crepuscular dataset
+mammals_df1 <- data.frame(lapply(mammals_df, function(x) {gsub("diurnal/crepuscular", "crepuscular", x)}))
+mammals_df1 <- data.frame(lapply(mammals_df1, function(x) {gsub("nocturnal/crepuscular", "crepuscular", x)}))
 
-df <- mammals_df %>% make_long(Bennie_diel, Amelia_diel, Maor_diel,)
+df <- mammals_df1 %>% make_long(Bennie_diel, Amelia_diel, Maor_diel,)
 
-sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+max_crep_sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
   geom_sankey(flow.alpha= 0.5, node.color = 1) + geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5")) +
-  theme_sankey(base_size = 16) + scale_x_discrete(labels = c("Bennie_diel" = "Existing database \n (Bennie et al)", "Amelia_diel" = "Current database \n (Mesich et al)", "Maor_diel" = "Existing database \n (Maor et al)")) +
-  theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
+  theme_sankey(base_size = 12) + scale_x_discrete(labels = c("Bennie_diel" = "Existing dataset \n (Bennie et al)", "Amelia_diel" = "Current dataset \n (Mesich et al)", "Maor_diel" = "Existing dataset \n (Maor et al)")) +
+  theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), axis.text = element_text(size = 11), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
 
-sankey
+max_crep_sankey
+
+
+proportion_plot <-   
+  mammals_df %>% 
+  pivot_longer(!tips, names_to = "dataset", values_to = "activity_pattern") %>%
+  mutate(activity_pattern = str_replace(activity_pattern, "diurnal/crepuscular", "diurnal")) %>%
+  mutate(activity_pattern = str_replace(activity_pattern, "nocturnal/crepuscular", "nocturnal")) %>%
+  ggplot(., aes(x = factor(dataset, levels = c("Bennie_diel", "Amelia_diel", "Maor_diel")), fill = activity_pattern)) + 
+  geom_bar(position = "fill", alpha = 0.75) +
+  scale_fill_manual(values= c("#dd8ae7","#EECBAD",  "#FC8D62","#66C2A5")) +
+  labs(y = "Proportion of species", x = "Clade") + 
+  scale_x_discrete(labels = c("Bennie_diel" = "Existing dataset \n (Bennie et al)", "Amelia_diel" = "Current dataset \n (Mesich et al)", "Maor_diel" = "Existing dataset \n (Maor et al)")) +
+  theme_bw() +
+  theme(legend.position = "none", axis.title.x = element_blank(), axis.title = element_text(size = 11), axis.text.x = element_text(size = 11), axis.text.y = element_text(size = 9))
+
+proportion_plot
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artiodactyl_proportion_plot.pdf", width = 4.5, height = 3.85)
+proportion_plot
+dev.off()
 
 #save out to figure folder
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maor_Bennie_sankey_max_crep.pdf"))
-sankey
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maor_Bennie_sankey_max_crep.pdf"), width = 4,  height = 4)
+max_crep_sankey
 dev.off()
 
-#add the concordance values to the sankey diagram
-df <- mammals_df %>% make_long(Bennie_diel, Amelia_diel, Maor_diel,)
-
-#with actual labels
-concordance <- as.data.frame(table(mammals_df$Bennie_diel, mammals_df$Amelia_diel))
-colnames(concordance) <- c("Bennie_data", "Amelia_data", "freq")
-totals_df <- aggregate(concordance$freq, by=list(Category=concordance$Bennie_data), FUN=sum)
-colnames(totals_df) <- c("Bennie_data", "total")
-concordance <- merge(concordance, totals_df, by = "Bennie_data")
-concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
-concordance$freq_count <- paste0(round(concordance$percent, 2), "%", " ", "(n=", concordance$freq, ")")
-Bennie_freq_count <- concordance$freq_count
-Bennie_freq_count <- Bennie_freq_count[-5] #remove zero for crep to cath
-
-concordance <- as.data.frame(table(mammals_df$Maor_diel, mammals_df$Amelia_diel))
-colnames(concordance) <- c("Maor_data", "Amelia_data", "freq")
-totals_df <- aggregate(concordance$freq, by=list(Category=concordance$Maor_data), FUN=sum)
-colnames(totals_df) <- c("Maor_data", "total")
-concordance <- merge(concordance, totals_df, by = "Maor_data")
-concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
-concordance$freq_count <- paste0(round(concordance$percent, 2), "%", " ", "(n=", concordance$freq, ")")
-Maor_freq_count <- concordance$freq_count
-
-test <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
-  geom_sankey(flow.alpha= 0.5, node.color = 1) + geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5")) +
-  theme_sankey(base_size = 16) + scale_x_discrete(labels = c("Bennie_diel" = "Existing database \n (Bennie et al)", "Amelia_diel" = "Current database \n (Mesich et al)", "Maor_diel" = "Existing database \n (Maor et al)")) +
-  theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(y = NULL, x = NULL) + 
-  annotate("text", x = 1.27, y = c(-108,-98,-88,-84,-60,-49,-45,-31.5,-4,38,50,64,80,93.5,109),
-           label = Bennie_freq_count, size = 3.5, colour = "grey25") + 
-  annotate("text", x = 2.73, y = c(-108,-90,-73,-67,-54,-30,-4,4,18,35,63,73,86,95,102,109),
-           label = Maor_freq_count, size =3.5, colour = "grey25")
-test
-
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maor_Bennie_sankey_labelled.pdf"), width = 10.5, height = 8)
-test
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/artiodactyl_proportion_plot.pdf", width = 8.5, height = 3.75)
+proportion_plot + max_crep_sankey
 dev.off()
 
+
+# Section: Baker et al comparison -----------------------------------------
 #my data
 artio_df <- read.csv(here("sleepy_artiodactyla_full.csv")) #235 species with data
 
@@ -703,36 +665,53 @@ Baker_df <- Baker_df[Baker_df$tips %in% artio_df$tips, ] #removes 5 sps
 # M rooseveltorum nor Sus bucculentus (both extinct) so drop, Bos frontalis and M gouazoupira not in mam tree
 # Alces americanus is a subspecies of Alces alces which is already in dataset
 
-mammals_df <- merge(Baker_df, artio_df, by = "tips", all.x = TRUE) #204 sps
+Baker_df <- merge(Baker_df, artio_df, by = "tips", all.x = TRUE) #204 sps
 
-df <- mammals_df %>% make_long(Activity_pattern, Diel_Pattern)
+df <- Baker_df %>% make_long(Activity_pattern, max_crep)
 
-sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
-  geom_sankey(flow.alpha= 0.5, node.color = 1) + 
-  geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "pink", "#66C2A5", "#A6D854")) +
-  theme_sankey(base_size = 16) +
-  scale_x_discrete(labels = c("Activity_pattern" = "Existing database \n (Baker et al)", "Diel_Pattern" = "Current database \n (Mesich et al)")) +
-  theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
-
-sankey
-
-#save out to figure folder
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Baker_sankey_six_state.pdf"))
-sankey
-dev.off()
-
-df <- mammals_df %>% make_long(Activity_pattern, max_crep)
-
-sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+Baker_sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
   geom_sankey(flow.alpha= 0.5, node.color = 1) + 
   geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5")) +
-  theme_sankey(base_size = 16) +
-  scale_x_discrete(labels = c("Activity_pattern" = "Existing database \n (Baker et al)", "max_crep" = "Current database \n (Mesich et al)")) +
-  theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
+  theme_sankey(base_size = 12) +
+  scale_x_discrete(labels = c("Activity_pattern" = "Existing dataset \n (Baker et al)", "max_crep" = "Current dataset \n (Mesich et al)")) +
+  theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), axis.text = element_text(size = 11), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
 
-sankey
+Baker_sankey
+
+Baker_proportion <-   
+  Baker_df %>% 
+  pivot_longer(c("Activity_pattern", "max_crep"), names_to = "dataset", values_to = "activity_pattern") %>%
+  mutate(activity_pattern = str_replace(activity_pattern, "diurnal/crepuscular", "diurnal")) %>%
+  mutate(activity_pattern = str_replace(activity_pattern, "nocturnal/crepuscular", "nocturnal")) %>%
+  ggplot(., aes(x = factor(dataset, levels = c("Activity_pattern", "max_crep")), fill = activity_pattern)) + 
+  geom_bar(position = "fill", alpha = 0.75) +
+  scale_fill_manual(values= c("#dd8ae7","#EECBAD",  "#FC8D62","#66C2A5")) +
+  labs(y = "Proportion of species", x = "Clade") + 
+  scale_x_discrete(labels =  c("Activity_pattern" = "Existing dataset \n (Baker et al)", "max_crep" = "Current dataset \n (Mesich et al)")) +
+  theme_bw() +
+  theme(legend.position = "none", axis.title.x = element_blank(), axis.title = element_text(size = 11), axis.text.x = element_text(size = 11), axis.text.y = element_text(size = 9))
+
+Baker_proportion
 
 #save out to figure folder
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Baker_sankey_four_state.pdf"))
-sankey
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/Baker_sankey_four_state.pdf", width= 5, height = 4)
+Baker_sankey
+dev.off()
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/Baker_proportion_plot.pdf", width = 3.5, height = 3.85)
+Baker_proportion
+dev.off()
+
+# Save out combined plots -------------------------------------------------
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/combined_category_confusion_plots.pdf", width = 8.5, height = 4)
+plot_countfreq_cet + plot_countfreq_rum
+dev.off()
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/combined_sankey_plots.pdf", width = 8.5, height = 7)
+(sankey_cet + coord_flip()) + plot_spacer() + (sankey_rum + coord_flip()) + plot_layout(width = c(5, 0.2, 5))
+dev.off()
+
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/combined_sankey_confusion_plots.pdf", width = 8.5, height = 11, bg = "transparent")
+(plot_countfreq_cet + plot_countfreq_rum)/
+  ((sankey_cet + coord_flip()) + (sankey_rum + coord_flip())) + plot_layout(height = c(3, 8))
 dev.off()

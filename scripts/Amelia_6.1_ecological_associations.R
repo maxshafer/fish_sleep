@@ -60,7 +60,7 @@ phylANOVA <- calculatePhylANOVA(trait.data.1, "Orbit_ratio")
 #plot out the group means
 cet_orbit_boxplot <- ggplot(trait.data.1, aes(x = max_crep, y = Orbit_ratio)) + 
   boxplot_format +
-  labs(x = "Temporal activity pattern", y = "Relative eye size") + 
+  labs(x = "Temporal activity pattern", y = "\n Relative eye size") + 
   annotate("text", x = 1.4, y = 40, label = paste("phylANOVA, p =", phylANOVA$Pf)) 
 
 cet_orbit_boxplot
@@ -173,16 +173,16 @@ phylANOVA <- calculatePhylANOVA(trait.data.art.subset, "Orbit_ratio")
 stat.test <- data.frame(group1 = c("crepuscular", "crepuscular", "diurnal"),
                         group2 = c("diurnal", "nocturnal", "nocturnal"),
                         p.adj = c(phylANOVA$Pt[2], phylANOVA$Pt[3], phylANOVA$Pt[6]),
-                        y.position = c(0.99, 1, 1.01))
+                        y.position = c(0.985, 0.991, 0.999))
 
 stat.test <- stat.test %>% add_x_position(x = "max_crep")
 stat.test <- stat.test %>% mutate(xmin = xmin + 1, xmax = xmax + 1)
 
 rum_orbit_boxplot <- ggplot(trait.data.art, aes(x = max_crep, y = Orbit_ratio)) + 
   boxplot_format +
-  stat_pvalue_manual(stat.test, label = "p.adj", hjust = 0.7) +
+  stat_pvalue_manual(stat.test, label = "p.adj", hjust = 0.7, size = 3) +
   labs(x = "Temporal activity pattern", y = "Relative eye size") + 
-  annotate("text", x = 1.4, y = 1.01, label = paste("phylANOVA, p =", phylANOVA$Pf)) 
+  annotate("text", x = 1.4, y = 1, label = paste("phylANOVA, p =", phylANOVA$Pf)) 
 
 rum_orbit_boxplot
 
@@ -214,7 +214,7 @@ stat.test <- stat.test %>% add_x_position(x = "max_crep")
 
 rum_lat_boxplot <- ggplot(trait.data.art, aes(x = max_crep, y = mean_lat)) + 
   boxplot_format +
-  stat_pvalue_manual(stat.test, label = "p.adj", hjust = 0.7) +
+  stat_pvalue_manual(stat.test, label = "p.adj", hjust = 0.7, size = 3) +
   labs(x = "Temporal activity pattern", y = "Mean latitude range") + 
   annotate("text", x = 1.4, y = 140, label = paste("phylANOVA, p =", phylANOVA$Pf)) 
 
@@ -249,7 +249,7 @@ stat.test <- stat.test %>% add_x_position(x = "max_crep")
 
 rum_max_lat_boxplot <- ggplot(trait.data.art, aes(x = max_crep, y = max_lat)) + 
   boxplot_format +
-  stat_pvalue_manual(stat.test, label = "p.adj", hjust = 0.7) +
+  stat_pvalue_manual(stat.test, label = "p.adj", hjust = 0.7, size = 3) +
   labs(x = "Temporal activity pattern", y = "Maximum latitude range") + 
   annotate("text", x = 1.4, y = 135, label = paste("phylANOVA, p =", phylANOVA$Pf)) 
 
@@ -285,23 +285,34 @@ rum_mass_boxplot <- ggplot(trait.data.art, aes(x = max_crep, y = log(AdultBodyMa
 
 # Arranging and saving out the plots --------------------------------------
 
-boxplots <- (cet_orbit_boxplot + rum_orbit_boxplot) /
-  (cet_lat_boxplot + rum_lat_boxplot) /
-  (cet_dive_boxplot + plot_spacer()) +
-  plot_annotation(tag_levels = 'a') + theme(plot.tag = element_text(size = 14))
+boxplots <- (rum_orbit_boxplot + cet_orbit_boxplot) /
+  (rum_lat_boxplot + cet_lat_boxplot) /
+  (plot_spacer() + cet_dive_boxplot) + plot_annotation(tag_levels = 'a') + theme(plot.tag = element_text(size = 14))
 
 boxplots
+
+#boxplots <- (rum_orbit_boxplot/ rum_lat_boxplot/plot_spacer()) | (cet_orbit_boxplot/cet_lat_boxplot/cet_dive_boxplot)
+boxplots <- (rum_orbit_boxplot/ rum_lat_boxplot) | (cet_orbit_boxplot/cet_lat_boxplot/cet_dive_boxplot) 
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/ecomorphological_boxplots.pdf"), width = 8.5, height = 7, bg = "transparent")
+boxplots #+ plot_annotation(tag_levels = 'a') + theme(plot.tag = element_text(size = 14))
+dev.off()
 
 #alternative plot arrangement
-boxplots <- (cet_orbit_boxplot + cet_lat_boxplot + cet_mass_boxplot) /
-  (rum_orbit_boxplot + rum_lat_boxplot + rum_mass_boxplot) /
-  plot_annotation(tag_levels = 'a') + theme(plot.tag = element_text(size = 14))
+rum_boxplots <- (rum_orbit_boxplot + rum_lat_boxplot + plot_spacer()) 
+ 
+cet_boxplots <- (cet_orbit_boxplot + cet_lat_boxplot + cet_dive_boxplot) 
+  
+#plot_annotation(tag_levels = 'a') + theme(plot.tag = element_text(size = 14), axis.title.x = element_blank(), axis.text.x = element_blank())
 
-boxplots
 
-
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/ecomorphological_boxplots.pdf"), width = 8.5, height = 8)
-boxplots
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/rum_ecomorphological_boxplots.pdf"), width = 8.5, height = 4, bg = "transparent")
+rum_boxplots
 dev.off()
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cet_ecomorphological_boxplots.pdf"), width = 8.5, height = 3, bg = "transparent")
+cet_boxplots
+dev.off()
+
 
 

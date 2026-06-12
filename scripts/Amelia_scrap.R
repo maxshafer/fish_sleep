@@ -990,6 +990,33 @@ simmaps <- corHMM::makeSimmap(tree = phylo_trees, data = trait.data, rate.cat = 
 plotSimmap(simmaps)
 
 
+# Concordance for each confidence level -----------------------------------
+
+function to plot the concordance for each of the confidence levels
+plotConcordance = function(set_column = "Conf2"){
+  diel_full_filtered <- diel_full %>% filter(column == set_column)
+  #need to filter for species with more than one entry or else concordance will always be 100%
+  mulitple_sources <- diel_full_filtered %>% count(Species_name) %>% filter(n>1)
+  diel_full_filtered <- diel_full_filtered[diel_full_filtered$Species_name %in% mulitple_sources$Species_name,]
+  concordance <- as.data.frame(table(diel_full_filtered$max_crep, diel_full_filtered$value))
+  colnames(concordance) <- c("actual", "predicted", "freq")
+  totals_df <- aggregate(concordance$freq, by=list(Category=concordance$actual), FUN=sum)
+  colnames(totals_df) <- c("actual", "total")
+  concordance <- merge(concordance, totals_df, by = "actual")
+  concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
+  return(concordance)
+}
+
+concordance_list <- lapply(sort(unique(diel_full$column)), function(x){plotConcordance(x)})
+
+use below if
+for(i in seq_along(concordance_list)){
+  pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "artio", "confidence", i, "_confusion_matrix.pdf"))
+  print(ggplot(as.data.frame(concordance_list[i]), aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
+          scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") +
+          ggtitle(paste("Confidence level ", i, " concordance")))
+  dev.off()
+}
 
 
 
@@ -1139,3 +1166,43 @@ whippomorpha_plot <-
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/piechart_percentages.pdf", width = 10, height = 5, bg = "transparent")
 grid.arrange(mammals_plot, ruminantia_plot, whippomorpha_plot, nrow = 1)
 dev.off()
+
+
+# Section : Max crep sankey with labels ----------------------------------
+#add the concordance values to the sankey diagram
+df <- mammals_df1 %>% make_long(Bennie_diel, Amelia_diel, Maor_diel,)
+
+#with labels
+concordance <- as.data.frame(table(mammals_df1$Bennie_diel, mammals_df1$Amelia_diel))
+colnames(concordance) <- c("Bennie_data", "Amelia_data", "freq")
+totals_df <- aggregate(concordance$freq, by=list(Category=concordance$Bennie_data), FUN=sum)
+colnames(totals_df) <- c("Bennie_data", "total")
+concordance <- merge(concordance, totals_df, by = "Bennie_data")
+concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
+concordance$freq_count <- paste0(round(concordance$percent, 2), "%", " ", "(n=", concordance$freq, ")")
+Bennie_freq_count <- concordance$freq_count
+Bennie_freq_count <- Bennie_freq_count[-5] #remove zero for crep to cath
+
+concordance <- as.data.frame(table(mammals_df1$Maor_diel, mammals_df1$Amelia_diel))
+colnames(concordance) <- c("Maor_data", "Amelia_data", "freq")
+totals_df <- aggregate(concordance$freq, by=list(Category=concordance$Maor_data), FUN=sum)
+colnames(totals_df) <- c("Maor_data", "total")
+concordance <- merge(concordance, totals_df, by = "Maor_data")
+concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
+concordance$freq_count <- paste0(round(concordance$percent, 2), "%", " ", "(n=", concordance$freq, ")")
+Maor_freq_count <- concordance$freq_count
+
+sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+  geom_sankey(flow.alpha= 0.5, node.color = 1) + geom_sankey_label(size = 3.5, color = 1, fill = "white") + scale_fill_manual(values = c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5")) +
+  theme_sankey(base_size = 16) + scale_x_discrete(labels = c("Bennie_diel" = "Existing database \n (Bennie et al)", "Amelia_diel" = "Current database \n (Mesich et al)", "Maor_diel" = "Existing database \n (Maor et al)")) +
+  theme(legend.position = "none", panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(y = NULL, x = NULL) + 
+  annotate("text", x = 1.27, y = c(-108,-98,-88,-84,-60,-49,-45,-31.5,-4,38,50,64,80,93.5,109),
+           label = Bennie_freq_count, size = 3.5, colour = "grey25") + 
+  annotate("text", x = 2.73, y = c(-108,-90,-73,-67,-54,-30,-4,4,18,35,63,73,86,95,102,109),
+           label = Maor_freq_count, size =3.5, colour = "grey25")
+sankey
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "Maor_Bennie_sankey_labelled.pdf"), width = 10.5, height = 8)
+test
+dev.off()
+

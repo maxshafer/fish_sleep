@@ -68,6 +68,7 @@ library(stats)
 library(phyloint)
 library(patchwork)
 library(ggridges)
+library(rlang)
 #pantheria database
 #library(trait.data)
 # Set the working directory and source the functions (not used yet)
@@ -470,32 +471,6 @@ pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacean_all_co
 confusion_plot_cet 
 dev.off()
 
-#function to plot the concordance for each of the confidence levels
-# plotConcordance = function(set_column = "Conf2"){
-#   diel_full_filtered <- diel_full %>% filter(column == set_column)
-#   #need to filter for species with more than one entry or else concordance will always be 100%
-#   mulitple_sources <- diel_full_filtered %>% count(Species_name) %>% filter(n>1)
-#   diel_full_filtered <- diel_full_filtered[diel_full_filtered$Species_name %in% mulitple_sources$Species_name,]
-#   concordance <- as.data.frame(table(diel_full_filtered$max_crep, diel_full_filtered$value))
-#   colnames(concordance) <- c("actual", "predicted", "freq")
-#   totals_df <- aggregate(concordance$freq, by=list(Category=concordance$actual), FUN=sum)
-#   colnames(totals_df) <- c("actual", "total")
-#   concordance <- merge(concordance, totals_df, by = "actual")
-#   concordance$percent <- round(concordance$freq / concordance$total * 100, 1)
-#   return(concordance)
-# }
-# 
-# concordance_list <- lapply(sort(unique(diel_full$column)), function(x){plotConcordance(x)})
-
-#use this to save out concordance for individual confidence levels (1-5)
-# for(i in seq_along(concordance_list)){
-#   pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "confidence", i, "_confusion_matrix.pdf"))
-#   print(ggplot(as.data.frame(concordance_list[i]), aes(actual, predicted, fill = percent)) + geom_tile() + geom_text(aes(label = percent)) +
-#     scale_fill_gradient(low = "white", high = "dodgerblue") + labs(x = "Actual", y = "Predicted") +
-#     ggtitle(paste("Confidence level ", i, " concordance"))) 
-#   dev.off()
-# }
-
 # Section 4.5: Concordance between confidence levels ----------------------
 diel_full_long <- read.csv(here("cetacean_confidence_long_df.csv"))
 
@@ -577,18 +552,19 @@ table2 <- table2[table2$Var2 == TRUE,]
 table2$count <- table
 
 #want to make a plot that has both the frequency and the counts
-table2$freq_count <- paste0(round(table2$Freq, 2), "\n", "(n=", table2$count, ")")
-plot_countfreq <- ggplot(table2, aes(x = Comp1, y = Comp2, fill = Freq, label = freq_count)) +
-  geom_tile() + geom_text() + scale_fill_viridis(begin = 0.2, end = 1, limits = c(1,0)) + 
-  theme_minimal() + ylab("Primary source \n") + xlab("\n Secondary source") +
-  scale_x_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
-  scale_y_discrete(labels = c("Category A", "Category B", "Category C", "Category D", "Category E")) +
+table2$freq_count <- paste0((round(table2$Freq, 2) * 100), "%", "\n", "(n=", table2$count, ")")
+plot_countfreq_cet <- table2[c(1:5, 7:10, 13:15, 19:20, 25), ] %>% 
+  ggplot(., aes(x = Comp1, y = Comp2, fill = Freq, label = freq_count)) +
+  geom_tile() + geom_text(size = 3) + scale_fill_viridis(begin = 0.2, end = 1, limits = c(1,0)) + 
+  theme_minimal() + ylab("Primary source category") + xlab("Secondary source category") +
+  scale_x_discrete(labels = c("A", "B", "C", "D", "E")) +
+  scale_y_discrete(labels = c("A", "B", "C", "D", "E")) +
   theme(legend.position = "none")
 
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance.pdf", width = 7, height = 7, bg = "transparent")
 #pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance_odontoceti.pdf", width = 7, height = 7, bg = "transparent")
 #pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/cetacaean_btw_source_concordance_mysticeti.pdf", width = 7, height = 7, bg = "transparent")
-plot_countfreq
+plot_countfreq_cet
 dev.off()
 
 
@@ -596,13 +572,13 @@ dev.off()
 
 #create dataframe of the number of species that had activity patterns determined at each step
 df <- data.frame(
-  step_0 = c(rep("A. Multiple category D \n sources in concordance?",82)),
-  step_1 = c(rep("B. Return category D \n (n = 26)", 26), rep("C. Category D + C \n concordance?", 56)),
-  step_2 = c(rep(NA, 26), rep("D. Return category D + C \n (n = 25)", 25), rep("E. Single category D source?", 31)),
+  step_6 = c(rep("A. Multiple category D \n sources in concordance?",82)),
+  step_5 = c(rep("B. Return category D \n (n = 26)", 26), rep("C. Category D + C \n in concordance?", 56)),
+  step_4 = c(rep(NA, 26), rep("D. Return category D + C \n (n = 25)", 25), rep("E. Single category D source?", 31)),
   step_3 = c(rep(NA, 51), rep("F. Return single cateory D  \n (n = 5)", 5), rep("G. Single category C source?", 26)),
-  step_4 = c(rep(NA, 56), rep("H. Return single category C \n (n = 13)", 13), rep("I. Category E + D + C \n sources in concordance?", 13)),
-  step_5 = c(rep(NA, 69), rep("J. Return category E + D \n + C (n = 1)", 1), rep("K. Multiple category C, D, or E \n sources in concordance?", 12)),
-  step_6 = c(rep(NA, 70), rep("L. Return category A \n (n = 7)", 7), rep("M. Else return cathemeral \n (n = 5)", 5))
+  step_2 = c(rep(NA, 56), rep("H. Return single category C \n (n = 13)", 13), rep("I. Category E + D + C \n sources in concordance?", 13)),
+  step_1 = c(rep(NA, 69), rep("J. Return category E + D \n + C (n = 1)", 1), rep("K. Multiple category C, D, or E \n sources in concordance?", 12)),
+  step_0 = c(rep(NA, 70), rep("L. Return category A \n (n = 7)", 7), rep("M. Else return \n cathemeral (n = 5)", 5))
 )
 
 #convert to long format for geomsankey
@@ -611,14 +587,14 @@ df <- df[!is.na(df$node), ]
 
 blues <- c("#010661", "#070E8A","#070E8A", "#0044A3","#0044A3", "#0070D1","#0070D1","#2E9DFF","#2E9DFF","#8AC8FF","#8AC8FF","#B8DEFF","#B8DEFF")
 
-sankey <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = node, label = substr(node, 4, 300))) +
-  geom_sankey(flow.alpha= 0.5, node.color = 0.5) + geom_sankey_label(size = 3.5, color = 1, fill = "white")  + 
-  theme_sankey(base_size = 16) + scale_fill_manual(values = blues) +
+sankey_cet <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = node, label = substr(node, 4, 300))) +
+  geom_sankey(flow.alpha= 0.5, node.color = 0.5) + geom_sankey_label(size = 3, color = 1, fill = "white")  + 
+  theme_sankey(base_size = 11) + scale_fill_manual(values = blues) +
   theme(legend.position = "none", axis.text.x = element_blank(), panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
 
-sankey
+sankey_cet
 
 #save out to figure folder
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "cetacean_flowchart.pdf"), height = 7, width = 14)
-sankey
+sankey_cet
 dev.off()
