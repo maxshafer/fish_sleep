@@ -492,15 +492,6 @@ filename2 <- "august_ruminants_four_state_max_crep_traits_ER_SYM_ARD_CONSYM_brid
 rates_df1 <- plot1kTransitionRates4state(readRDS(here(filename1)), 5)
 rates_df2 <- plot1kTransitionRates4state(readRDS(here(filename2)), 5)
 
-whippo_SYM_rates_density_ridges <-
-  rates_df1 %>% filter(model == "SYM") %>%
-  mutate(solution = str_replace(solution, pattern = "->", replacement = "%->%")) %>%
-  mutate(solution = factor(solution, levels = c("Crepuscular %->% Cathemeral", "Cathemeral %->% Crepuscular",  "Cathemeral %->% Diurnal", "Diurnal %->% Cathemeral", "Cathemeral %->% Nocturnal", "Nocturnal %->% Cathemeral",  "Diurnal %->% Crepuscular", "Crepuscular %->% Diurnal", "Nocturnal %->% Crepuscular", "Crepuscular %->% Nocturnal", "Nocturnal %->% Diurnal", "Diurnal %->% Nocturnal"))) %>%
-  ggplot(., aes(x = log(rates), y = solution, fill = solution)) + 
-  ggridges::geom_density_ridges(bandwidth = 1, scale = 2, show.legend = FALSE, alpha = 0.5, jittered_points = FALSE, point_shape = 21, point_size = 1, point_alpha = 0.2, inherit.aes = TRUE) +
-  scale_y_discrete(labels = function(l) parse(text=l), expand = expansion(add = c(0.5, 1.5))) + xlab("Log (transition rates)") +
-  theme_bw() + theme(axis.text.x = element_text(angle = 0, vjust = 0.5, size =9), axis.title.x = element_text(size = 11), axis.title.y = element_blank(), axis.text.y = element_blank(), strip.background = element_rect(fill = "grey90"),  panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA))
-
 ridges_palette_10 <- c(alpha("#AAC7A9", 0.7), alpha("#AAC7A9", 0.4), alpha("#A2A6C6", 0.7), alpha("#A2A6C6", 0.4), alpha("#F5AC88", 0.7), alpha("#F5AC88", 0.4), alpha("#ED8CA5", 0.7), alpha("#ED8CA5", 0.4), alpha("#E6ABCA", 0.7), alpha("#E6ABCA", 0.4))
 
 whippo_bridge_rates_density_ridges <-
@@ -508,25 +499,16 @@ whippo_bridge_rates_density_ridges <-
   mutate(solution = str_replace(solution, pattern = "->", replacement = "%->%")) %>%
   mutate(solution = 
            factor(solution, levels = c("Nocturnal %->% Crepuscular", "Crepuscular %->% Nocturnal",
-                                      "Cathemeral %->% Nocturnal", "Nocturnal %->% Cathemeral", 
+                                       "Cathemeral %->% Nocturnal", "Nocturnal %->% Cathemeral", 
                                        "Diurnal %->% Crepuscular", "Crepuscular %->% Diurnal",
-                                      "Cathemeral %->% Diurnal", "Diurnal %->% Cathemeral",
-                                      "Crepuscular %->% Cathemeral", "Cathemeral %->% Crepuscular" ))) %>%
+                                       "Cathemeral %->% Diurnal", "Diurnal %->% Cathemeral",
+                                       "Crepuscular %->% Cathemeral", "Cathemeral %->% Crepuscular" ))) %>%
   ggplot(., aes(x = log(rates), y = solution, fill = solution)) + 
   ggridges::geom_density_ridges(bandwidth = 1, scale = 2, show.legend = FALSE, jittered_points = FALSE, point_shape = 21, point_size = 1, point_alpha = 0.2, inherit.aes = TRUE) +
   #scale_fill_viridis_d(option = "C") +
   scale_fill_manual(values = ridges_palette_10) + 
   scale_y_discrete(labels = function(l) parse(text=l), expand = expansion(add = c(0.5, 1.6))) + xlab("Log (transition rates)") +
   theme_bw() + theme(axis.text.x = element_text(angle = 0, vjust = 0.5, size =9), axis.title.x = element_text(size = 11), axis.title.y = element_blank(), strip.background = element_rect(fill = "grey90"),  panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA))
-
-rumi_ARD_rates_density_ridges <-
-  rates_df2 %>% filter(model == "ARD") %>% 
-  mutate(solution = str_replace(solution, pattern = "->", replacement = "%->%")) %>%
-  mutate(solution = factor(solution, levels = c("Crepuscular %->% Cathemeral", "Cathemeral %->% Crepuscular",  "Cathemeral %->% Diurnal", "Diurnal %->% Cathemeral", "Cathemeral %->% Nocturnal", "Nocturnal %->% Cathemeral",  "Diurnal %->% Crepuscular", "Crepuscular %->% Diurnal", "Nocturnal %->% Crepuscular", "Crepuscular %->% Nocturnal", "Nocturnal %->% Diurnal", "Diurnal %->% Nocturnal"))) %>%
-  ggplot(., aes(x = log(rates), y = solution, fill = solution)) + 
-  ggridges::geom_density_ridges(bandwidth = 1, scale = 2, show.legend = FALSE, alpha = 0.5, jittered_points = FALSE, point_shape = 21, point_size = 1, point_alpha = 0.2, inherit.aes = TRUE) +
-  scale_y_discrete(labels = function(l) parse(text=l), expand = expansion(add = c(0.5, 1.5))) + xlab("Log (transition rates)") +
-  theme_bw() + theme(axis.text.x = element_text(angle = 0, vjust = 0.5, size =10), axis.text.y = element_blank(), axis.title.y = element_blank(), axis.title = element_text(size = 12), strip.background = element_rect(fill = "grey90"),  panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA))
 
 rumi_bridge_rates_density_ridges <-
   rates_df2 %>% filter(model == "Bridge_only") %>% mutate(solution = str_replace(solution, pattern = "->", replacement = "%->%")) %>%
@@ -541,11 +523,59 @@ rumi_bridge_rates_density_ridges <-
   scale_fill_manual(values = ridges_palette_10) + 
   scale_y_discrete(labels = function(l) parse(text=l), expand = expansion(add = c(0.5, 1.75))) + xlab("Log (transition rates)") +
   theme_bw() + theme(axis.text.x = element_text(angle = 0, vjust = 0.5, size =10), axis.title.y = element_blank(), axis.title = element_text(size = 12), strip.background = element_rect(fill = "grey90"),  panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA))
- 
+
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/combined_rates_density_ridges.pdf"), width = 8.5, height = 7)
-(whippo_bridge_rates_density_ridges + whippo_SYM_rates_density_ridges) /
-  (rumi_bridge_rates_density_ridges + rumi_ARD_rates_density_ridges) #+ plot_annotation(tag_levels = 'a')
+(whippo_bridge_rates_density_ridges + plot_spacer()) /
+  (rumi_bridge_rates_density_ridges + plot_spacer()) #+ plot_annotation(tag_levels = 'a')
 dev.off()
+
+ridges_palette_12 <- c(alpha("#B1A884", 0.7), alpha("#B1A884", 0.4), alpha("#AAC7A9", 0.7), alpha("#AAC7A9", 0.4), alpha("#A2A6C6", 0.7), alpha("#A2A6C6", 0.4), alpha("#F5AC88", 0.7), alpha("#F5AC88", 0.4), alpha("#ED8CA5", 0.7), alpha("#ED8CA5", 0.4), alpha("#E6ABCA", 0.7), alpha("#E6ABCA", 0.4))
+
+whippo_SYM_rates_density_ridges <-
+  rates_df1 %>% filter(model == "SYM") %>%
+  mutate(solution = str_replace(solution, pattern = "->", replacement = "%->%")) %>%
+  mutate(solution = factor(solution, levels = c("Nocturnal %->% Diurnal", "Diurnal %->% Nocturnal", "Crepuscular %->% Cathemeral", "Cathemeral %->% Crepuscular",  "Cathemeral %->% Diurnal", "Diurnal %->% Cathemeral", "Cathemeral %->% Nocturnal", "Nocturnal %->% Cathemeral",  "Diurnal %->% Crepuscular", "Crepuscular %->% Diurnal", "Nocturnal %->% Crepuscular", "Crepuscular %->% Nocturnal"))) %>%
+  ggplot(., aes(x = log(rates), y = solution, fill = solution)) + 
+  ggridges::geom_density_ridges(bandwidth = 1, scale = 2, show.legend = FALSE, alpha = 0.5, jittered_points = FALSE, point_shape = 21, point_size = 1, point_alpha = 0.2, inherit.aes = TRUE) +
+  scale_fill_manual(values = ridges_palette_12) + 
+  scale_y_discrete(labels = function(l) parse(text=l), expand = expansion(add = c(0.5, 1.6))) + xlab("Log (transition rates)") +
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, vjust = 0.5, size =9), axis.title.x = element_text(size = 11), axis.text.y = element_text(size = 11), axis.title.y = element_blank(), strip.background = element_rect(fill = "grey90"),  panel.background = element_rect(fill='transparent', colour = NA), plot.background = element_rect(fill='transparent', color=NA))
+
+whippo_ARD_rates_density_ridges <-
+  rates_df1 %>% filter(model == "ARD") %>%
+  mutate(solution = str_replace(solution, pattern = "->", replacement = "%->%")) %>%
+  mutate(solution = factor(solution, levels = c("Nocturnal %->% Diurnal", "Diurnal %->% Nocturnal", "Crepuscular %->% Cathemeral", "Cathemeral %->% Crepuscular",  "Cathemeral %->% Diurnal", "Diurnal %->% Cathemeral", "Cathemeral %->% Nocturnal", "Nocturnal %->% Cathemeral",  "Diurnal %->% Crepuscular", "Crepuscular %->% Diurnal", "Nocturnal %->% Crepuscular", "Crepuscular %->% Nocturnal"))) %>%
+  ggplot(., aes(x = log(rates), y = solution, fill = solution)) + 
+  ggridges::geom_density_ridges(bandwidth = 1, scale = 2, show.legend = FALSE, alpha = 0.5, jittered_points = FALSE, point_shape = 21, point_size = 1, point_alpha = 0.2, inherit.aes = TRUE) +
+  scale_fill_manual(values = ridges_palette_12) + 
+  scale_y_discrete(labels = function(l) parse(text=l), expand = expansion(add = c(0.5, 1.6))) + xlab("Log (transition rates)") +
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, vjust = 0.5, size =9), axis.title.x = element_text(size = 11), axis.title.y = element_blank(), axis.text.y = element_blank(), strip.background = element_rect(fill = "grey90"),  panel.background = element_rect(fill='transparent', colour = NA), plot.background = element_rect(fill='transparent', color=NA))
+
+rumi_ARD_rates_density_ridges <-
+  rates_df2 %>% filter(model == "ARD") %>% 
+  mutate(solution = str_replace(solution, pattern = "->", replacement = "%->%")) %>%
+  mutate(solution = factor(solution, levels = c("Nocturnal %->% Diurnal", "Diurnal %->% Nocturnal", "Crepuscular %->% Cathemeral", "Cathemeral %->% Crepuscular",  "Cathemeral %->% Diurnal", "Diurnal %->% Cathemeral", "Cathemeral %->% Nocturnal", "Nocturnal %->% Cathemeral",  "Diurnal %->% Crepuscular", "Crepuscular %->% Diurnal", "Nocturnal %->% Crepuscular", "Crepuscular %->% Nocturnal"))) %>%
+  ggplot(., aes(x = log(rates), y = solution, fill = solution)) + 
+  ggridges::geom_density_ridges(bandwidth = 1, scale = 2, show.legend = FALSE, alpha = 0.5, jittered_points = FALSE, point_shape = 21, point_size = 1, point_alpha = 0.2, inherit.aes = TRUE) +
+  scale_fill_manual(values = ridges_palette_12) + 
+  scale_y_discrete(labels = function(l) parse(text=l), expand = expansion(add = c(0.5, 2.2))) + xlab("Log (transition rates)") +
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, vjust = 0.5, size =10), axis.text.y = element_blank(), axis.title.y = element_blank(), axis.title = element_text(size = 12), strip.background = element_rect(fill = "grey90"),  panel.background = element_rect(fill='transparent', colour = NA), plot.background = element_rect(fill='transparent', color=NA))
+
+rumi_SYM_rates_density_ridges <-
+  rates_df2 %>% filter(model == "SYM") %>% 
+  mutate(solution = str_replace(solution, pattern = "->", replacement = "%->%")) %>%
+  mutate(solution = factor(solution, levels = c("Nocturnal %->% Diurnal", "Diurnal %->% Nocturnal", "Crepuscular %->% Cathemeral", "Cathemeral %->% Crepuscular",  "Cathemeral %->% Diurnal", "Diurnal %->% Cathemeral", "Cathemeral %->% Nocturnal", "Nocturnal %->% Cathemeral",  "Diurnal %->% Crepuscular", "Crepuscular %->% Diurnal", "Nocturnal %->% Crepuscular", "Crepuscular %->% Nocturnal"))) %>%
+  ggplot(., aes(x = log(rates), y = solution, fill = solution)) + 
+  ggridges::geom_density_ridges(bandwidth = 1, scale = 2, show.legend = FALSE, alpha = 0.5, jittered_points = FALSE, point_shape = 21, point_size = 1, point_alpha = 0.2, inherit.aes = TRUE) +
+  scale_fill_manual(values = ridges_palette_12) + 
+  scale_y_discrete(labels = function(l) parse(text=l), expand = expansion(add = c(0.5, 2.2))) + xlab("Log (transition rates)") +
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, vjust = 0.5, size =10), axis.text.y = element_text(size = 11), axis.title.y = element_blank(), axis.title = element_text(size = 12), strip.background = element_rect(fill = "grey90"),  panel.background = element_rect(fill='transparent', colour = NA), plot.background = element_rect(fill='transparent', color=NA))
+
+
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/supplemental_rates_density_ridges.pdf"), width = 8.5, height = 7)
+(whippo_SYM_rates_density_ridges + whippo_ARD_rates_density_ridges) /
+  (rumi_SYM_rates_density_ridges + rumi_ARD_rates_density_ridges) + plot_annotation(tag_levels = 'a')
+dev.off() 
 
 #what proportion of trees finds a non-zero vs a near zero rate?
 test <- rates_df2 %>% filter(model %in% c("ARD", "Bridge_only")) %>%

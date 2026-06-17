@@ -524,13 +524,13 @@ dev.off()
 
 df <- data.frame(
   step_8 = c(rep("A. Multiple category D \n sources in concordance?", 206)),
-  step_7 = c(rep("B. Return category \n D (n = 10)", 10), rep("C. Category D + E \n sources in concordance?", 196)),
-  step_6 = c(rep(NA, 10), rep("D. Return category \n D + E (n = 1)", 1), rep("E. Category C + D + E \n sources in concordance?", 195)),
+  step_7 = c(rep("B. Return category \n D (n = 10)", 10), rep("C. Category D + E \n source majority?", 196)),
+  step_6 = c(rep(NA, 10), rep("D. Return category \n D + E (n = 1)", 1), rep("E. Category C + D + E \n source majority?", 195)),
   step_5 = c(rep(NA, 11), rep("F. Return category \n C + D + E (n = 28)", 28), rep("G. Single category D \n source?", 167)),
-  step_4 = c(rep(NA, 39), rep("H. Return single category D \n source (n = 36)", 36), rep("I. Multiple category E \n sources in concordance?", 131)),
-  step_3 = c(rep(NA, 75), rep("J. Return category E \n (n = 3)",3), rep("K. Multiple category C \n sources in concordance?", 128)),
+  step_4 = c(rep(NA, 39), rep("H. Return single category D \n source (n = 36)", 36), rep("I. Multiple category E \n source majority?", 131)),
+  step_3 = c(rep(NA, 75), rep("J. Return category E \n (n = 3)",3), rep("K. Multiple category C \n source majority?", 128)),
   step_2 = c(rep(NA, 78), rep("L. Return category C \n (n = 64)", 64), rep("M. Single category C \n source?", 64)),
-  step_1 = c(rep(NA, 142), rep("N. Return single category C \n source (n = 6)", 6), rep("O. Category A + C + D + E \n sources in concordance?", 58)),
+  step_1 = c(rep(NA, 142), rep("N. Return single category C \n source (n = 6)", 6), rep("O. Category A + C + D + E \n source majority?", 58)),
   step_0 = c(rep(NA, 148), rep("P. Return A + C \n + D + E (n = 51)",51), rep("Q. Else return \n cathemeral (n = 7)", 7))
 )
 
@@ -542,14 +542,15 @@ blues <- c("#010661", "#070E8A","#070E8A", "#0044A3","#0044A3", "#0070D1","#0070
 
 sankey_rum <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = node, label = substr(node, 4, 300))) +
   geom_sankey(flow.alpha= 0.5, node.color = 0.5) + geom_sankey_label(size = 3, color = 1, fill = "white")  + 
-  theme_sankey(base_size = 11) + scale_fill_manual(values = blues) +
-  theme(legend.position = "none", axis.text.x = element_blank(), panel.background = element_rect(fill='transparent', colour = NA), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
+  theme_sankey(base_size = 10) + scale_fill_manual(values = blues) +
+  theme(legend.position = "none", axis.text.x = element_blank(), panel.background = element_rect(fill='transparent', colour = NA), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent', colour = NA)) + labs(x = NULL) 
 
-sankey_rum
+sankey_rum + coord_flip()
 
 #save out to figure folder
-pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "ruminant_flowchart.pdf"), height = 7, width = 16)
-sankey_rum
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/ruminant_flowchart.pdf", height = 7, width = 5)
+sankey_rum + coord_flip() + scale_x_discrete(expand = expansion(add = .6))
+  
 dev.off()
 
 
@@ -707,9 +708,11 @@ pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/combined_catego
 plot_countfreq_cet + plot_countfreq_rum
 dev.off()
 
-pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/combined_sankey_plots.pdf", width = 8.5, height = 7)
+pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/combined_sankey_plots.pdf", width = 8.5, height = 7, bg = "transparent")
 (sankey_cet + coord_flip()) + plot_spacer() + (sankey_rum + coord_flip()) + plot_layout(width = c(5, 0.2, 5))
+#grid.arrange(sankey_cet + coord_flip(), plot_spacer(), sankey_rum + coord_flip(), nrow = 1)
 dev.off()
+
 
 pdf("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/combined_sankey_confusion_plots.pdf", width = 8.5, height = 11, bg = "transparent")
 (plot_countfreq_cet + plot_countfreq_rum)/

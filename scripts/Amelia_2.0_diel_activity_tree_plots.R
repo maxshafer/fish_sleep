@@ -19,7 +19,6 @@ diel_full <- diel_full[!is.na(diel_full$Diel_Pattern), ]
 trait.data <- diel_full[diel_full$tips %in% mam.tree$tip.label,]
 trpy_n <- keep.tip(mam.tree, tip = trait.data$tips)
 
-
 # Section 2: Whippomorpha and ruminantia labelled by species names ---------------------------------
 
 custom.colours <- c("#dd8ae7", "#EECBAD" ,"#FC8D62", "#66C2A5","grey")

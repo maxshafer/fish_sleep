@@ -292,7 +292,7 @@ test_diel_long$crepuscular <- as.numeric(test_diel_long$crepuscular) #mark all c
 test_diel_long$total <- 1 #used to calculate the percentage of crepuscular sources out of the total sources
 
 #use to test function below
-#x <- filter(test_diel_long, Species_name == "Stenella clymene")
+x <- filter(test_diel_long, Species_name == "Monodon monoceros")
 
 #if category 3 greater than 50%, category 4 higher than 0% and if category 2 higher than 75% then call this source crepuscular
 #if majority of evidence categories call it crepuscular then designate it crepuscular
@@ -306,7 +306,7 @@ tabulateCrep = function(x){
   
   #if species only has level 1 and/or 5 data then total evidence will always be FALSE (we can't determine crepuscularity)
   if(all(!df2$Category %in% c("Conf2", "Conf3", "Conf4")) == TRUE){
-    total_evidence <- "non"
+    total_evidence <- "no sources"
     return(total_evidence)
   }
   
@@ -332,7 +332,7 @@ tabulateCrep = function(x){
     }
   } else {total_evidence <- unique_percents[which.max(tabulate(match(df2$crep_evidence, unique_percents)))]}
   #additional screen: if there is level 4 evidence then evaluate to true 
-  if(nrow(filter(df2, Category == "Conf4"))==1){
+  if(nrow(filter(df2, Category == "Conf4"))== 1){
     if(df2[df2$Category == "Conf4", "crep_evidence"] == "crepuscular"){
       total_evidence <- "crepuscular"
     }
@@ -341,6 +341,17 @@ tabulateCrep = function(x){
 }
 
 crep_df <- test_diel_long %>% group_by(Species_name) %>% do(tabulated_crep = tabulateCrep(.)) %>% unnest()
+
+#values for the crepuscularity pipeline flowchart
+test <- test_diel_long %>% filter(column %in% c("Conf2", "Conf3", "Conf4")) %>% group_by(Species_name, column) %>% 
+  summarize(sum_crep = sum(crepuscular), sum_total = sum(total))  %>% mutate(percent_crep = (sum_crep/sum_total)*100) %>% 
+  pivot_wider(id_cols = !c(sum_total, sum_crep), names_from = "column", values_from = percent_crep)
+
+test <- test %>% mutate(evidence2 = as.numeric(Conf2 >50), evidence3 = as.numeric(Conf3 >50), evidence4 = as.numeric(Conf4 >20)) %>%
+  mutate(total_evidence = evidence2 + evidence3 + evidence4)
+
+table(test$evidence4)
+
 
 final_df <- merge(crep_df, activity_pattern_df, by = "Species_name")
 final_df$tabulated_diel <- final_df$tabulated_diel_pattern
@@ -590,7 +601,7 @@ blues <- c("#010661", "#070E8A","#070E8A", "#0044A3","#0044A3", "#0070D1","#0070
 sankey_cet <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = node, label = substr(node, 4, 300))) +
   geom_sankey(flow.alpha= 0.5, node.color = 0.5) + geom_sankey_label(size = 3, color = 1, fill = "white")  + 
   theme_sankey(base_size = 11) + scale_fill_manual(values = blues) +
-  theme(legend.position = "none", axis.text.x = element_blank(), panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent')) + labs(x = NULL) 
+  theme(legend.position = "none", axis.text.x = element_blank(), panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent', colour = NA)) + labs(x = NULL) 
 
 sankey_cet
 
@@ -598,3 +609,33 @@ sankey_cet
 pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "cetacean_flowchart.pdf"), height = 7, width = 14)
 sankey_cet
 dev.off()
+# Section 6: Crepuscularity sankey -------------------------------------------
+
+#create dataframe of the number of species that had activity patterns determined at each step
+df <- data.frame(
+  step_4 = c(rep("A. Total species (n = 84) ",84)),
+  step_3 = c(rep("B. No sources, non-crepuscular (n = 76)", 8), rep("C. Level B, C, D sources", 76)),
+  step_2 = c(rep(NA, 8), rep("D. Category B sources majority (n = 70)", 32), rep("E. Category C sources majority (n = 33)", 22), rep("F. Category D sources (n = 39)", 22)),
+  step_1 = c(rep(NA, 8), rep("G. No evidence (n = 23)", 20), rep("H. Crepuscular evidence (n = 10)", 12), rep("I. No evidence (n = 67)", 10), rep("J. Crepuscular evidence (n = 13)", 12), rep("K. No evidence (n = 29)", 10), rep("L. Crepuscular evidence (n = 10)", 12))
+  #step_0 = c(rep(NA, 8), rep("M. Non-crepuscular (n = 53)", 53), rep("N. Crepuscular (n = 23)", 23))
+  )
+
+#convert to long format for geomsankey
+df <- df %>% make_long(step_1, step_2, step_3, step_4)
+df <- df[!is.na(df$node), ]
+
+blues <- c("#010661", "#070E8A","#070E8A", "#0044A3","#0044A3", "#0070D1","#0070D1","#2E9DFF","#2E9DFF","#8AC8FF","#8AC8FF","#B8DEFF","#B8DEFF")
+
+sankey_crep_cet <- ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = node, label = substr(node, 4, 300))) +
+  geom_sankey(flow.alpha= 0.5, node.color = 0.5) + geom_sankey_label(size = 3, color = 1, fill = "white")  + 
+  theme_sankey(base_size = 11) +  scale_fill_manual(values = blues) +
+  theme(legend.position = "none", axis.text.x = element_blank(), panel.background = element_rect(fill='transparent', colour = "transparent"), plot.background = element_rect(fill='transparent', color=NA), legend.background = element_rect(fill='transparent', colour = NA)) + labs(x = NULL) 
+
+sankey_crep_cet + coord_flip()
+
+#save out to figure folder
+pdf(paste0("C:/Users/ameli/OneDrive/Documents/R_projects/Amelia_figures/", "cetacean_flowchart.pdf"), height = 7, width = 14)
+sankey_cet
+dev.off()
+
+

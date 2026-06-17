@@ -60,7 +60,7 @@ phylANOVA <- calculatePhylANOVA(trait.data.1, "Orbit_ratio")
 #plot out the group means
 cet_orbit_boxplot <- ggplot(trait.data.1, aes(x = max_crep, y = Orbit_ratio)) + 
   boxplot_format +
-  labs(x = "Temporal activity pattern", y = "\n Relative eye size") + 
+  labs(x = "Temporal activity pattern", y = "Relative eye size") + 
   annotate("text", x = 1.4, y = 40, label = paste("phylANOVA, p =", phylANOVA$Pf)) 
 
 cet_orbit_boxplot
